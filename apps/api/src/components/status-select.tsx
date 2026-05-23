@@ -2,7 +2,7 @@
 
 import { Check, ChevronDown } from 'lucide-react';
 
-import { LEAD_STATUS, type LeadStatus } from '@agency-os/shared/enums';
+import { LEAD_STATUS, type LeadStatus } from '@halcon-os/shared/enums';
 import { LeadStatusBadge } from '~/components/lead-status-badge';
 import {
   DropdownMenu,

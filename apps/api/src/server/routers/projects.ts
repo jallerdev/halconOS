@@ -1,6 +1,6 @@
 import { and, desc, eq } from 'drizzle-orm';
 
-import { idSchema } from '@agency-os/shared/schemas';
+import { idSchema } from '@halcon-os/shared/schemas';
 import { projects } from '../db/schema';
 import { orgProcedure, router } from '../trpc';
 

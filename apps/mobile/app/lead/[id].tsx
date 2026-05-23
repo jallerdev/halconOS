@@ -14,7 +14,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { LEAD_STATUS, type LeadStatus } from '@agency-os/shared/enums';
+import { LEAD_STATUS, type LeadStatus } from '@halcon-os/shared/enums';
 import { Card } from '~/components/Card';
 import { StatusPill } from '~/components/StatusPill';
 import { NotesSection } from '~/features/leads/NotesSection';

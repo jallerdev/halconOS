@@ -13,8 +13,8 @@
     "lint": "expo lint"
   },
   "dependencies": {
-    "@agency-os/api": "workspace:*",
-    "@agency-os/shared": "workspace:*",
+    "@halcon-os/api": "workspace:*",
+    "@halcon-os/shared": "workspace:*",
     "@expo/vector-icons": "^15.0.2",
     "@gorhom/bottom-sheet": "^5.2.0",
     "@react-native-async-storage/async-storage": "2.2.0",
@@ -50,7 +50,7 @@
     "zustand": "^5.0.2"
   },
   "devDependencies": {
-    "@agency-os/tsconfig": "workspace:*",
+    "@halcon-os/tsconfig": "workspace:*",
     "@babel/core": "^7.26.0",
     "@types/react": "~19.0.10",
     "typescript": "^5.7.2"

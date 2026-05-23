@@ -10,7 +10,7 @@ type Props = {
   id: string;
   businessName: string;
   contactName: string | null;
-  status: import('@agency-os/shared/enums').LeadStatus;
+  status: import('@halcon-os/shared/enums').LeadStatus;
   estimatedValue: string | null;
   phone: string | null;
 };

@@ -1,4 +1,4 @@
-import type { LeadStatus } from '@agency-os/shared/enums';
+import type { LeadStatus } from '@halcon-os/shared/enums';
 import { cn } from '~/lib/utils';
 
 const LABEL: Record<LeadStatus, string> = {

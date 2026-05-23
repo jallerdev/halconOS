@@ -2,7 +2,7 @@ import { TRPCError } from '@trpc/server';
 import { and, asc, desc, eq, getTableColumns, ilike, inArray, or, sql } from 'drizzle-orm';
 import { z } from 'zod';
 
-import { LEAD_STATUS } from '@agency-os/shared/enums';
+import { LEAD_STATUS } from '@halcon-os/shared/enums';
 import {
   aiGenerateSchema,
   bulkIdsSchema,
@@ -12,7 +12,7 @@ import {
   leadSearchSchema,
   leadStatusUpdateSchema,
   leadUpdateSchema,
-} from '@agency-os/shared/schemas';
+} from '@halcon-os/shared/schemas';
 import { buildPrompt } from '../ai/lead-prompts';
 import { generateText, isAiConfigured } from '../ai/provider';
 import { rateLimit } from '../rate-limit';

@@ -16,7 +16,7 @@ import { useMemo, useState } from 'react';
 
 import { toast } from 'sonner';
 
-import { LEAD_STATUS as LEAD_STATUS_LIST, type LeadStatus } from '@agency-os/shared/enums';
+import { LEAD_STATUS as LEAD_STATUS_LIST, type LeadStatus } from '@halcon-os/shared/enums';
 import { BusinessAvatar } from '~/components/business-avatar';
 import { LEAD_STATUS_LABEL } from '~/components/lead-status-badge';
 import { LeadPeek } from './LeadPeek';

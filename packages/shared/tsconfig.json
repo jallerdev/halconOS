@@ -1,5 +1,5 @@
 {
-  "extends": "@agency-os/tsconfig/base.json",
+  "extends": "@halcon-os/tsconfig/base.json",
   "compilerOptions": {
     "outDir": "./dist",
     "rootDir": "./src"

@@ -1,6 +1,6 @@
 import { Pressable, ScrollView, Text } from 'react-native';
 
-import { LEAD_STATUS, type LeadStatus } from '@agency-os/shared/enums';
+import { LEAD_STATUS, type LeadStatus } from '@halcon-os/shared/enums';
 import { haptics } from '~/lib/haptics';
 
 type Filter = LeadStatus | 'ALL';

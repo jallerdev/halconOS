@@ -1,6 +1,6 @@
 import { Text, View } from 'react-native';
 
-import type { LeadStatus, ProjectStatus, TaskStatus } from '@agency-os/shared/enums';
+import type { LeadStatus, ProjectStatus, TaskStatus } from '@halcon-os/shared/enums';
 
 type Status = LeadStatus | ProjectStatus | TaskStatus;
 

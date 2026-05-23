@@ -6,7 +6,7 @@ import {
   noteCreateSchema,
   noteUpdateSchema,
   parentRefSchema,
-} from '@agency-os/shared/schemas';
+} from '@halcon-os/shared/schemas';
 import { notes } from '../db/schema';
 import { orgProcedure, router } from '../trpc';
 

@@ -1,5 +1,5 @@
 {
-  "extends": "@agency-os/tsconfig/expo.json",
+  "extends": "@halcon-os/tsconfig/expo.json",
   "compilerOptions": {
     "baseUrl": ".",
     "paths": {

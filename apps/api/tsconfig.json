@@ -1,5 +1,5 @@
 {
-  "extends": "@agency-os/tsconfig/next.json",
+  "extends": "@halcon-os/tsconfig/next.json",
   "compilerOptions": {
     "baseUrl": ".",
     "paths": {

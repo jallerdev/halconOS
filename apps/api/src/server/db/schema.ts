@@ -18,7 +18,7 @@ import {
   TASK_PRIORITY,
   TASK_STATUS,
   USER_ROLE,
-} from '@agency-os/shared/enums';
+} from '@halcon-os/shared/enums';
 
 export const agencySchema = pgSchema('agency_os');
 

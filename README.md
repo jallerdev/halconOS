@@ -79,7 +79,7 @@ bun run dev:mobile   # expo start
 3. Start with your LAN IP so the manifest points there:
 
    ```bash
-   REACT_NATIVE_PACKAGER_HOSTNAME=192.168.1.6 bun --filter @agency-os/mobile dev --host lan
+   REACT_NATIVE_PACKAGER_HOSTNAME=192.168.1.6 bun --filter @halcon-os/mobile dev --host lan
    ```
    Replace `192.168.1.6` with your IP (update it in `apps/mobile/.env.local` too if you want the client to hit the right backend).
 
@@ -95,7 +95,7 @@ bun run dev:mobile   # expo start
 | `bun run db:studio` | Web UI to inspect Postgres |
 | `bun run db:generate` | Generate a migration from changes in `schema.ts` |
 | `bun run db:migrate` | Apply pending migrations |
-| `bun --filter @agency-os/api <script>` | Run a script in a specific workspace |
+| `bun --filter @halcon-os/api <script>` | Run a script in a specific workspace |
 
 ## Project status
 

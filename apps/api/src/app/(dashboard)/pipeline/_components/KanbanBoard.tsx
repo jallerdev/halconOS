@@ -15,7 +15,7 @@ import { Star } from 'lucide-react';
 import { useState } from 'react';
 import { toast } from 'sonner';
 
-import { LEAD_STATUS, type LeadStatus } from '@agency-os/shared/enums';
+import { LEAD_STATUS, type LeadStatus } from '@halcon-os/shared/enums';
 import { BusinessAvatar } from '~/components/business-avatar';
 import { LEAD_STATUS_LABEL } from '~/components/lead-status-badge';
 import { ScoreBadge } from '~/components/score-badge';

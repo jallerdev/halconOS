@@ -1,4 +1,4 @@
-import type { LeadStatus } from '@agency-os/shared/enums';
+import type { LeadStatus } from '@halcon-os/shared/enums';
 
 const FORWARD_FLOW: Record<LeadStatus, LeadStatus> = {
   NEW: 'CONTACTED',

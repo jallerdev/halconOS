@@ -8,14 +8,14 @@
   ],
   "scripts": {
     "dev": "turbo run dev",
-    "dev:api": "bun --filter @agency-os/api dev",
-    "dev:mobile": "bun --filter @agency-os/mobile start",
+    "dev:api": "bun --filter @halcon-os/api dev",
+    "dev:mobile": "bun --filter @halcon-os/mobile start",
     "build": "turbo run build",
     "lint": "turbo run lint",
     "typecheck": "turbo run typecheck",
-    "db:generate": "bun --filter @agency-os/api db:generate",
-    "db:migrate": "bun --filter @agency-os/api db:migrate",
-    "db:studio": "bun --filter @agency-os/api db:studio"
+    "db:generate": "bun --filter @halcon-os/api db:generate",
+    "db:migrate": "bun --filter @halcon-os/api db:migrate",
+    "db:studio": "bun --filter @halcon-os/api db:studio"
   },
   "devDependencies": {
     "turbo": "^2.3.3",

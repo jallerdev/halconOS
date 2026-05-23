@@ -1,5 +1,5 @@
 {
-  "name": "@agency-os/shared",
+  "name": "@halcon-os/shared",
   "version": "0.0.0",
   "private": true,
   "type": "module",
@@ -17,7 +17,7 @@
     "zod": "^3.24.1"
   },
   "devDependencies": {
-    "@agency-os/tsconfig": "workspace:*",
+    "@halcon-os/tsconfig": "workspace:*",
     "typescript": "^5.7.2"
   }
 }

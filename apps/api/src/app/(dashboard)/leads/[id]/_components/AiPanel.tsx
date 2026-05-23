@@ -4,7 +4,7 @@ import { Check, Copy, FileText, Lightbulb, Loader2, MessageCircle, Sparkles } fr
 import type { LucideIcon } from 'lucide-react';
 import { useState } from 'react';
 
-import type { AiKind } from '@agency-os/shared/schemas';
+import type { AiKind } from '@halcon-os/shared/schemas';
 import { Button } from '~/components/ui/button';
 import { trpc } from '~/lib/trpc';
 

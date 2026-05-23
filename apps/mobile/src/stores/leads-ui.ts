@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 
-import type { LeadStatus } from '@agency-os/shared/enums';
+import type { LeadStatus } from '@halcon-os/shared/enums';
 
 type State = {
   statusFilter: LeadStatus | 'ALL';

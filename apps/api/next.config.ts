@@ -17,7 +17,7 @@ const securityHeaders = [
 
 const nextConfig: NextConfig = {
   reactStrictMode: true,
-  transpilePackages: ['@agency-os/shared'],
+  transpilePackages: ['@halcon-os/shared'],
   typedRoutes: true,
   poweredByHeader: false,
   async headers() {
