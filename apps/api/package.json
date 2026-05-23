@@ -1,5 +1,5 @@
 {
-  "name": "@agency-os/api",
+  "name": "@halcon-os/api",
   "version": "0.0.0",
   "private": true,
   "scripts": {
