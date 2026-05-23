@@ -1,0 +1,166 @@
+'use client';
+
+import { AlertTriangle, CalendarClock, CalendarDays, Star } from 'lucide-react';
+import Link from 'next/link';
+import { toast } from 'sonner';
+
+import type { inferRouterOutputs } from '@trpc/server';
+
+import type { AppRouter } from '~/server/routers/_app';
+import { BusinessAvatar } from '~/components/business-avatar';
+import { LeadStatusBadge } from '~/components/lead-status-badge';
+import { ScoreBadge } from '~/components/score-badge';
+import { WhatsAppButton } from '~/components/whatsapp-button';
+import { Button } from '~/components/ui/button';
+import { trpc } from '~/lib/trpc';
+
+export default function TodayPage() {
+  const { data, isLoading } = trpc.leads.followUps.useQuery();
+
+  return (
+    <div className="mx-auto max-w-[1000px] px-6 py-8 lg:px-10">
+      <header className="mb-6">
+        <h1 className="text-2xl font-semibold tracking-tight">Hoy</h1>
+        <p className="mt-1 text-sm text-muted-foreground">Seguimientos programados de tus leads.</p>
+      </header>
+
+      {isLoading ? (
+        <p className="text-sm text-muted-foreground">Cargando…</p>
+      ) : !data || data.counts.overdue + data.counts.today + data.counts.upcoming === 0 ? (
+        <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-border/60 py-20 text-center">
+          <CalendarClock className="size-6 text-muted-foreground" />
+          <p className="mt-4 text-sm font-medium">No tienes seguimientos programados</p>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Programa un seguimiento desde el panel de un lead.
+          </p>
+        </div>
+      ) : (
+        <div className="space-y-8">
+          <Bucket
+            title="Vencidos"
+            icon={AlertTriangle}
+            tone="text-rose-400"
+            items={data.overdue}
+            empty="Nada vencido. 👌"
+          />
+          <Bucket
+            title="Hoy"
+            icon={CalendarDays}
+            tone="text-amber-400"
+            items={data.today}
+            empty="Nada para hoy."
+          />
+          <Bucket
+            title="Próximos"
+            icon={CalendarClock}
+            tone="text-sky-400"
+            items={data.upcoming}
+            empty="Sin próximos."
+          />
+        </div>
+      )}
+    </div>
+  );
+}
+
+type Item = inferRouterOutputs<AppRouter>['leads']['followUps']['today'][number];
+
+function Bucket({
+  title,
+  icon: Icon,
+  tone,
+  items,
+  empty,
+}: {
+  title: string;
+  icon: import('lucide-react').LucideIcon;
+  tone: string;
+  items: Item[];
+  empty: string;
+}) {
+  return (
+    <section>
+      <div className="mb-3 flex items-center gap-2">
+        <Icon className={`size-4 ${tone}`} />
+        <h2 className="text-sm font-semibold uppercase tracking-wide">{title}</h2>
+        <span className="rounded-full bg-secondary/60 px-2 py-0.5 text-xs text-muted-foreground">
+          {items.length}
+        </span>
+      </div>
+      {items.length === 0 ? (
+        <p className="px-1 text-sm text-muted-foreground">{empty}</p>
+      ) : (
+        <div className="space-y-2">
+          {items.map((l) => (
+            <Row key={l.id} lead={l} />
+          ))}
+        </div>
+      )}
+    </section>
+  );
+}
+
+function Row({ lead }: { lead: Item }) {
+  const utils = trpc.useUtils();
+  const clearFollowUp = trpc.leads.setFollowUp.useMutation({
+    onSuccess: () => {
+      utils.leads.followUps.invalidate();
+      toast.success('Seguimiento completado');
+    },
+  });
+  const snooze = trpc.leads.setFollowUp.useMutation({
+    onSuccess: () => {
+      utils.leads.followUps.invalidate();
+      toast.success('Pospuesto 3 días');
+    },
+  });
+
+  const due = lead.nextFollowUpAt ? new Date(lead.nextFollowUpAt) : null;
+
+  return (
+    <div className="flex items-center gap-3 rounded-lg border border-border/60 bg-card/50 p-3">
+      <BusinessAvatar name={lead.businessName} size="sm" />
+      <div className="min-w-0 flex-1">
+        <Link href={`/leads/${lead.id}`} className="truncate text-sm font-medium hover:text-primary">
+          {lead.businessName}
+        </Link>
+        <div className="mt-0.5 flex items-center gap-2 text-xs text-muted-foreground">
+          {[lead.category, lead.city].filter(Boolean).join(' · ')}
+          {due && <span>· {due.toLocaleDateString('es-CO', { day: 'numeric', month: 'short' })}</span>}
+        </div>
+      </div>
+      <ScoreBadge score={lead.score} />
+      <LeadStatusBadge status={lead.status} />
+      {lead.googleRating && (
+        <span className="hidden items-center gap-1 font-mono text-xs text-muted-foreground sm:inline-flex">
+          <Star className="size-3 fill-amber-400 text-amber-400" />
+          {lead.googleRating}
+        </span>
+      )}
+      <WhatsAppButton
+        leadId={lead.id}
+        phone={lead.phone}
+        phoneIntl={lead.phoneIntl}
+        aiFirstMessage={lead.aiFirstMessage}
+        businessName={lead.businessName}
+        size="icon"
+        variant="secondary"
+        label=""
+      />
+      <Button
+        size="sm"
+        variant="ghost"
+        onClick={() => {
+          const d = new Date();
+          d.setDate(d.getDate() + 3);
+          snooze.mutate({ id: lead.id, date: d.toISOString() });
+        }}
+      >
+        +3d
+      </Button>
+      <Button size="sm" variant="ghost" onClick={() => clearFollowUp.mutate({ id: lead.id, date: null })}>
+        ✓
+      </Button>
+    </div>
+  );
+}
