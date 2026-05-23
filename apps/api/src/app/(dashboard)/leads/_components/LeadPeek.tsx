@@ -1,6 +1,6 @@
 'use client';
 
-import { CalendarClock, ExternalLink, MapPin, Phone, Sparkles, Star } from 'lucide-react';
+import { CalendarClock, ExternalLink, KanbanSquare, MapPin, Phone, Sparkles } from 'lucide-react';
 import Link from 'next/link';
 import { toast } from 'sonner';
 
@@ -89,6 +89,15 @@ export function LeadPeek({
                     <a href={`tel:${lead.phone}`}>
                       <Phone className="size-4" /> Llamar
                     </a>
+                  </Button>
+                )}
+                {lead.status === 'NEW' && (
+                  <Button
+                    size="sm"
+                    onClick={() => updateStatus.mutate({ id: lead.id, status: 'CONTACTED' })}
+                    disabled={updateStatus.isPending}
+                  >
+                    <KanbanSquare className="size-4" /> Añadir al pipeline
                   </Button>
                 )}
               </div>

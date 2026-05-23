@@ -5,6 +5,7 @@ import {
   ArrowUpDown,
   Download,
   Eye,
+  KanbanSquare,
   MoreVertical,
   Pencil,
   Search,
@@ -348,6 +349,13 @@ export function LeadsTable() {
                         />
                         <RowActions
                           id={l.id}
+                          status={l.status}
+                          onAddToPipeline={() =>
+                            updateStatus.mutate(
+                              { id: l.id, status: 'CONTACTED' },
+                              { onSuccess: () => toast.success('Añadido al pipeline') },
+                            )
+                          }
                           onDelete={() => {
                             if (confirm(`¿Eliminar "${l.businessName}"?`))
                               del.mutate(
@@ -421,7 +429,17 @@ function SortableHead({
   );
 }
 
-function RowActions({ id, onDelete }: { id: string; onDelete: () => void }) {
+function RowActions({
+  id,
+  status,
+  onAddToPipeline,
+  onDelete,
+}: {
+  id: string;
+  status: LeadStatus;
+  onAddToPipeline: () => void;
+  onDelete: () => void;
+}) {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
@@ -440,6 +458,14 @@ function RowActions({ id, onDelete }: { id: string; onDelete: () => void }) {
             <Pencil /> Editar
           </Link>
         </DropdownMenuItem>
+        {status === 'NEW' && (
+          <>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem onClick={onAddToPipeline}>
+              <KanbanSquare /> Añadir al pipeline
+            </DropdownMenuItem>
+          </>
+        )}
         <DropdownMenuSeparator />
         <DropdownMenuItem destructive onClick={onDelete}>
           <Trash2 /> Eliminar

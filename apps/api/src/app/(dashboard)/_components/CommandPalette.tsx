@@ -1,7 +1,7 @@
 'use client';
 
 import * as DialogPrimitive from '@radix-ui/react-dialog';
-import { Boxes, Search, Zap } from 'lucide-react';
+import { Boxes, CalendarClock, KanbanSquare, Search, Zap } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 
@@ -69,6 +69,12 @@ export function CommandPalette() {
               <CommandGroup heading="Navegación">
                 <CommandItem onSelect={() => go('/leads')}>
                   <Zap /> Ir a Leads
+                </CommandItem>
+                <CommandItem onSelect={() => go('/today')}>
+                  <CalendarClock /> Ir a Hoy
+                </CommandItem>
+                <CommandItem onSelect={() => go('/pipeline')}>
+                  <KanbanSquare /> Ir a Pipeline
                 </CommandItem>
                 <CommandItem onSelect={() => go('/projects')}>
                   <Boxes /> Ir a Proyectos
