@@ -1,0 +1,188 @@
+'use client';
+
+import { Check, Copy, KeyRound, Loader2, Plus, Trash2 } from 'lucide-react';
+import { useState } from 'react';
+import { toast } from 'sonner';
+
+import { Button } from '~/components/ui/button';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '~/components/ui/card';
+import { Input } from '~/components/ui/input';
+import { trpc } from '~/lib/trpc';
+
+function fmtDate(d: Date | string | null) {
+  if (!d) return '—';
+  return new Date(d).toLocaleString('es-CO', {
+    day: 'numeric',
+    month: 'short',
+    hour: '2-digit',
+    minute: '2-digit',
+  });
+}
+
+export default function SettingsPage() {
+  const utils = trpc.useUtils();
+  const list = trpc.inboundKeys.list.useQuery(undefined, { retry: false });
+
+  const [name, setName] = useState('');
+  const [newSecret, setNewSecret] = useState<string | null>(null);
+  const [copied, setCopied] = useState(false);
+
+  const create = trpc.inboundKeys.create.useMutation({
+    onSuccess: (data) => {
+      setNewSecret(data.secret);
+      setCopied(false);
+      setName('');
+      void utils.inboundKeys.list.invalidate();
+    },
+    onError: (e) => toast.error(e.message),
+  });
+
+  const revoke = trpc.inboundKeys.revoke.useMutation({
+    onSuccess: () => {
+      toast.success('Key revocada');
+      void utils.inboundKeys.list.invalidate();
+    },
+    onError: (e) => toast.error(e.message),
+  });
+
+  const isForbidden = list.error?.data?.code === 'FORBIDDEN';
+
+  const copySecret = async () => {
+    if (!newSecret) return;
+    await navigator.clipboard.writeText(newSecret);
+    setCopied(true);
+    toast.success('Copiada al portapapeles');
+  };
+
+  return (
+    <div className="mx-auto max-w-3xl space-y-6 px-4 py-8">
+      <div>
+        <h1 className="flex items-center gap-2 text-2xl font-semibold tracking-tight">
+          <KeyRound className="size-6 text-primary" /> Ajustes
+        </h1>
+        <p className="mt-1 text-sm text-muted-foreground">
+          Keys de leads entrantes para tu landing. Cada key guarda los leads en{' '}
+          <strong>tu organización</strong>.
+        </p>
+      </div>
+
+      {isForbidden ? (
+        <Card>
+          <CardContent className="py-8 text-center text-sm text-muted-foreground">
+            Solo un administrador de la organización puede gestionar las keys.
+          </CardContent>
+        </Card>
+      ) : (
+        <>
+          <Card>
+            <CardHeader>
+              <CardTitle>Generar key</CardTitle>
+              <CardDescription>
+                Ponle un nombre para identificarla (ej. &ldquo;Landing principal&rdquo;).
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="flex gap-2">
+                <Input
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  placeholder="Nombre de la key"
+                  maxLength={80}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && name.trim()) create.mutate({ name: name.trim() });
+                  }}
+                />
+                <Button
+                  onClick={() => create.mutate({ name: name.trim() })}
+                  disabled={!name.trim() || create.isPending}
+                >
+                  {create.isPending ? (
+                    <Loader2 className="animate-spin" />
+                  ) : (
+                    <Plus />
+                  )}
+                  Generar
+                </Button>
+              </div>
+
+              {newSecret && (
+                <div className="rounded-lg border border-amber-500/40 bg-amber-500/10 p-4">
+                  <p className="text-sm font-medium text-amber-200">
+                    Guárdala ahora — no se vuelve a mostrar.
+                  </p>
+                  <div className="mt-2 flex items-center gap-2">
+                    <code className="flex-1 overflow-x-auto rounded border border-border/60 bg-background px-3 py-2 font-mono text-xs">
+                      {newSecret}
+                    </code>
+                    <Button variant="outline" size="icon" onClick={copySecret} title="Copiar">
+                      {copied ? <Check className="text-emerald-400" /> : <Copy />}
+                    </Button>
+                  </div>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Tus keys</CardTitle>
+            </CardHeader>
+            <CardContent>
+              {list.isLoading ? (
+                <div className="flex justify-center py-6 text-muted-foreground">
+                  <Loader2 className="animate-spin" />
+                </div>
+              ) : !list.data?.length ? (
+                <p className="py-6 text-center text-sm text-muted-foreground">
+                  Aún no tienes keys. Genera una arriba.
+                </p>
+              ) : (
+                <ul className="divide-y divide-border/60">
+                  {list.data.map((k) => (
+                    <li key={k.id} className="flex items-center gap-3 py-3">
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center gap-2">
+                          <span className="truncate text-sm font-medium">{k.name}</span>
+                          {k.revokedAt && (
+                            <span className="rounded-full bg-rose-500/15 px-2 py-0.5 text-[10px] font-medium text-rose-300">
+                              Revocada
+                            </span>
+                          )}
+                        </div>
+                        <p className="mt-0.5 font-mono text-xs text-muted-foreground">
+                          {k.keyPrefix}… · último uso {fmtDate(k.lastUsedAt)}
+                        </p>
+                      </div>
+                      {!k.revokedAt && (
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="text-muted-foreground hover:text-rose-400"
+                          disabled={revoke.isPending}
+                          onClick={() => {
+                            if (confirm(`¿Revocar la key "${k.name}"? Dejará de funcionar.`)) {
+                              revoke.mutate({ id: k.id });
+                            }
+                          }}
+                          title="Revocar"
+                        >
+                          <Trash2 />
+                        </Button>
+                      )}
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </CardContent>
+          </Card>
+        </>
+      )}
+    </div>
+  );
+}

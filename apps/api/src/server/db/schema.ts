@@ -38,6 +38,30 @@ export const users = agencySchema.table('users', {
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
 });
 
+// API keys para leads entrantes (landing pública). Cada org genera la suya;
+// la key (hasheada) identifica a qué org/owner se asignan los leads. El request
+// público nunca envía orgId — lo determina la key del lado del servidor.
+export const inboundKeys = agencySchema.table(
+  'inbound_keys',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    orgId: text('org_id').notNull(),
+    ownerId: uuid('owner_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    name: text('name').notNull(),
+    keyHash: text('key_hash').notNull(), // sha256 hex del secreto
+    keyPrefix: text('key_prefix').notNull(), // primeros chars, para mostrar en la UI
+    lastUsedAt: timestamp('last_used_at', { withTimezone: true }),
+    revokedAt: timestamp('revoked_at', { withTimezone: true }),
+    createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+  },
+  (t) => [
+    uniqueIndex('inbound_keys_hash_idx').on(t.keyHash),
+    index('inbound_keys_org_idx').on(t.orgId),
+  ],
+);
+
 export const leads = agencySchema.table(
   'leads',
   {
@@ -221,3 +245,5 @@ export type Task = typeof tasks.$inferSelect;
 export type NewTask = typeof tasks.$inferInsert;
 export type Note = typeof notes.$inferSelect;
 export type NewNote = typeof notes.$inferInsert;
+export type InboundKey = typeof inboundKeys.$inferSelect;
+export type NewInboundKey = typeof inboundKeys.$inferInsert;

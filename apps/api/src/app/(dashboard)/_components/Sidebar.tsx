@@ -1,6 +1,14 @@
 'use client';
 
-import { Boxes, CalendarClock, KanbanSquare, Search, Zap, type LucideIcon } from 'lucide-react';
+import {
+  Boxes,
+  CalendarClock,
+  KanbanSquare,
+  KeyRound,
+  Search,
+  Zap,
+  type LucideIcon,
+} from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 
@@ -16,6 +24,7 @@ const NAV: { href: string; label: string; icon: LucideIcon }[] = [
   { href: '/today', label: 'Hoy', icon: CalendarClock },
   { href: '/pipeline', label: 'Pipeline', icon: KanbanSquare },
   { href: '/projects', label: 'Proyectos', icon: Boxes },
+  { href: '/settings', label: 'Ajustes', icon: KeyRound },
 ];
 
 export function Sidebar() {
