@@ -1,0 +1,84 @@
+{
+  "common": {
+    "save": "Guardar",
+    "cancel": "Cancelar",
+    "delete": "Eliminar",
+    "edit": "Editar",
+    "loading": "Cargando…",
+    "search": "Buscar",
+    "noResults": "Sin resultados",
+    "back": "Atrás",
+    "next": "Siguiente",
+    "close": "Cerrar",
+    "confirm": "Confirmar"
+  },
+  "nav": {
+    "leads": "Leads",
+    "pipeline": "Pipeline",
+    "projects": "Proyectos",
+    "today": "Hoy",
+    "discover": "Descubrir",
+    "settings": "Ajustes",
+    "notifications": "Notificaciones"
+  },
+  "leads": {
+    "list": {
+      "title": "Leads",
+      "empty": "Aún no tienes leads",
+      "emptyDescription": "Importa un CSV o conecta una landing para empezar.",
+      "create": "Crear lead",
+      "import": "Importar"
+    },
+    "form": {
+      "labels": {
+        "businessName": "Nombre del negocio",
+        "contactName": "Nombre de contacto",
+        "phone": "Teléfono",
+        "email": "Email",
+        "city": "Ciudad",
+        "category": "Categoría"
+      },
+      "actions": {
+        "save": "Guardar lead",
+        "saving": "Guardando…"
+      }
+    },
+    "status": {
+      "NEW": "Nuevo",
+      "CONTACTED": "Contactado",
+      "QUALIFIED": "Calificado",
+      "PROPOSAL": "Propuesta",
+      "WON": "Ganado",
+      "LOST": "Perdido"
+    }
+  },
+  "pipeline": {
+    "title": "Pipeline",
+    "filterMine": "Mis leads",
+    "filterAll": "Todos los leads"
+  },
+  "today": {
+    "title": "Hoy",
+    "upcomingMeetings": "Próximas reuniones",
+    "followUpsOverdue": "Seguimientos vencidos",
+    "followUpsToday": "Seguimientos de hoy"
+  },
+  "settings": {
+    "title": "Ajustes",
+    "google": {
+      "title": "Conexión con Google",
+      "description": "Necesaria para crear videollamadas de Meet desde un lead.",
+      "connect": "Conectar Google",
+      "disconnect": "Desconectar"
+    },
+    "inboundKeys": {
+      "title": "Tus keys",
+      "generate": "Generar key",
+      "namePlaceholder": "Nombre de la key",
+      "revoke": "Revocar",
+      "reveal": "Ver key completa",
+      "hide": "Ocultar",
+      "copy": "Copiar"
+    }
+  }
+}

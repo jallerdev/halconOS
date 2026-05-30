@@ -1,4 +1,7 @@
 import type { NextConfig } from 'next';
+import createNextIntlPlugin from 'next-intl/plugin';
+
+const withNextIntl = createNextIntlPlugin('./src/i18n/request.ts');
 
 const securityHeaders = [
   { key: 'X-Content-Type-Options', value: 'nosniff' },
@@ -23,7 +26,6 @@ const nextConfig: NextConfig = {
   async headers() {
     return [
       {
-        // No aplicar a /api/* (esos manejan su propio CORS).
         source: '/((?!api).*)',
         headers: securityHeaders,
       },
@@ -31,4 +33,4 @@ const nextConfig: NextConfig = {
   },
 };
 
-export default nextConfig;
+export default withNextIntl(nextConfig);
