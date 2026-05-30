@@ -25,6 +25,9 @@ export type TaskStatus = (typeof TASK_STATUS)[number];
 export const TASK_PRIORITY = ['LOW', 'MED', 'HIGH', 'URGENT'] as const;
 export type TaskPriority = (typeof TASK_PRIORITY)[number];
 
+export const TASK_KIND = ['task', 'meeting'] as const;
+export type TaskKind = (typeof TASK_KIND)[number];
+
 export const NOTE_PARENT_TYPE = ['lead', 'project'] as const;
 export type NoteParentType = (typeof NOTE_PARENT_TYPE)[number];
 
