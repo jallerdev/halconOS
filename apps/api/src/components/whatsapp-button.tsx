@@ -77,7 +77,13 @@ export function WhatsAppButton({
   }
 
   return (
-    <Button size={size} variant={variant} onClick={onClick} disabled={busy}>
+    <Button
+      size={size}
+      variant={variant}
+      onClick={onClick}
+      disabled={busy}
+      className="bg-emerald-600 text-white hover:bg-emerald-500 focus-visible:ring-emerald-400"
+    >
       {busy ? <Loader2 className="size-4 animate-spin" /> : <MessageCircle className="size-4" />}
       {label}
     </Button>

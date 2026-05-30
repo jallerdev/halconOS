@@ -4,7 +4,7 @@ import { and, eq, isNull } from 'drizzle-orm';
 import { z } from 'zod';
 
 import { db } from '~/server/db';
-import { inboundKeys, leads, notes } from '~/server/db/schema';
+import { inboundKeys, leads, notes, tasks } from '~/server/db/schema';
 import { rateLimit } from '~/server/rate-limit';
 
 export const runtime = 'nodejs';
@@ -20,6 +20,10 @@ const inboundSchema = z.object({
   phone: z.string().trim().max(50).optional(),
   service: z.string().trim().max(80).optional(),
   scheduledAt: z.string().datetime({ offset: true }).optional(),
+  // Si la landing creó un evento con Google Meet, lo pasa aquí (en vez de embeber
+  // el link en la nota). Halcon crea una row en tasks(kind='meeting').
+  meetUrl: z.string().url().max(500).optional(),
+  durationMin: z.number().int().min(15).max(240).optional(),
   note: z.string().trim().max(2000).optional(),
 });
 
@@ -99,7 +103,30 @@ export async function POST(req: Request) {
     return json({ ok: false, error: 'No se pudo crear el lead.' }, 500);
   }
 
-  // 6. Nota opcional con el mensaje del formulario (aparece en el timeline del lead).
+  // 6. Si la landing programó una llamada, registrar la reunión como tasks(kind='meeting').
+  //    googleEventId/googleCalendarId quedan en NULL: el evento se creó con la cuenta
+  //    de Google de la landing, no la del owner de halcon, así que no podemos cancelarlo
+  //    desde aquí — solo persistimos el link Meet para mostrarlo en /leads/[id].
+  if (parsed.scheduledAt) {
+    const startsAt = new Date(parsed.scheduledAt);
+    const endsAt = new Date(startsAt.getTime() + (parsed.durationMin ?? 30) * 60_000);
+    await db.insert(tasks).values({
+      orgId: key.orgId,
+      kind: 'meeting',
+      leadId: created.id,
+      title: `Llamada con ${parsed.name}${parsed.service ? ` · ${parsed.service}` : ''}`,
+      status: 'TODO',
+      priority: 'MED',
+      startsAt,
+      endsAt,
+      attendees: email ? [email] : [],
+      meetUrl: parsed.meetUrl ?? null,
+      googleEventId: null,
+      googleCalendarId: null,
+    });
+  }
+
+  // 7. Nota opcional con el mensaje del formulario (aparece en el timeline del lead).
   if (parsed.note) {
     await db.insert(notes).values({
       orgId: key.orgId,
@@ -110,7 +137,7 @@ export async function POST(req: Request) {
     });
   }
 
-  // 7. Marcar uso de la key (best-effort).
+  // 8. Marcar uso de la key (best-effort).
   await db
     .update(inboundKeys)
     .set({ lastUsedAt: new Date() })
