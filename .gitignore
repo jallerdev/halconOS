@@ -39,3 +39,10 @@ Thumbs.db
 
 # Drizzle
 **/drizzle/.snapshot
+
+# Claude Code workspace state (plans, sessions, memory)
+.claude/
+
+# Bun (legacy, project uses pnpm)
+bun.lock
+bunfig.toml
