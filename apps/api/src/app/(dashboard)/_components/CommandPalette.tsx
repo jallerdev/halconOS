@@ -1,7 +1,7 @@
 'use client';
 
 import * as DialogPrimitive from '@radix-ui/react-dialog';
-import { Boxes, CalendarClock, KanbanSquare, Search, Zap } from 'lucide-react';
+import { Boxes, CalendarClock, KanbanSquare, Plus, Search, Zap } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 
@@ -15,6 +15,7 @@ import {
   CommandList,
 } from '~/components/ui/command';
 import { trpc } from '~/lib/trpc';
+import { openNewLeadSheet } from './NewLeadSheet';
 
 function useDebounced<T>(value: T, delay = 200): T {
   const [v, setV] = useState(value);
@@ -66,6 +67,17 @@ export function CommandPalette() {
               placeholder="Buscar leads, ir a páginas…"
             />
             <CommandList>
+              <CommandGroup heading="Acciones">
+                <CommandItem
+                  onSelect={() => {
+                    setOpen(false);
+                    setQuery('');
+                    openNewLeadSheet();
+                  }}
+                >
+                  <Plus /> Nuevo lead
+                </CommandItem>
+              </CommandGroup>
               <CommandGroup heading="Navegación">
                 <CommandItem onSelect={() => go('/leads')}>
                   <Zap /> Ir a Leads

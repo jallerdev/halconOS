@@ -2,6 +2,7 @@ import { auth } from '@clerk/nextjs/server';
 import type { ReactNode } from 'react';
 
 import { CommandPalette } from './_components/CommandPalette';
+import { NewLeadSheet } from './_components/NewLeadSheet';
 import { OrgGate } from './_components/OrgGate';
 import { Sidebar } from './_components/Sidebar';
 
@@ -22,6 +23,7 @@ export default async function DashboardLayout({ children }: { children: ReactNod
       <Sidebar />
       <main className="flex-1 overflow-x-hidden">{children}</main>
       <CommandPalette />
+      <NewLeadSheet />
     </div>
   );
 }
