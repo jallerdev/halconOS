@@ -2,8 +2,8 @@ import { auth } from '@clerk/nextjs/server';
 import { NextResponse } from 'next/server';
 
 import { googleConfigured } from '~/env';
-import { signOAuthState } from '~/server/google/crypto';
-import { GOOGLE_SCOPES, getOAuthClient } from '~/server/google/client';
+import { signOAuthState } from '~/server/crypto';
+import { GOOGLE_SCOPES, getOAuthClient } from '~/server/integrations/google/client';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';

@@ -15,8 +15,8 @@ import {
   leadStatusUpdateSchema,
   leadUpdateSchema,
 } from '@halcon-os/shared/schemas';
-import { buildPrompt } from '../ai/lead-prompts';
-import { generateText, isAiConfigured } from '../ai/provider';
+import { buildPrompt } from '../integrations/ai/lead-prompts';
+import { generateText, isAiConfigured } from '../integrations/ai/provider';
 import { rateLimit } from '../rate-limit';
 import { leads, notes } from '../db/schema';
 import { orgProcedure, router } from '../trpc';

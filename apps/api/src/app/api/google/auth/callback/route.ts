@@ -6,8 +6,8 @@ import { NextResponse } from 'next/server';
 import { googleConfigured } from '~/env';
 import { db } from '~/server/db';
 import { googleAccounts, users } from '~/server/db/schema';
-import { encryptRefreshToken, verifyOAuthState } from '~/server/google/crypto';
-import { getOAuthClient } from '~/server/google/client';
+import { encryptRefreshToken, verifyOAuthState } from '~/server/crypto';
+import { getOAuthClient } from '~/server/integrations/google/client';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';

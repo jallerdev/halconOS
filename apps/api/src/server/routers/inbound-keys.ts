@@ -6,7 +6,7 @@ import { z } from 'zod';
 
 import { idSchema } from '@halcon-os/shared/schemas';
 import { env } from '~/env';
-import { decryptSecret, encryptSecret } from '~/server/google/crypto';
+import { decryptSecret, encryptSecret } from '~/server/crypto';
 import { inboundKeys } from '../db/schema';
 import { adminProcedure, router } from '../trpc';
 

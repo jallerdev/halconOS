@@ -2,7 +2,7 @@ import { eq } from 'drizzle-orm';
 
 import { googleConfigured } from '~/env';
 import { googleAccounts } from '~/server/db/schema';
-import { disconnectGoogleAccount } from '~/server/google/client';
+import { disconnectGoogleAccount } from '~/server/integrations/google/client';
 
 import { orgProcedure, router } from '../trpc';
 

@@ -1,4 +1,4 @@
-import { env } from '../../env';
+import { env } from '../../../env';
 
 export type AiMessage = { role: 'user' | 'system'; content: string };
 

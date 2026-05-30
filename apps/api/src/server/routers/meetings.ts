@@ -7,7 +7,7 @@ import { z } from 'zod';
 import { idSchema, meetingScheduleSchema } from '@halcon-os/shared/schemas';
 
 import { leads, tasks } from '~/server/db/schema';
-import { getCalendarForUser } from '~/server/google/client';
+import { getCalendarForUser } from '~/server/integrations/google/client';
 
 import { orgProcedure, router } from '../trpc';
 

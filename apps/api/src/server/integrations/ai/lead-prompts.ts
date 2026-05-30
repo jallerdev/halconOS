@@ -1,4 +1,4 @@
-import type { Lead } from '../db/schema';
+import type { Lead } from '../../db/schema';
 
 export type AiKind = 'strategy' | 'proposal' | 'message' | 'landing';
 

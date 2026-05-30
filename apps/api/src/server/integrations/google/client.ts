@@ -7,7 +7,7 @@ import { env, googleConfigured } from '~/env';
 import { db } from '~/server/db';
 import { googleAccounts } from '~/server/db/schema';
 
-import { decryptRefreshToken } from './crypto';
+import { decryptRefreshToken } from '../../crypto';
 
 export const GOOGLE_SCOPES = [
   'https://www.googleapis.com/auth/calendar.events',
