@@ -1,6 +1,6 @@
 'use client';
 
-import { Check, Copy, KeyRound, Loader2, Plus, Trash2, Video } from 'lucide-react';
+import { Check, Copy, Eye, EyeOff, KeyRound, Loader2, Plus, Trash2, Video } from 'lucide-react';
 import { useSearchParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
@@ -24,6 +24,123 @@ function fmtDate(d: Date | string | null) {
     hour: '2-digit',
     minute: '2-digit',
   });
+}
+
+type KeyListItem = {
+  id: string;
+  name: string;
+  keyPrefix: string;
+  revealable: boolean;
+  lastUsedAt: Date | string | null;
+  revokedAt: Date | string | null;
+  createdAt: Date | string;
+};
+
+function KeyRow({
+  k,
+  disableRevoke,
+  onRevoke,
+}: {
+  k: KeyListItem;
+  disableRevoke: boolean;
+  onRevoke: (id: string) => void;
+}) {
+  const [revealed, setRevealed] = useState<string | null>(null);
+  const [copied, setCopied] = useState(false);
+  const reveal = trpc.inboundKeys.reveal.useMutation({
+    onSuccess: (data) => {
+      setRevealed(data.secret);
+      setCopied(false);
+    },
+    onError: (e) => toast.error(e.message),
+  });
+
+  const copy = async () => {
+    if (!revealed) return;
+    await navigator.clipboard.writeText(revealed);
+    setCopied(true);
+    toast.success('Copiada al portapapeles');
+  };
+
+  const toggle = () => {
+    if (revealed) {
+      setRevealed(null);
+      setCopied(false);
+    } else {
+      reveal.mutate({ id: k.id });
+    }
+  };
+
+  return (
+    <li className="flex items-center gap-3 py-3">
+      <div className="min-w-0 flex-1">
+        <div className="flex items-center gap-2">
+          <span className="truncate text-sm font-medium">{k.name}</span>
+          {k.revokedAt && (
+            <span className="rounded-full bg-rose-500/15 px-2 py-0.5 text-[10px] font-medium text-rose-300">
+              Revocada
+            </span>
+          )}
+        </div>
+        {revealed ? (
+          <code className="mt-1 block max-w-full overflow-x-auto rounded border border-border/60 bg-background px-2 py-1 font-mono text-xs">
+            {revealed}
+          </code>
+        ) : (
+          <p className="mt-0.5 font-mono text-xs text-muted-foreground">
+            {k.keyPrefix}… · último uso {fmtDate(k.lastUsedAt)}
+          </p>
+        )}
+      </div>
+      {!k.revokedAt && k.revealable && (
+        <>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="text-muted-foreground hover:text-foreground"
+            disabled={reveal.isPending}
+            onClick={toggle}
+            title={revealed ? 'Ocultar' : 'Ver key completa'}
+          >
+            {reveal.isPending ? (
+              <Loader2 className="animate-spin" />
+            ) : revealed ? (
+              <EyeOff />
+            ) : (
+              <Eye />
+            )}
+          </Button>
+          {revealed && (
+            <Button
+              variant="ghost"
+              size="icon"
+              className="text-muted-foreground hover:text-foreground"
+              onClick={copy}
+              title="Copiar"
+            >
+              {copied ? <Check className="text-emerald-400" /> : <Copy />}
+            </Button>
+          )}
+        </>
+      )}
+      {!k.revokedAt && (
+        <Button
+          variant="ghost"
+          size="icon"
+          className="text-muted-foreground hover:text-rose-400"
+          disabled={disableRevoke}
+          onClick={() => {
+            if (confirm(`¿Revocar la key "${k.name}"? Dejará de funcionar.`)) {
+              onRevoke(k.id);
+            }
+          }}
+          title="Revocar"
+        >
+          <Trash2 />
+        </Button>
+      )}
+    </li>
+  );
 }
 
 export default function SettingsPage() {
@@ -229,37 +346,7 @@ export default function SettingsPage() {
               ) : (
                 <ul className="divide-y divide-border/60">
                   {list.data.map((k) => (
-                    <li key={k.id} className="flex items-center gap-3 py-3">
-                      <div className="min-w-0 flex-1">
-                        <div className="flex items-center gap-2">
-                          <span className="truncate text-sm font-medium">{k.name}</span>
-                          {k.revokedAt && (
-                            <span className="rounded-full bg-rose-500/15 px-2 py-0.5 text-[10px] font-medium text-rose-300">
-                              Revocada
-                            </span>
-                          )}
-                        </div>
-                        <p className="mt-0.5 font-mono text-xs text-muted-foreground">
-                          {k.keyPrefix}… · último uso {fmtDate(k.lastUsedAt)}
-                        </p>
-                      </div>
-                      {!k.revokedAt && (
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="text-muted-foreground hover:text-rose-400"
-                          disabled={revoke.isPending}
-                          onClick={() => {
-                            if (confirm(`¿Revocar la key "${k.name}"? Dejará de funcionar.`)) {
-                              revoke.mutate({ id: k.id });
-                            }
-                          }}
-                          title="Revocar"
-                        >
-                          <Trash2 />
-                        </Button>
-                      )}
-                    </li>
+                    <KeyRow key={k.id} k={k} disableRevoke={revoke.isPending} onRevoke={(id) => revoke.mutate({ id })} />
                   ))}
                 </ul>
               )}

@@ -52,8 +52,13 @@ export const inboundKeys = agencySchema.table(
       .notNull()
       .references(() => users.id, { onDelete: 'cascade' }),
     name: text('name').notNull(),
-    keyHash: text('key_hash').notNull(), // sha256 hex del secreto
+    keyHash: text('key_hash').notNull(), // sha256 hex del secreto (para lookup en /api/inbound/lead)
     keyPrefix: text('key_prefix').notNull(), // primeros chars, para mostrar en la UI
+    // Secreto cifrado AES-256-GCM para que el admin pueda revelarlo después.
+    // Nullable: keys legacy creadas antes de esta feature no tienen versión recuperable.
+    keyEncrypted: text('key_encrypted'),
+    keyEncryptedIv: text('key_encrypted_iv'),
+    keyEncryptedTag: text('key_encrypted_tag'),
     lastUsedAt: timestamp('last_used_at', { withTimezone: true }),
     revokedAt: timestamp('revoked_at', { withTimezone: true }),
     createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),

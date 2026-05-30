@@ -11,13 +11,13 @@ function getKey(): Buffer {
   return Buffer.from(env.ENCRYPTION_KEY, 'hex');
 }
 
-export type EncryptedRefreshToken = {
+export type EncryptedSecret = {
   ciphertext: string;
   iv: string;
   tag: string;
 };
 
-export function encryptRefreshToken(plaintext: string): EncryptedRefreshToken {
+export function encryptSecret(plaintext: string): EncryptedSecret {
   const key = getKey();
   const iv = randomBytes(12);
   const cipher = createCipheriv(ALGO, key, iv);
@@ -30,7 +30,7 @@ export function encryptRefreshToken(plaintext: string): EncryptedRefreshToken {
   };
 }
 
-export function decryptRefreshToken(payload: EncryptedRefreshToken): string {
+export function decryptSecret(payload: EncryptedSecret): string {
   const key = getKey();
   const decipher = createDecipheriv(ALGO, key, Buffer.from(payload.iv, 'base64'));
   decipher.setAuthTag(Buffer.from(payload.tag, 'base64'));
@@ -40,6 +40,11 @@ export function decryptRefreshToken(payload: EncryptedRefreshToken): string {
   ]);
   return pt.toString('utf8');
 }
+
+// Aliases mantenidos por compatibilidad (Google refresh tokens fue el primer caso de uso).
+export type EncryptedRefreshToken = EncryptedSecret;
+export const encryptRefreshToken = encryptSecret;
+export const decryptRefreshToken = decryptSecret;
 
 // CSRF state para el OAuth flow: HMAC-SHA256 sobre { userId, exp } con
 // la misma ENCRYPTION_KEY como secreto compartido.
