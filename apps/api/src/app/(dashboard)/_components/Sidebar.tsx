@@ -18,6 +18,7 @@ import { trpc } from '~/lib/trpc';
 import { ThemeToggle } from '~/components/theme-toggle';
 import { Wordmark } from '~/components/wordmark';
 import { AuthButton } from './AuthButton';
+import { NotificationBell } from './NotificationBell';
 import { OrgControl } from './OrgControl';
 
 const NAV: { href: string; label: string; icon: LucideIcon; exact?: boolean }[] = [
@@ -96,6 +97,7 @@ export function Sidebar() {
           <div className="flex-1">
             <AuthButton />
           </div>
+          <NotificationBell />
           <ThemeToggle />
         </div>
       </div>

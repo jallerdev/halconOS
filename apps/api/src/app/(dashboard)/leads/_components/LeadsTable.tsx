@@ -45,6 +45,7 @@ import {
   DropdownMenuTrigger,
 } from '~/components/ui/dropdown-menu';
 import { Input } from '~/components/ui/input';
+import { Skeleton } from '~/components/ui/skeleton';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '~/components/ui/table';
 import { timeAgo } from '~/lib/utils';
 import { trpc } from '~/lib/trpc';
@@ -521,9 +522,23 @@ function SkeletonRows() {
     <>
       {Array.from({ length: 10 }).map((_, i) => (
         <TableRow key={i} className="hover:bg-transparent">
-          <TableCell colSpan={9}>
-            <div className="h-5 w-full animate-pulse rounded bg-secondary/50" />
+          <TableCell>
+            <Skeleton className="size-4 rounded" />
           </TableCell>
+          <TableCell>
+            <div className="flex items-center gap-3">
+              <Skeleton className="size-9 rounded-full" />
+              <div className="space-y-1.5">
+                <Skeleton className="h-4 w-40" />
+                <Skeleton className="h-3 w-24" />
+              </div>
+            </div>
+          </TableCell>
+          <TableCell><Skeleton className="h-5 w-12 rounded-full" /></TableCell>
+          <TableCell><Skeleton className="h-4 w-20" /></TableCell>
+          <TableCell><Skeleton className="h-5 w-16" /></TableCell>
+          <TableCell><Skeleton className="h-4 w-24" /></TableCell>
+          <TableCell className="text-right"><Skeleton className="ml-auto h-7 w-7 rounded" /></TableCell>
         </TableRow>
       ))}
     </>
