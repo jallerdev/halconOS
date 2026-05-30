@@ -98,6 +98,17 @@ export const bulkImportSchema = z.object({
 });
 export type BulkImportInput = z.infer<typeof bulkImportSchema>;
 
+export const meetingScheduleSchema = z.object({
+  leadId: uuid,
+  title: z.string().min(1).max(200),
+  description: z.string().max(2000).optional().nullable(),
+  startsAt: z.string().datetime({ offset: true }),
+  endsAt: z.string().datetime({ offset: true }),
+  attendees: z.array(z.string().email()).max(20).optional(),
+  timeZone: z.string().max(80).optional(),
+});
+export type MeetingScheduleInput = z.infer<typeof meetingScheduleSchema>;
+
 export const leadStatusUpdateSchema = z.object({
   id: uuid,
   status: z.enum(LEAD_STATUS),

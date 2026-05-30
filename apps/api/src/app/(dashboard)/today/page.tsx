@@ -14,15 +14,19 @@ import { WhatsAppButton } from '~/components/whatsapp-button';
 import { Button } from '~/components/ui/button';
 import { trpc } from '~/lib/trpc';
 
+import { UpcomingMeetings } from './_components/UpcomingMeetings';
+
 export default function TodayPage() {
   const { data, isLoading } = trpc.leads.followUps.useQuery();
 
   return (
-    <div className="mx-auto max-w-[1000px] px-6 py-8 lg:px-10">
-      <header className="mb-6">
+    <div className="mx-auto max-w-[1000px] space-y-8 px-6 py-8 lg:px-10">
+      <header>
         <h1 className="text-2xl font-semibold tracking-tight">Hoy</h1>
         <p className="mt-1 text-sm text-muted-foreground">Seguimientos programados de tus leads.</p>
       </header>
+
+      <UpcomingMeetings />
 
       {isLoading ? (
         <p className="text-sm text-muted-foreground">Cargando…</p>

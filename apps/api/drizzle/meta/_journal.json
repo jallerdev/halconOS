@@ -43,6 +43,13 @@
       "when": 1779664423070,
       "tag": "0005_eager_patriot",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1780089497062,
+      "tag": "0006_shocking_alex_power",
+      "breakpoints": true
     }
   ]
 }

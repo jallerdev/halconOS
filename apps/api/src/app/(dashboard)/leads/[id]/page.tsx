@@ -28,6 +28,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '~/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '~/components/ui/tabs';
 import { trpc } from '~/lib/trpc';
 import { AiPanel } from './_components/AiPanel';
+import { MeetingsPanel } from './_components/MeetingsPanel';
 import { NotesPanel } from './_components/NotesPanel';
 import { Timeline } from './_components/Timeline';
 
@@ -261,6 +262,15 @@ export default function LeadDetailPage() {
               </Tabs>
             </CardContent>
           </Card>
+
+          {/* Reuniones */}
+          <div className="mt-6">
+            <MeetingsPanel
+              leadId={lead.id}
+              businessName={lead.businessName}
+              leadEmail={lead.email}
+            />
+          </div>
 
           {/* IA */}
           <Card className="mt-6">

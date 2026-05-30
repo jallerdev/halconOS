@@ -1,7 +1,8 @@
 'use client';
 
-import { Check, Copy, KeyRound, Loader2, Plus, Trash2 } from 'lucide-react';
-import { useState } from 'react';
+import { Check, Copy, KeyRound, Loader2, Plus, Trash2, Video } from 'lucide-react';
+import { useSearchParams } from 'next/navigation';
+import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 
 import { Button } from '~/components/ui/button';
@@ -28,10 +29,31 @@ function fmtDate(d: Date | string | null) {
 export default function SettingsPage() {
   const utils = trpc.useUtils();
   const list = trpc.inboundKeys.list.useQuery(undefined, { retry: false });
+  const googleStatus = trpc.google.status.useQuery(undefined, { retry: false });
+  const searchParams = useSearchParams();
 
   const [name, setName] = useState('');
   const [newSecret, setNewSecret] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
+
+  useEffect(() => {
+    const g = searchParams.get('google');
+    if (g === 'connected') {
+      toast.success('Google conectado correctamente.');
+      void utils.google.status.invalidate();
+    } else if (g === 'error') {
+      const reason = searchParams.get('reason') ?? 'desconocido';
+      toast.error(`No se pudo conectar Google: ${reason}`);
+    }
+  }, [searchParams, utils.google.status]);
+
+  const disconnectGoogle = trpc.google.disconnect.useMutation({
+    onSuccess: () => {
+      toast.success('Google desconectado');
+      void utils.google.status.invalidate();
+    },
+    onError: (e) => toast.error(e.message),
+  });
 
   const create = trpc.inboundKeys.create.useMutation({
     onSuccess: (data) => {
@@ -124,6 +146,68 @@ export default function SettingsPage() {
                       {copied ? <Check className="text-emerald-400" /> : <Copy />}
                     </Button>
                   </div>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          <Card id="google">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Video className="size-4 text-primary" /> Conexión con Google
+              </CardTitle>
+              <CardDescription>
+                Necesaria para crear videollamadas de Meet desde un lead. La conexión es por
+                usuario.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {googleStatus.isLoading ? (
+                <div className="flex justify-center py-4 text-muted-foreground">
+                  <Loader2 className="animate-spin" />
+                </div>
+              ) : !googleStatus.data?.configured ? (
+                <p className="text-sm text-muted-foreground">
+                  La integración con Google no está configurada en el servidor. Falta definir{' '}
+                  <code className="font-mono text-xs">GOOGLE_CLIENT_ID</code>,{' '}
+                  <code className="font-mono text-xs">GOOGLE_CLIENT_SECRET</code>,{' '}
+                  <code className="font-mono text-xs">GOOGLE_OAUTH_REDIRECT_URI</code> y{' '}
+                  <code className="font-mono text-xs">ENCRYPTION_KEY</code>.
+                </p>
+              ) : googleStatus.data.connected ? (
+                <div className="flex items-center justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className="text-sm">
+                      Conectado como{' '}
+                      <strong className="text-foreground">{googleStatus.data.email}</strong>
+                    </p>
+                    <p className="mt-0.5 text-xs text-muted-foreground">
+                      Puedes agendar reuniones desde cualquier lead.
+                    </p>
+                  </div>
+                  <Button
+                    variant="outline"
+                    disabled={disconnectGoogle.isPending}
+                    onClick={() => {
+                      if (confirm('¿Desconectar tu cuenta de Google?')) {
+                        disconnectGoogle.mutate();
+                      }
+                    }}
+                  >
+                    {disconnectGoogle.isPending ? <Loader2 className="animate-spin" /> : null}
+                    Desconectar
+                  </Button>
+                </div>
+              ) : (
+                <div className="flex items-center justify-between gap-3">
+                  <p className="text-sm text-muted-foreground">
+                    Conecta tu Google para agendar reuniones con Meet sobre los leads.
+                  </p>
+                  <Button asChild>
+                    <a href="/api/google/auth/start">
+                      <Video /> Conectar Google
+                    </a>
+                  </Button>
                 </div>
               )}
             </CardContent>

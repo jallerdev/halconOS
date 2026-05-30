@@ -1,6 +1,8 @@
 import { router } from '../trpc';
+import { googleRouter } from './google';
 import { inboundKeysRouter } from './inbound-keys';
 import { leadsRouter } from './leads';
+import { meetingsRouter } from './meetings';
 import { notesRouter } from './notes';
 import { projectsRouter } from './projects';
 import { tasksRouter } from './tasks';
@@ -11,6 +13,8 @@ export const appRouter = router({
   tasks: tasksRouter,
   notes: notesRouter,
   inboundKeys: inboundKeysRouter,
+  google: googleRouter,
+  meetings: meetingsRouter,
 });
 
 export type AppRouter = typeof appRouter;

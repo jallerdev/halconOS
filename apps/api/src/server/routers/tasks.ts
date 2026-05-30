@@ -18,7 +18,7 @@ export const tasksRouter = router({
       return ctx.db
         .select()
         .from(tasks)
-        .where(eq(tasks.projectId, input.projectId))
+        .where(and(eq(tasks.projectId, input.projectId), eq(tasks.kind, 'task')))
         .orderBy(asc(tasks.status), asc(tasks.position));
     }),
 });
