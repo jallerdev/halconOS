@@ -3,6 +3,7 @@
 import { AlertTriangle, CalendarClock, CalendarDays, Star } from 'lucide-react';
 import Link from 'next/link';
 import { toast } from 'sonner';
+import { Card as TremorCard, Metric, Text } from '@tremor/react';
 
 import type { inferRouterOutputs } from '@trpc/server';
 
@@ -12,6 +13,7 @@ import { LeadStatusBadge } from '~/components/lead-status-badge';
 import { ScoreBadge } from '~/components/score-badge';
 import { WhatsAppButton } from '~/components/whatsapp-button';
 import { Button } from '~/components/ui/button';
+import { Skeleton } from '~/components/ui/skeleton';
 import { trpc } from '~/lib/trpc';
 
 import { UpcomingMeetings } from './_components/UpcomingMeetings';
@@ -26,10 +28,35 @@ export default function TodayPage() {
         <p className="mt-1 text-sm text-muted-foreground">Seguimientos programados de tus leads.</p>
       </header>
 
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+        <KpiStat
+          label="Vencidos"
+          value={data?.counts.overdue ?? 0}
+          tone="rose"
+          isLoading={isLoading}
+        />
+        <KpiStat
+          label="Hoy"
+          value={data?.counts.today ?? 0}
+          tone="amber"
+          isLoading={isLoading}
+        />
+        <KpiStat
+          label="Próximos"
+          value={data?.counts.upcoming ?? 0}
+          tone="sky"
+          isLoading={isLoading}
+        />
+      </div>
+
       <UpcomingMeetings />
 
       {isLoading ? (
-        <p className="text-sm text-muted-foreground">Cargando…</p>
+        <div className="space-y-3">
+          {[0, 1, 2].map((i) => (
+            <Skeleton key={i} className="h-14 w-full rounded-lg" />
+          ))}
+        </div>
       ) : !data || data.counts.overdue + data.counts.today + data.counts.upcoming === 0 ? (
         <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-border/60 py-20 text-center">
           <CalendarClock className="size-6 text-muted-foreground" />
@@ -68,6 +95,39 @@ export default function TodayPage() {
 }
 
 type Item = inferRouterOutputs<AppRouter>['leads']['followUps']['today'][number];
+
+const TONE_CLASSES = {
+  rose: { value: 'text-rose-400', dot: 'bg-rose-500' },
+  amber: { value: 'text-amber-400', dot: 'bg-amber-500' },
+  sky: { value: 'text-sky-400', dot: 'bg-sky-500' },
+} as const;
+
+function KpiStat({
+  label,
+  value,
+  tone,
+  isLoading,
+}: {
+  label: string;
+  value: number;
+  tone: keyof typeof TONE_CLASSES;
+  isLoading: boolean;
+}) {
+  const classes = TONE_CLASSES[tone];
+  return (
+    <TremorCard className="border border-border bg-card/60">
+      <div className="flex items-center gap-2">
+        <span className={`size-2 rounded-full ${classes.dot}`} />
+        <Text className="text-muted-foreground">{label}</Text>
+      </div>
+      {isLoading ? (
+        <Skeleton className="mt-2 h-9 w-16" />
+      ) : (
+        <Metric className={`mt-1 ${classes.value}`}>{value}</Metric>
+      )}
+    </TremorCard>
+  );
+}
 
 function Bucket({
   title,

@@ -19,12 +19,23 @@ import { toast } from 'sonner';
 
 import { LEAD_STATUS as LEAD_STATUS_LIST, type LeadStatus } from '@halcon-os/shared/enums';
 import { BusinessAvatar } from '~/components/business-avatar';
+import { ConfirmDialog } from '~/components/confirm-dialog';
 import { LEAD_STATUS_LABEL } from '~/components/lead-status-badge';
 import { LeadPeek } from './LeadPeek';
 import { ScoreBadge } from '~/components/score-badge';
 import { StatusSelect } from '~/components/status-select';
 import { WhatsAppButton } from '~/components/whatsapp-button';
-import { Button } from '~/components/ui/button';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '~/components/ui/alert-dialog';
+import { Button, buttonVariants } from '~/components/ui/button';
 import { Combobox } from '~/components/ui/combobox';
 import {
   DropdownMenu,
@@ -62,6 +73,7 @@ export function LeadsTable() {
   const [exporting, setExporting] = useState(false);
   const [peekId, setPeekId] = useState<string | null>(null);
   const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [pendingDelete, setPendingDelete] = useState<{ id: string; name: string } | null>(null);
 
   const facets = trpc.leads.facets.useQuery();
   const filters = { q: q || undefined, city, category, sort, limit: PAGE_SIZE, cursor };
@@ -228,17 +240,22 @@ export function LeadsTable() {
               ))}
             </DropdownMenuContent>
           </DropdownMenu>
-          <Button
-            variant="ghost"
-            size="sm"
-            className="text-destructive hover:bg-destructive/10"
-            onClick={() => {
-              if (confirm(`¿Eliminar ${selected.size} leads? Esta acción no se puede deshacer.`))
-                bulkDelete.mutate({ ids: [...selected] });
-            }}
-          >
-            <Trash2 className="size-4" /> Eliminar
-          </Button>
+          <ConfirmDialog
+            title={`¿Eliminar ${selected.size} ${selected.size === 1 ? 'lead' : 'leads'}?`}
+            description="Esta acción no se puede deshacer. Los leads seleccionados se borrarán permanentemente."
+            confirmLabel="Eliminar"
+            destructive
+            onConfirm={() => bulkDelete.mutate({ ids: [...selected] })}
+            trigger={
+              <Button
+                variant="ghost"
+                size="sm"
+                className="text-destructive hover:bg-destructive/10"
+              >
+                <Trash2 className="size-4" /> Eliminar
+              </Button>
+            }
+          />
           <Button variant="ghost" size="sm" onClick={() => setSelected(new Set())}>
             Limpiar
           </Button>
@@ -355,13 +372,7 @@ export function LeadsTable() {
                               { onSuccess: () => toast.success('Añadido al pipeline') },
                             )
                           }
-                          onDelete={() => {
-                            if (confirm(`¿Eliminar "${l.businessName}"?`))
-                              del.mutate(
-                                { id: l.id },
-                                { onSuccess: () => toast.success('Lead eliminado') },
-                              );
-                          }}
+                          onDelete={() => setPendingDelete({ id: l.id, name: l.businessName })}
                         />
                       </div>
                     </TableCell>
@@ -400,6 +411,37 @@ export function LeadsTable() {
       </div>
 
       <LeadPeek leadId={peekId} open={!!peekId} onOpenChange={(v) => !v && setPeekId(null)} />
+
+      <AlertDialog
+        open={!!pendingDelete}
+        onOpenChange={(o) => !o && setPendingDelete(null)}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>¿Eliminar &ldquo;{pendingDelete?.name}&rdquo;?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Esta acción no se puede deshacer. El lead se borrará permanentemente.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              className={buttonVariants({ variant: 'destructive' })}
+              onClick={() => {
+                if (pendingDelete) {
+                  del.mutate(
+                    { id: pendingDelete.id },
+                    { onSuccess: () => toast.success('Lead eliminado') },
+                  );
+                }
+                setPendingDelete(null);
+              }}
+            >
+              Eliminar
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

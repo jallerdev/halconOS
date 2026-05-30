@@ -13,6 +13,7 @@ import {
   CardHeader,
   CardTitle,
 } from '~/components/ui/card';
+import { ConfirmDialog } from '~/components/confirm-dialog';
 import { Input } from '~/components/ui/input';
 import { trpc } from '~/lib/trpc';
 
@@ -124,20 +125,25 @@ function KeyRow({
         </>
       )}
       {!k.revokedAt && (
-        <Button
-          variant="ghost"
-          size="icon"
-          className="text-muted-foreground hover:text-rose-400"
+        <ConfirmDialog
+          title={`¿Revocar la key "${k.name}"?`}
+          description="La key dejará de funcionar para todas las landings que la usen. Esta acción no se puede deshacer."
+          confirmLabel="Revocar"
+          destructive
           disabled={disableRevoke}
-          onClick={() => {
-            if (confirm(`¿Revocar la key "${k.name}"? Dejará de funcionar.`)) {
-              onRevoke(k.id);
-            }
-          }}
-          title="Revocar"
-        >
-          <Trash2 />
-        </Button>
+          onConfirm={() => onRevoke(k.id)}
+          trigger={
+            <Button
+              variant="ghost"
+              size="icon"
+              className="text-muted-foreground hover:text-rose-400"
+              disabled={disableRevoke}
+              title="Revocar"
+            >
+              <Trash2 />
+            </Button>
+          }
+        />
       )}
     </li>
   );
@@ -302,18 +308,19 @@ export default function SettingsPage() {
                       Puedes agendar reuniones desde cualquier lead.
                     </p>
                   </div>
-                  <Button
-                    variant="outline"
-                    disabled={disconnectGoogle.isPending}
-                    onClick={() => {
-                      if (confirm('¿Desconectar tu cuenta de Google?')) {
-                        disconnectGoogle.mutate();
-                      }
-                    }}
-                  >
-                    {disconnectGoogle.isPending ? <Loader2 className="animate-spin" /> : null}
-                    Desconectar
-                  </Button>
+                  <ConfirmDialog
+                    title="¿Desconectar tu cuenta de Google?"
+                    description="Ya no podrás agendar reuniones con Meet desde halcon hasta que vuelvas a conectarla."
+                    confirmLabel="Desconectar"
+                    destructive
+                    onConfirm={() => disconnectGoogle.mutate()}
+                    trigger={
+                      <Button variant="outline" disabled={disconnectGoogle.isPending}>
+                        {disconnectGoogle.isPending ? <Loader2 className="animate-spin" /> : null}
+                        Desconectar
+                      </Button>
+                    }
+                  />
                 </div>
               ) : (
                 <div className="flex items-center justify-between gap-3">

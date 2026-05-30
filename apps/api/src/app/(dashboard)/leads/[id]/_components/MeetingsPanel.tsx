@@ -6,6 +6,7 @@ import { toast } from 'sonner';
 
 import { Button } from '~/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '~/components/ui/card';
+import { ConfirmDialog } from '~/components/confirm-dialog';
 import { trpc } from '~/lib/trpc';
 
 import { ScheduleMeetingSheet } from './ScheduleMeetingSheet';
@@ -106,20 +107,25 @@ export function MeetingsPanel({
                         </Button>
                       )}
                       {!isPast && (
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="text-muted-foreground hover:text-rose-400"
+                        <ConfirmDialog
+                          title="¿Cancelar esta reunión?"
+                          description="Se borrará el evento del calendario de Google y se notificará a los asistentes."
+                          confirmLabel="Cancelar reunión"
+                          destructive
                           disabled={cancel.isPending}
-                          onClick={() => {
-                            if (confirm('¿Cancelar esta reunión?')) {
-                              cancel.mutate({ id: m.id });
-                            }
-                          }}
-                          title="Cancelar"
-                        >
-                          <Trash2 />
-                        </Button>
+                          onConfirm={() => cancel.mutate({ id: m.id })}
+                          trigger={
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="text-muted-foreground hover:text-rose-400"
+                              disabled={cancel.isPending}
+                              title="Cancelar"
+                            >
+                              <Trash2 />
+                            </Button>
+                          }
+                        />
                       )}
                     </div>
                   </li>
