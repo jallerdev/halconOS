@@ -132,7 +132,6 @@ export default function LeadDetailPage() {
             phoneIntl={lead.phoneIntl}
             aiFirstMessage={lead.aiFirstMessage}
             businessName={lead.businessName}
-            variant="secondary"
           />
           <Button
             onClick={() => generateProposal.mutate({ id, kind: 'proposal' })}
@@ -167,7 +166,6 @@ export default function LeadDetailPage() {
                   phoneIntl={lead.phoneIntl}
                   aiFirstMessage={lead.aiFirstMessage}
                   businessName={lead.businessName}
-                  variant="secondary"
                 />
                 {lead.websiteUrl && (
                   <Button size="sm" variant="secondary" asChild>

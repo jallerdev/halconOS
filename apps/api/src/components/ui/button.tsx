@@ -18,6 +18,10 @@ const buttonVariants = cva(
         ghost: 'hover:bg-accent hover:text-accent-foreground',
         destructive: 'bg-destructive text-destructive-foreground hover:bg-destructive/90',
         link: 'text-primary underline-offset-4 hover:underline',
+        whatsapp:
+          'bg-emerald-600 text-white shadow-sm shadow-emerald-600/20 hover:bg-emerald-500 focus-visible:ring-emerald-400',
+        success:
+          'bg-green-700 text-white shadow-sm shadow-green-700/20 hover:bg-green-600 focus-visible:ring-green-500',
       },
       size: {
         default: 'h-9 px-4 py-2',

@@ -148,7 +148,6 @@ function Row({ lead }: { lead: Item }) {
         aiFirstMessage={lead.aiFirstMessage}
         businessName={lead.businessName}
         size="icon"
-        variant="secondary"
         label=""
       />
       <Button

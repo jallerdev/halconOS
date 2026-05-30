@@ -15,7 +15,6 @@ type Props = {
   aiFirstMessage: string | null;
   businessName: string;
   size?: ButtonProps['size'];
-  variant?: ButtonProps['variant'];
   label?: string;
 };
 
@@ -26,7 +25,6 @@ export function WhatsAppButton({
   aiFirstMessage,
   businessName,
   size = 'sm',
-  variant = 'default',
   label = 'WhatsApp',
 }: Props) {
   const utils = trpc.useUtils();
@@ -77,13 +75,7 @@ export function WhatsAppButton({
   }
 
   return (
-    <Button
-      size={size}
-      variant={variant}
-      onClick={onClick}
-      disabled={busy}
-      className="bg-emerald-600 text-white hover:bg-emerald-500 focus-visible:ring-emerald-400"
-    >
+    <Button size={size} variant="whatsapp" onClick={onClick} disabled={busy}>
       {busy ? <Loader2 className="size-4 animate-spin" /> : <MessageCircle className="size-4" />}
       {label}
     </Button>

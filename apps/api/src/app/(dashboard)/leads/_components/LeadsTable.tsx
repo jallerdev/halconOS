@@ -344,7 +344,6 @@ export function LeadsTable() {
                           aiFirstMessage={l.aiFirstMessage}
                           businessName={l.businessName}
                           size="icon"
-                          variant="secondary"
                           label=""
                         />
                         <RowActions
