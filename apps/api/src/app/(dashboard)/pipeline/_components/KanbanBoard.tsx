@@ -21,6 +21,8 @@ import { LEAD_STATUS_LABEL } from '~/components/lead-status-badge';
 import { ScoreBadge } from '~/components/score-badge';
 import { trpc } from '~/lib/trpc';
 
+import { LeadPeek } from '../../leads/_components/LeadPeek';
+
 type Card = {
   id: string;
   businessName: string;
@@ -46,6 +48,7 @@ export function KanbanBoard() {
   const utils = trpc.useUtils();
   const { data, isLoading } = trpc.leads.pipeline.useQuery({ perColumn: 25 });
   const [activeCard, setActiveCard] = useState<Card | null>(null);
+  const [peekId, setPeekId] = useState<string | null>(null);
 
   const updateStatus = trpc.leads.updateStatus.useMutation({
     onMutate: async ({ id, status }) => {
@@ -115,16 +118,32 @@ export function KanbanBoard() {
               status={status}
               count={col?.count ?? 0}
               cards={(col?.items as Card[]) ?? []}
+              onPeek={setPeekId}
             />
           );
         })}
       </div>
       <DragOverlay>{activeCard ? <LeadCard card={activeCard} dragging /> : null}</DragOverlay>
+      <LeadPeek
+        leadId={peekId}
+        open={!!peekId}
+        onOpenChange={(v) => !v && setPeekId(null)}
+      />
     </DndContext>
   );
 }
 
-function Column({ status, count, cards }: { status: LeadStatus; count: number; cards: Card[] }) {
+function Column({
+  status,
+  count,
+  cards,
+  onPeek,
+}: {
+  status: LeadStatus;
+  count: number;
+  cards: Card[];
+  onPeek: (id: string) => void;
+}) {
   const { setNodeRef, isOver } = useDroppable({ id: status });
   return (
     <div className="flex w-72 shrink-0 flex-col">
@@ -144,7 +163,7 @@ function Column({ status, count, cards }: { status: LeadStatus; count: number; c
         }`}
       >
         {cards.map((card) => (
-          <DraggableCard key={card.id} card={card} />
+          <DraggableCard key={card.id} card={card} onPeek={onPeek} />
         ))}
         {cards.length === 0 && (
           <div className="flex flex-1 items-center justify-center text-xs text-muted-foreground">
@@ -161,7 +180,7 @@ function Column({ status, count, cards }: { status: LeadStatus; count: number; c
   );
 }
 
-function DraggableCard({ card }: { card: Card }) {
+function DraggableCard({ card, onPeek }: { card: Card; onPeek: (id: string) => void }) {
   const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
     id: card.id,
     data: { card },
@@ -171,6 +190,11 @@ function DraggableCard({ card }: { card: Card }) {
       ref={setNodeRef}
       {...listeners}
       {...attributes}
+      onClick={() => {
+        // dnd-kit ya filtra clicks vs drags via activationConstraint.distance=6.
+        // Si llegó aquí, fue un click real (no drag).
+        if (!isDragging) onPeek(card.id);
+      }}
       className={isDragging ? 'opacity-30' : ''}
     >
       <LeadCard card={card} />
