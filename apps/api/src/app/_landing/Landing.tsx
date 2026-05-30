@@ -8,9 +8,12 @@ import {
   Check,
   ClipboardList,
   Eye,
+  FileText,
   GitBranch,
   Hammer,
   Inbox,
+  MapPin,
+  MessageCircle,
   Rocket,
   Sparkles,
   Star,
@@ -68,10 +71,10 @@ const ARROW: Record<Accent, string> = {
 
 const FEATURES: { icon: LucideIcon; title: string; body: string; accent: Accent }[] = [
   {
-    icon: Inbox,
+    icon: MapPin,
     accent: 'sky',
-    title: 'Captación centralizada',
-    body: 'Todos tus prospectos en un solo pipeline: búsqueda instantánea, filtros y scoring automático que prioriza los leads con mayor potencial de cierre.',
+    title: 'Descubre leads con Google',
+    body: 'Encuentra negocios reales por ciudad y categoría usando Google Places. Filtra los que no tienen web, los mejor calificados, los más reseñados — y mándalos directo a tu pipeline.',
   },
   {
     icon: Sparkles,
@@ -80,18 +83,36 @@ const FEATURES: { icon: LucideIcon; title: string; body: string; accent: Accent 
     body: 'Genera estrategia de venta, propuesta comercial y el primer mensaje perfecto en segundos. La IA hace el borrador; tú cierras el trato.',
   },
   {
-    icon: GitBranch,
+    icon: MessageCircle,
     accent: 'emerald',
-    title: 'Trazabilidad total',
-    body: 'Del primer contacto a la entrega: convierte un lead ganado en proyecto con un tap y sigue cada tarea sin perder una sola nota.',
+    title: 'Conversación multicanal',
+    body: 'WhatsApp + Email sincronizados con cada lead. Cada conversación queda guardada en su contexto — sin saltar entre apps, sin perder hilos.',
+  },
+  {
+    icon: Inbox,
+    accent: 'amber',
+    title: 'Pipeline + Inbox personal',
+    body: 'Kanban configurable por servicio, scoring automático, asignación por miembro y vista "Mis leads" para que cada vendedor trabaje sin ruido.',
+  },
+  {
+    icon: FileText,
+    accent: 'sky',
+    title: 'Propuestas firmables',
+    body: 'Crea propuestas con line items, envíalas con un link público y deja que el cliente las firme online. PDF generado, contrato cerrado.',
+  },
+  {
+    icon: GitBranch,
+    accent: 'violet',
+    title: 'De lead a proyecto en 1 tap',
+    body: 'Cuando ganas el deal, el lead se convierte en proyecto con todo el contexto. Tareas, deadlines, facturación — sin retipear nada.',
   },
 ];
 
 const STATS: { value: string; label: string; accent: Accent }[] = [
-  { value: '1.461', label: 'leads gestionados', accent: 'violet' },
-  { value: '7', label: 'etapas de pipeline', accent: 'sky' },
-  { value: 'IA', label: 'propuestas en segundos', accent: 'emerald' },
-  { value: '⌘K', label: 'command palette', accent: 'amber' },
+  { value: '5min', label: 'de prospección a primer mensaje', accent: 'sky' },
+  { value: 'IA', label: 'propuestas en segundos', accent: 'violet' },
+  { value: '100%', label: 'multi-tenant y multi-canal', accent: 'emerald' },
+  { value: '⌘K', label: 'command palette nativo', accent: 'amber' },
 ];
 
 type Step = { icon: LucideIcon; label: string; sub: string; accent: Accent };
@@ -202,7 +223,7 @@ export function Landing() {
               <span className="absolute inline-flex size-full animate-ping rounded-full bg-primary/60" />
               <span className="relative inline-flex size-2 rounded-full bg-primary" />
             </span>
-            El Sales OS para agencias de desarrollo web
+            El CRM con IA para freelancers y agencias de LatAm
           </motion.div>
 
           <motion.h1
@@ -210,7 +231,7 @@ export function Landing() {
             transition={{ duration: 0.5 }}
             className="mx-auto mt-7 max-w-4xl text-balance text-5xl font-bold leading-[1.05] tracking-tight md:text-7xl"
           >
-            Capta, propone y{' '}
+            Descubre, contacta y{' '}
             <span className="relative inline-block">
               <span className="relative z-10 bg-gradient-to-r from-primary via-fuchsia-500 to-sky-500 bg-clip-text text-transparent">
                 cierra
@@ -220,7 +241,7 @@ export function Landing() {
                 className="absolute inset-x-0 bottom-1 -z-0 h-3 -rotate-1 rounded-full bg-gradient-to-r from-primary/30 to-sky-400/30 blur-[2px]"
               />
             </span>{' '}
-            sin perder un solo lead
+            con un solo CRM
           </motion.h1>
 
           <motion.p
@@ -228,8 +249,9 @@ export function Landing() {
             transition={{ duration: 0.5 }}
             className="mx-auto mt-6 max-w-2xl text-pretty text-lg text-muted-foreground"
           >
-            HalcónOS centraliza tus prospectos, redacta tus propuestas con IA y traza cada venta
-            desde el primer contacto hasta la entrega del proyecto. Tu pipeline, por fin bajo control.
+            HalcónOS encuentra negocios reales con Google Maps, redacta tus propuestas con IA y
+            unifica WhatsApp + Email + Pipeline en un solo lugar. Sin Excel, sin chats sueltos,
+            sin saltar entre apps.
           </motion.p>
 
           <motion.div
@@ -237,13 +259,21 @@ export function Landing() {
             transition={{ duration: 0.5 }}
             className="mt-9 flex flex-wrap items-center justify-center gap-4"
           >
-            <MagneticButton href="/sign-in">
-              Empezar ahora <ArrowRight className="size-4" />
+            <MagneticButton href="/sign-up">
+              Empezar gratis <ArrowRight className="size-4" />
             </MagneticButton>
-            <MagneticButton href="#flujo" variant="outline">
-              Ver cómo funciona
+            <MagneticButton href="#features" variant="outline">
+              Ver capacidades
             </MagneticButton>
           </motion.div>
+
+          <motion.p
+            variants={fadeUp}
+            transition={{ duration: 0.5 }}
+            className="mt-4 text-xs text-muted-foreground"
+          >
+            14 días free trial · Sin tarjeta · Cancela cuando quieras
+          </motion.p>
         </motion.div>
 
         <HeroMockup />
