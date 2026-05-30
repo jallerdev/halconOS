@@ -28,6 +28,76 @@ export type LeadCreateInput = z.infer<typeof leadCreateSchema>;
 export const leadUpdateSchema = leadCreateSchema.partial().extend({ id: uuid });
 export type LeadUpdateInput = z.infer<typeof leadUpdateSchema>;
 
+// Versión laxa para bulk import desde CSV/XLSX: trim de strings, coerciones, vacíos → null.
+const trimOrNull = (v: unknown) => {
+  if (typeof v !== 'string') return v;
+  const t = v.trim();
+  return t === '' ? null : t;
+};
+const optionalTrimmed = (max: number) =>
+  z.preprocess(trimOrNull, z.string().max(max).nullable().optional());
+
+const tagsCoerce = z.preprocess(
+  (v) => {
+    if (v == null) return undefined;
+    if (Array.isArray(v)) return v.map((x) => String(x).trim()).filter(Boolean);
+    const s = String(v).trim();
+    if (!s) return undefined;
+    return s
+      .split(/[,;|]/)
+      .map((t) => t.trim())
+      .filter(Boolean);
+  },
+  z.array(z.string().max(40)).optional(),
+);
+
+const valueCoerce = z.preprocess((v) => {
+  if (v == null) return null;
+  const s = String(v).trim();
+  if (!s) return null;
+  // Quita símbolos de moneda y separadores; deja punto como decimal.
+  const cleaned = s.replace(/[^0-9.,-]/g, '').replace(/\.(?=\d{3}(\D|$))/g, '').replace(/,/g, '.');
+  const n = Number(cleaned);
+  return Number.isFinite(n) ? String(n) : null;
+}, z.string().nullable().optional());
+
+const emailCoerce = z.preprocess((v) => {
+  if (v == null) return null;
+  const s = String(v).trim();
+  return s === '' ? null : s;
+}, z.string().email().nullable().optional());
+
+const sourceCoerce = z.preprocess((v) => {
+  if (v == null) return null;
+  const s = String(v).trim().toLowerCase().replace(/\s+/g, '_');
+  if (!s) return null;
+  return (LEAD_SOURCE as readonly string[]).includes(s) ? s : null;
+}, z.enum(LEAD_SOURCE).nullable().optional());
+
+const statusCoerce = z.preprocess((v) => {
+  if (v == null) return undefined;
+  const s = String(v).trim().toUpperCase().replace(/\s+/g, '_');
+  if (!s) return undefined;
+  return (LEAD_STATUS as readonly string[]).includes(s) ? s : undefined;
+}, z.enum(LEAD_STATUS).optional());
+
+export const bulkImportRowSchema = z.object({
+  businessName: z.preprocess(trimOrNull, z.string().min(1).max(200)),
+  contactName: optionalTrimmed(120),
+  phone: optionalTrimmed(32),
+  email: emailCoerce,
+  source: sourceCoerce,
+  estimatedValue: valueCoerce,
+  status: statusCoerce,
+  tags: tagsCoerce,
+});
+export type BulkImportRow = z.infer<typeof bulkImportRowSchema>;
+
+export const bulkImportSchema = z.object({
+  rows: z.array(z.unknown()).min(1).max(500),
+});
+export type BulkImportInput = z.infer<typeof bulkImportSchema>;
+
 export const leadStatusUpdateSchema = z.object({
   id: uuid,
   status: z.enum(LEAD_STATUS),

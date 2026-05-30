@@ -6,6 +6,8 @@ import { LEAD_STATUS } from '@halcon-os/shared/enums';
 import {
   aiGenerateSchema,
   bulkIdsSchema,
+  bulkImportRowSchema,
+  bulkImportSchema,
   bulkStatusSchema,
   idSchema,
   leadCreateSchema,
@@ -292,6 +294,95 @@ export const leadsRouter = router({
       .returning();
     if (!created) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR' });
     return created;
+  }),
+
+  // Importa un chunk de leads desde la UI de CSV/XLSX. Valida fila a fila y
+  // deduplica contra leads existentes de la org por email/teléfono.
+  bulkImport: orgProcedure.input(bulkImportSchema).mutation(async ({ ctx, input }) => {
+    const parsed: { row: ReturnType<typeof bulkImportRowSchema.parse>; index: number }[] = [];
+    const errors: { rowIndex: number; message: string }[] = [];
+
+    input.rows.forEach((raw, i) => {
+      const result = bulkImportRowSchema.safeParse(raw);
+      if (result.success) {
+        parsed.push({ row: result.data, index: i });
+      } else {
+        errors.push({
+          rowIndex: i,
+          message: result.error.issues.map((iss) => `${iss.path.join('.') || 'fila'}: ${iss.message}`).join('; '),
+        });
+      }
+    });
+
+    if (!parsed.length) {
+      return { created: 0, skippedDuplicates: 0, errors };
+    }
+
+    const emails = Array.from(
+      new Set(parsed.map((p) => p.row.email).filter((e): e is string => Boolean(e))),
+    );
+    const phones = Array.from(
+      new Set(parsed.map((p) => p.row.phone).filter((p): p is string => Boolean(p))),
+    );
+
+    const existing = await ctx.db
+      .select({ email: leads.email, phone: leads.phone })
+      .from(leads)
+      .where(
+        and(
+          eq(leads.orgId, ctx.orgId),
+          or(
+            emails.length ? inArray(leads.email, emails) : sql`false`,
+            phones.length ? inArray(leads.phone, phones) : sql`false`,
+          ),
+        ),
+      );
+
+    const existingEmails = new Set(existing.map((e) => e.email).filter(Boolean));
+    const existingPhones = new Set(existing.map((e) => e.phone).filter(Boolean));
+
+    const toInsert: typeof leads.$inferInsert[] = [];
+    let skippedDuplicates = 0;
+
+    // Dedup dentro del batch también (mismo email/teléfono dos veces en el CSV).
+    const batchEmails = new Set<string>();
+    const batchPhones = new Set<string>();
+
+    for (const { row } of parsed) {
+      const email = row.email ?? null;
+      const phone = row.phone ?? null;
+      const dupEmail = email && (existingEmails.has(email) || batchEmails.has(email));
+      const dupPhone = phone && (existingPhones.has(phone) || batchPhones.has(phone));
+      if (dupEmail || dupPhone) {
+        skippedDuplicates += 1;
+        continue;
+      }
+      if (email) batchEmails.add(email);
+      if (phone) batchPhones.add(phone);
+
+      toInsert.push({
+        orgId: ctx.orgId,
+        ownerId: ctx.userId,
+        businessName: row.businessName,
+        contactName: row.contactName ?? null,
+        phone,
+        email,
+        source: row.source ?? null,
+        estimatedValue: row.estimatedValue ?? null,
+        status: row.status ?? 'NEW',
+        tags: row.tags ?? [],
+      });
+    }
+
+    let created = 0;
+    if (toInsert.length) {
+      await ctx.db.transaction(async (tx) => {
+        const inserted = await tx.insert(leads).values(toInsert).returning({ id: leads.id });
+        created = inserted.length;
+      });
+    }
+
+    return { created, skippedDuplicates, errors };
   }),
 
   update: orgProcedure.input(leadUpdateSchema).mutation(async ({ ctx, input }) => {

@@ -1,7 +1,7 @@
 'use client';
 
 import * as DialogPrimitive from '@radix-ui/react-dialog';
-import { Boxes, CalendarClock, KanbanSquare, Plus, Search, Zap } from 'lucide-react';
+import { Boxes, CalendarClock, FileSpreadsheet, KanbanSquare, Plus, Search, Zap } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 
@@ -76,6 +76,9 @@ export function CommandPalette() {
                   }}
                 >
                   <Plus /> Nuevo lead
+                </CommandItem>
+                <CommandItem onSelect={() => go('/leads/import')}>
+                  <FileSpreadsheet /> Importar leads (CSV/XLSX)
                 </CommandItem>
               </CommandGroup>
               <CommandGroup heading="Navegación">

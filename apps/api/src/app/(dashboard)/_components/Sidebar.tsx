@@ -3,6 +3,7 @@
 import {
   Boxes,
   CalendarClock,
+  FileSpreadsheet,
   KanbanSquare,
   KeyRound,
   Search,
@@ -19,11 +20,12 @@ import { Wordmark } from '~/components/wordmark';
 import { AuthButton } from './AuthButton';
 import { OrgControl } from './OrgControl';
 
-const NAV: { href: string; label: string; icon: LucideIcon }[] = [
+const NAV: { href: string; label: string; icon: LucideIcon; exact?: boolean }[] = [
   { href: '/leads', label: 'Leads', icon: Zap },
   { href: '/today', label: 'Hoy', icon: CalendarClock },
   { href: '/pipeline', label: 'Pipeline', icon: KanbanSquare },
   { href: '/projects', label: 'Proyectos', icon: Boxes },
+  { href: '/leads/import', label: 'Importar', icon: FileSpreadsheet, exact: true },
   { href: '/settings', label: 'Ajustes', icon: KeyRound },
 ];
 
@@ -58,8 +60,13 @@ export function Sidebar() {
       </button>
 
       <nav className="mt-6 flex flex-col gap-1">
-        {NAV.map(({ href, label, icon: Icon }) => {
-          const active = pathname === href || pathname.startsWith(href + '/');
+        {NAV.map(({ href, label, icon: Icon, exact }) => {
+          const isImport = pathname.startsWith('/leads/import');
+          const active = exact
+            ? pathname === href
+            : href === '/leads' && isImport
+              ? false
+              : pathname === href || pathname.startsWith(href + '/');
           return (
             <Link
               key={href}
