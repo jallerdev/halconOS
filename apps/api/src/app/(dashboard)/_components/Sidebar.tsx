@@ -37,11 +37,17 @@ export function Sidebar() {
 
   return (
     <aside className="sticky top-0 hidden h-screen w-60 shrink-0 flex-col border-r border-border/60 bg-card/30 px-3 py-5 backdrop-blur-xl md:flex">
-      <div className="px-3">
-        <Wordmark logoClassName="size-6" textClassName="text-base" />
-        <p className="mt-1 pl-[2.1rem] text-[10px] uppercase tracking-wide text-muted-foreground">
-          by JALLER.DEV
-        </p>
+      <div className="flex items-center justify-between gap-2 px-3">
+        <div className="min-w-0">
+          <Wordmark logoClassName="size-6" textClassName="text-base" />
+          <p className="mt-1 pl-[2.1rem] text-[10px] uppercase tracking-wide text-muted-foreground">
+            by JALLER.DEV
+          </p>
+        </div>
+        <div className="flex items-center gap-1">
+          <NotificationBell />
+          <ThemeToggle />
+        </div>
       </div>
 
       <button
@@ -93,13 +99,7 @@ export function Sidebar() {
 
       <div className="mt-auto space-y-2">
         <OrgControl />
-        <div className="flex items-center gap-2">
-          <div className="flex-1">
-            <AuthButton />
-          </div>
-          <NotificationBell />
-          <ThemeToggle />
-        </div>
+        <AuthButton />
       </div>
     </aside>
   );

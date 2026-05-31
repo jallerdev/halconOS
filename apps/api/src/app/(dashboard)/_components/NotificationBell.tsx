@@ -37,11 +37,11 @@ export function NotificationBell() {
         <button
           type="button"
           aria-label="Notificaciones"
-          className="relative flex size-9 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-accent/50 hover:text-foreground"
+          className="relative inline-flex size-9 items-center justify-center rounded-lg border border-border/60 bg-card/40 text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
         >
           <Bell className="size-4" />
           {totalUrgent > 0 && (
-            <span className="absolute -right-0.5 -top-0.5 flex min-w-[16px] items-center justify-center rounded-full bg-rose-500 px-1 text-[10px] font-semibold leading-4 text-white">
+            <span className="absolute -right-1 -top-1 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-rose-500 px-1 text-[10px] font-semibold leading-none text-white ring-2 ring-card">
               {totalUrgent > 9 ? '9+' : totalUrgent}
             </span>
           )}
