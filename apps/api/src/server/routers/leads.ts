@@ -196,6 +196,10 @@ export const leadsRouter = router({
     }),
 
   // KPIs para las tarjetas del dashboard.
+  // Devuelve 4 sparklines de 14 días para que cada KPI tenga su propia mini-curva
+  // (estilo Tremor uniforme): total cumulativo, nuevos por día, contactados
+  // cumulativo, y ganados cumulativo. También deltas semana vs semana para los
+  // BadgeDelta de tendencia.
   stats: orgProcedure.query(async ({ ctx }) => {
     const owner = eq(leads.orgId, ctx.orgId);
 
@@ -207,12 +211,25 @@ export const leadsRouter = router({
         ganados: sql<number>`count(*) filter (where ${leads.status} = 'WON')::int`,
         nuevosSemana: sql<number>`count(*) filter (where ${leads.createdAt} >= now() - interval '7 days')::int`,
         semanaPrevia: sql<number>`count(*) filter (where ${leads.createdAt} >= now() - interval '14 days' and ${leads.createdAt} < now() - interval '7 days')::int`,
+        contactadosSemana: sql<number>`count(*) filter (where ${leads.lastContactedAt} >= now() - interval '7 days')::int`,
+        contactadosPrevia: sql<number>`count(*) filter (where ${leads.lastContactedAt} >= now() - interval '14 days' and ${leads.lastContactedAt} < now() - interval '7 days')::int`,
       })
       .from(leads)
       .where(owner);
 
-    // Sparkline: leads creados por día (últimos 14 días).
-    const daily = await ctx.db
+    // Baseline: cuántos leads existían ANTES de los últimos 14 días.
+    const [baseline] = await ctx.db
+      .select({
+        total: sql<number>`count(*)::int`,
+        contactados: sql<number>`count(*) filter (where ${leads.lastContactedAt} is not null)::int`,
+        ganados: sql<number>`count(*) filter (where ${leads.convertedAt} is not null)::int`,
+      })
+      .from(leads)
+      .where(and(owner, sql`${leads.createdAt} < now() - interval '14 days'`));
+
+    // Daily new leads (últimos 14 días) — base para el sparkline de NUEVOS y
+    // para construir el cumulativo de TOTAL.
+    const dailyNew = await ctx.db
       .select({
         day: sql<string>`to_char(date_trunc('day', ${leads.createdAt}), 'YYYY-MM-DD')`,
         n: sql<number>`count(*)::int`,
@@ -222,6 +239,36 @@ export const leadsRouter = router({
       .groupBy(sql`date_trunc('day', ${leads.createdAt})`)
       .orderBy(sql`date_trunc('day', ${leads.createdAt})`);
 
+    const dailyContacted = await ctx.db
+      .select({
+        day: sql<string>`to_char(date_trunc('day', ${leads.lastContactedAt}), 'YYYY-MM-DD')`,
+        n: sql<number>`count(*)::int`,
+      })
+      .from(leads)
+      .where(
+        and(
+          owner,
+          sql`${leads.lastContactedAt} is not null and ${leads.lastContactedAt} >= now() - interval '14 days'`,
+        ),
+      )
+      .groupBy(sql`date_trunc('day', ${leads.lastContactedAt})`)
+      .orderBy(sql`date_trunc('day', ${leads.lastContactedAt})`);
+
+    const dailyWon = await ctx.db
+      .select({
+        day: sql<string>`to_char(date_trunc('day', ${leads.convertedAt}), 'YYYY-MM-DD')`,
+        n: sql<number>`count(*)::int`,
+      })
+      .from(leads)
+      .where(
+        and(
+          owner,
+          sql`${leads.convertedAt} is not null and ${leads.convertedAt} >= now() - interval '14 days'`,
+        ),
+      )
+      .groupBy(sql`date_trunc('day', ${leads.convertedAt})`)
+      .orderBy(sql`date_trunc('day', ${leads.convertedAt})`);
+
     const t = totals ?? {
       total: 0,
       nuevos: 0,
@@ -229,17 +276,46 @@ export const leadsRouter = router({
       ganados: 0,
       nuevosSemana: 0,
       semanaPrevia: 0,
+      contactadosSemana: 0,
+      contactadosPrevia: 0,
     };
+    const b = baseline ?? { total: 0, contactados: 0, ganados: 0 };
 
     const conversion = t.total > 0 ? Math.round((t.ganados / t.total) * 1000) / 10 : 0;
-    const rawTrend =
-      t.semanaPrevia > 0
-        ? Math.round(((t.nuevosSemana - t.semanaPrevia) / t.semanaPrevia) * 100)
-        : t.nuevosSemana > 0
-          ? 100
-          : 0;
-    // Cap para no mostrar % absurdos cuando la base previa es ~0 (ej. import inicial).
-    const trendNuevos = Math.max(-100, Math.min(100, rawTrend));
+
+    function trendPct(curr: number, prev: number): number {
+      const raw =
+        prev > 0 ? Math.round(((curr - prev) / prev) * 100) : curr > 0 ? 100 : 0;
+      return Math.max(-100, Math.min(100, raw));
+    }
+    const trendNuevos = trendPct(t.nuevosSemana, t.semanaPrevia);
+    const trendContactados = trendPct(t.contactadosSemana, t.contactadosPrevia);
+
+    // Reconstruye un array de 14 valores ordenado por día calendario, con
+    // cumulativo opcional sobre `baseline`. Días sin actividad quedan en 0
+    // (no se acumulan si `cumulative === false`).
+    function buildDailyArray(
+      rows: { day: string; n: number }[],
+      baseline: number,
+      cumulative: boolean,
+    ): number[] {
+      const map = new Map(rows.map((r) => [r.day, r.n]));
+      const result: number[] = [];
+      let running = baseline;
+      for (let i = 13; i >= 0; i--) {
+        const d = new Date();
+        d.setDate(d.getDate() - i);
+        const key = d.toISOString().slice(0, 10);
+        const v = map.get(key) ?? 0;
+        if (cumulative) {
+          running += v;
+          result.push(running);
+        } else {
+          result.push(v);
+        }
+      }
+      return result;
+    }
 
     return {
       total: t.total,
@@ -248,8 +324,13 @@ export const leadsRouter = router({
       ganados: t.ganados,
       nuevosSemana: t.nuevosSemana,
       trendNuevos,
+      trendContactados,
       conversion,
-      sparkline: daily.map((d) => d.n),
+      // Sparkline de tendencia para cada KPI (14 días).
+      totalSparkline: buildDailyArray(dailyNew, b.total, true),
+      nuevosSparkline: buildDailyArray(dailyNew, 0, false),
+      contactadosSparkline: buildDailyArray(dailyContacted, b.contactados, true),
+      ganadosSparkline: buildDailyArray(dailyWon, b.ganados, true),
     };
   }),
 

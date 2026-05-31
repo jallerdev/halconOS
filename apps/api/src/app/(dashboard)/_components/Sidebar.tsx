@@ -70,54 +70,54 @@ export function Sidebar() {
           collapsed ? 'w-[68px] px-2 py-5' : 'w-60 px-3 py-5',
         )}
       >
-        {/* Header — logo + toggle + acciones globales */}
-        <div
-          className={cn(
-            'flex items-center gap-2',
-            collapsed ? 'flex-col px-0' : 'justify-between px-3',
-          )}
-        >
-          <div className={cn('min-w-0', collapsed && 'flex w-full justify-center')}>
-            {collapsed ? (
-              <Wordmark logoClassName="size-6" textClassName="hidden" />
-            ) : (
-              <>
-                <Wordmark logoClassName="size-6" textClassName="text-base" />
-                <p className="mt-1 pl-[2.1rem] text-[10px] uppercase tracking-wide text-muted-foreground">
-                  by JALLER.DEV
-                </p>
-              </>
-            )}
-          </div>
-          <div
-            className={cn(
-              'flex items-center gap-1',
-              collapsed ? 'mt-3 flex-col' : '',
-            )}
-          >
+        {/* Header — logo + acciones en filas separadas para que el wordmark
+            no compita con los iconos por ancho horizontal. */}
+        {collapsed ? (
+          <div className="flex flex-col items-center gap-3">
+            <Wordmark logoClassName="size-6" textClassName="hidden" />
             <NotificationBell />
             <ThemeToggle />
             <Tooltip>
               <TooltipTrigger asChild>
                 <button
                   type="button"
-                  onClick={() => setCollapsed((c) => !c)}
-                  aria-label={collapsed ? 'Expandir sidebar' : 'Colapsar sidebar'}
+                  onClick={() => setCollapsed(false)}
+                  aria-label="Expandir sidebar"
                   className="inline-flex size-9 items-center justify-center rounded-lg border border-border/60 bg-card/40 text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
                 >
-                  {collapsed ? (
-                    <PanelLeftOpen className="size-4" />
-                  ) : (
-                    <PanelLeftClose className="size-4" />
-                  )}
+                  <PanelLeftOpen className="size-4" />
                 </button>
               </TooltipTrigger>
-              <TooltipContent side="right">
-                {collapsed ? 'Expandir' : 'Colapsar'}
-              </TooltipContent>
+              <TooltipContent side="right">Expandir</TooltipContent>
             </Tooltip>
           </div>
-        </div>
+        ) : (
+          <>
+            <div className="px-3">
+              <Wordmark logoClassName="size-6" textClassName="text-base" />
+              <p className="mt-1 pl-[2.1rem] text-[10px] uppercase tracking-wide text-muted-foreground">
+                by JALLER.DEV
+              </p>
+            </div>
+            <div className="mt-3 flex items-center justify-end gap-1 px-3">
+              <NotificationBell />
+              <ThemeToggle />
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button
+                    type="button"
+                    onClick={() => setCollapsed(true)}
+                    aria-label="Colapsar sidebar"
+                    className="inline-flex size-9 items-center justify-center rounded-lg border border-border/60 bg-card/40 text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+                  >
+                    <PanelLeftClose className="size-4" />
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent side="right">Colapsar</TooltipContent>
+              </Tooltip>
+            </div>
+          </>
+        )}
 
         {/* Search */}
         {collapsed ? (

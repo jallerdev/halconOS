@@ -1,59 +1,104 @@
 'use client';
 
 import { motion } from 'framer-motion';
-import { ArrowDownRight, ArrowUpRight, CheckCircle2, PhoneCall, TrendingUp, Users } from 'lucide-react';
+import { CheckCircle2, PhoneCall, TrendingUp, Users } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
+import {
+  BadgeDelta,
+  Card as TremorCard,
+  Metric,
+  SparkAreaChart,
+  Text,
+  type DeltaType,
+} from '@tremor/react';
 
-import { CountUp } from '~/components/count-up';
-import { Sparkline } from '~/components/sparkline';
-import { Card } from '~/components/ui/card';
-import { cn } from '~/lib/utils';
+import { Skeleton } from '~/components/ui/skeleton';
 import { trpc } from '~/lib/trpc';
+
+// Tremor uniforme: 4 cards con label · metric · BadgeDelta · sparkline.
+// Cada KPI tiene su propia curva de 14 días para que la tarjeta cuente una
+// historia (no solo un número).
+type KpiSpec = {
+  label: string;
+  value: string;
+  icon: LucideIcon;
+  iconTone: string;
+  spark: number[];
+  sparkColor: 'sky' | 'violet' | 'blue' | 'emerald';
+  delta?: { value: string; type: DeltaType };
+};
+
+function deltaType(pct: number): DeltaType {
+  if (pct > 2) return 'increase';
+  if (pct < -2) return 'decrease';
+  return 'unchanged';
+}
+
+function formatPct(pct: number): string {
+  if (pct === 0) return 'sin cambio';
+  const sign = pct > 0 ? '+' : '';
+  return `${sign}${pct}% sem`;
+}
+
+function formatNumber(n: number): string {
+  return n.toLocaleString('es-CO');
+}
 
 export function KpiCards() {
   const { data, isLoading } = trpc.leads.stats.useQuery();
 
-  const cards: {
-    label: string;
-    value: number;
-    suffix?: string;
-    decimals?: number;
-    icon: LucideIcon;
-    trend?: number;
-    sub?: string;
-    accent: string;
-    showSpark?: boolean;
-  }[] = [
+  if (isLoading || !data) {
+    return (
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        {[0, 1, 2, 3].map((i) => (
+          <TremorCard key={i} className="border border-border bg-card/60">
+            <Skeleton className="h-3 w-24" />
+            <Skeleton className="mt-3 h-8 w-20" />
+            <Skeleton className="mt-4 h-10 w-full" />
+            <Skeleton className="mt-2 h-3 w-32" />
+          </TremorCard>
+        ))}
+      </div>
+    );
+  }
+
+  const cards: KpiSpec[] = [
     {
-      label: 'Total de Leads',
-      value: data?.total ?? 0,
+      label: 'Total de leads',
+      value: formatNumber(data.total),
       icon: Users,
-      sub: 'negocios sin web',
-      accent: 'text-sky-300',
+      iconTone: 'text-sky-400',
+      spark: data.totalSparkline,
+      sparkColor: 'sky',
     },
     {
-      label: 'Nuevos esta semana',
-      value: data?.nuevosSemana ?? 0,
+      label: 'Nuevos · semana',
+      value: formatNumber(data.nuevosSemana),
       icon: TrendingUp,
-      trend: data?.trendNuevos,
-      accent: 'text-violet-300',
-      showSpark: true,
+      iconTone: 'text-violet-400',
+      spark: data.nuevosSparkline,
+      sparkColor: 'violet',
+      delta: { value: formatPct(data.trendNuevos), type: deltaType(data.trendNuevos) },
     },
     {
       label: 'Contactados',
-      value: data?.contactados ?? 0,
+      value: formatNumber(data.contactados),
       icon: PhoneCall,
-      sub: 'en seguimiento',
-      accent: 'text-blue-300',
+      iconTone: 'text-blue-400',
+      spark: data.contactadosSparkline,
+      sparkColor: 'blue',
+      delta: {
+        value: formatPct(data.trendContactados),
+        type: deltaType(data.trendContactados),
+      },
     },
     {
       label: 'Tasa de conversión',
-      value: data?.conversion ?? 0,
-      suffix: '%',
-      decimals: 1,
+      value: `${data.conversion.toLocaleString('es-CO', { minimumFractionDigits: 1, maximumFractionDigits: 1 })}%`,
       icon: CheckCircle2,
-      sub: `${(data?.ganados ?? 0).toLocaleString('es-CO')} ganados`,
-      accent: 'text-emerald-300',
+      iconTone: 'text-emerald-400',
+      spark: data.ganadosSparkline,
+      sparkColor: 'emerald',
     },
   ];
 
@@ -66,56 +111,39 @@ export function KpiCards() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.35, delay: i * 0.06, ease: [0.22, 1, 0.36, 1] }}
         >
-          <Card className="group relative overflow-hidden p-5 transition-colors hover:border-border">
-            {/* glow sutil */}
-            <div
-              className={cn(
-                'pointer-events-none absolute -right-8 -top-8 size-24 rounded-full opacity-0 blur-2xl transition-opacity duration-500 group-hover:opacity-20',
-                c.accent.replace('text-', 'bg-'),
-              )}
-            />
+          <TremorCard className="group relative overflow-hidden border border-border bg-card/60 transition-colors hover:border-foreground/20">
             <div className="flex items-start justify-between">
-              <div>
-                <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+              <div className="space-y-1">
+                <Text className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
                   {c.label}
-                </p>
-                <p className="mt-2 text-2xl font-semibold tracking-tight tabular-nums">
-                  {isLoading ? (
-                    <span className="inline-block h-7 w-16 animate-pulse rounded bg-secondary/60" />
-                  ) : (
-                    <CountUp value={c.value} suffix={c.suffix} decimals={c.decimals ?? 0} />
-                  )}
-                </p>
+                </Text>
+                <Metric className="tabular-nums">{c.value}</Metric>
               </div>
-              <div className={cn('rounded-lg bg-secondary/60 p-2', c.accent)}>
+              <div className={`rounded-lg bg-secondary/60 p-2 ${c.iconTone}`}>
                 <c.icon className="size-4" />
               </div>
             </div>
-            <div className="mt-3 flex h-7 items-center justify-between">
-              <div className="text-xs text-muted-foreground">
-                {c.trend != null ? (
-                  <span
-                    className={cn(
-                      'inline-flex items-center gap-0.5 font-medium',
-                      c.trend >= 0 ? 'text-emerald-400' : 'text-rose-400',
-                    )}
-                  >
-                    {c.trend >= 0 ? (
-                      <ArrowUpRight className="size-3" />
-                    ) : (
-                      <ArrowDownRight className="size-3" />
-                    )}
-                    {Math.abs(c.trend)}% vs. semana previa
-                  </span>
-                ) : (
-                  <span>{c.sub}</span>
-                )}
-              </div>
-              {c.showSpark && data?.sparkline && data.sparkline.length > 1 && (
-                <Sparkline data={data.sparkline} className={c.accent} />
+
+            <SparkAreaChart
+              data={c.spark.map((n, idx) => ({ idx, value: n }))}
+              index="idx"
+              categories={['value']}
+              colors={[c.sparkColor]}
+              className="mt-4 h-10 w-full"
+            />
+
+            <div className="mt-3 flex h-5 items-center">
+              {c.delta ? (
+                <BadgeDelta deltaType={c.delta.type} className="text-[10px]">
+                  {c.delta.value}
+                </BadgeDelta>
+              ) : (
+                <span className="text-[10px] uppercase tracking-wide text-muted-foreground">
+                  últimos 14 días
+                </span>
               )}
             </div>
-          </Card>
+          </TremorCard>
         </motion.div>
       ))}
     </div>
