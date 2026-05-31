@@ -42,7 +42,7 @@ export function UpcomingMeetings() {
         </h2>
       </header>
 
-      <ul className="divide-y divide-border/60 rounded-xl border border-border/60 bg-card/30">
+      <ul className="divide-y divide-border/60 rounded-xl border border-border/60 bg-card/60">
         {data.map((m) => (
           <li key={m.id} className="flex items-center gap-3 p-3">
             <div className="min-w-0 flex-1">

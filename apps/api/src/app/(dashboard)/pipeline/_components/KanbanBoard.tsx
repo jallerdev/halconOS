@@ -159,7 +159,7 @@ function Column({
       <div
         ref={setNodeRef}
         className={`flex min-h-[60vh] flex-1 flex-col gap-2 rounded-xl border border-border/50 p-2 transition-colors ${
-          isOver ? 'border-primary/50 bg-primary/5' : 'bg-card/30'
+          isOver ? 'border-primary/50 bg-primary/5' : 'bg-card/60'
         }`}
       >
         {cards.map((card) => (

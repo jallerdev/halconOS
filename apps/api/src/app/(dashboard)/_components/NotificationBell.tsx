@@ -37,7 +37,7 @@ export function NotificationBell() {
         <button
           type="button"
           aria-label="Notificaciones"
-          className="relative inline-flex size-9 items-center justify-center rounded-lg border border-border/60 bg-card/40 text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+          className="relative inline-flex size-9 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
         >
           <Bell className="size-4" />
           {totalUrgent > 0 && (

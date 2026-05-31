@@ -8,7 +8,7 @@ export function OrgControl() {
   if (!clerkEnabled) return null;
 
   return (
-    <div className="rounded-lg border border-border/60 bg-secondary/30 p-1">
+    <div className="rounded-lg border border-border/60 bg-card/60 p-1">
       <OrganizationSwitcher
         hidePersonal
         afterCreateOrganizationUrl="/leads"

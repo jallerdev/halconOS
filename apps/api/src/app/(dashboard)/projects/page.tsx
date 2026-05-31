@@ -1,17 +1,32 @@
 'use client';
 
 import { motion } from 'framer-motion';
-import { Boxes, Calendar, CheckCircle2, Clock, DollarSign, ExternalLink, Hourglass, PauseCircle, Rocket, XCircle } from 'lucide-react';
+import {
+  Boxes,
+  Calendar,
+  CheckCircle2,
+  Clock,
+  DollarSign,
+  ExternalLink,
+  Hourglass,
+  PauseCircle,
+  Rocket,
+  XCircle,
+} from 'lucide-react';
 import Link from 'next/link';
-import { Card as TremorCard, Metric, Text } from '@tremor/react';
 
 import type { ProjectStatus } from '@halcon-os/shared/enums';
+import { KpiStrip, type KpiSpec } from '~/components/kpi-strip';
+import { PageHeader } from '~/components/page-header';
 import { Badge } from '~/components/ui/badge';
 import { Card, CardContent } from '~/components/ui/card';
 import { Skeleton } from '~/components/ui/skeleton';
 import { trpc } from '~/lib/trpc';
 
-const STATUS_META: Record<ProjectStatus, { label: string; icon: typeof Boxes; tone: string; ring: string }> = {
+const STATUS_META: Record<
+  ProjectStatus,
+  { label: string; icon: typeof Boxes; tone: string; ring: string }
+> = {
   PLANNING: { label: 'Planeación', icon: Hourglass, tone: 'text-sky-400', ring: 'border-sky-500/30 bg-sky-500/5' },
   IN_PROGRESS: { label: 'En curso', icon: Rocket, tone: 'text-violet-400', ring: 'border-violet-500/30 bg-violet-500/5' },
   REVIEW: { label: 'Revisión', icon: Clock, tone: 'text-amber-400', ring: 'border-amber-500/30 bg-amber-500/5' },
@@ -41,34 +56,37 @@ export default function ProjectsPage() {
   const stats = data
     ? {
         total: data.length,
-        active: data.filter((p) => p.status === 'IN_PROGRESS' || p.status === 'PLANNING' || p.status === 'REVIEW').length,
+        active: data.filter(
+          (p) =>
+            p.status === 'IN_PROGRESS' || p.status === 'PLANNING' || p.status === 'REVIEW',
+        ).length,
         delivered: data.filter((p) => p.status === 'DELIVERED').length,
         revenue: data.reduce((sum, p) => sum + Number(p.amount || 0), 0),
       }
     : null;
 
+  const items: KpiSpec[] = stats
+    ? [
+        { label: 'Total', value: stats.total, icon: Boxes, hint: 'proyectos creados' },
+        { label: 'Activos', value: stats.active, icon: Rocket, hint: 'en ejecución' },
+        { label: 'Entregados', value: stats.delivered, icon: CheckCircle2, hint: 'cerrados' },
+        {
+          label: 'Facturación',
+          value: formatCOP(stats.revenue),
+          icon: DollarSign,
+          hint: 'monto total acumulado',
+        },
+      ]
+    : [];
+
   return (
     <div className="mx-auto max-w-[1400px] space-y-8 px-6 py-8 lg:px-10">
-      <header>
-        <h1 className="text-2xl font-semibold tracking-tight">Proyectos</h1>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Ejecución de los leads ganados — del kickoff a la entrega.
-        </p>
-      </header>
+      <PageHeader
+        title="Proyectos"
+        description="Ejecución de los leads ganados — del kickoff a la entrega."
+      />
 
-      <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
-        <KpiStat label="Total" value={stats?.total ?? 0} icon={Boxes} tone="text-foreground" isLoading={isLoading} />
-        <KpiStat label="Activos" value={stats?.active ?? 0} icon={Rocket} tone="text-violet-400" isLoading={isLoading} />
-        <KpiStat label="Entregados" value={stats?.delivered ?? 0} icon={CheckCircle2} tone="text-emerald-400" isLoading={isLoading} />
-        <KpiStat
-          label="Facturación"
-          value={stats ? formatCOP(stats.revenue) : '—'}
-          icon={DollarSign}
-          tone="text-amber-400"
-          isLoading={isLoading}
-          isMoney
-        />
-      </div>
+      <KpiStrip items={items} accent="emerald" isLoading={isLoading} />
 
       {isLoading ? (
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
@@ -89,7 +107,7 @@ export default function ProjectsPage() {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.25, delay: i * 0.03 }}
               >
-                <Card className={`group h-full overflow-hidden border transition-colors hover:border-border`}>
+                <Card className="group h-full overflow-hidden transition-colors hover:border-foreground/20">
                   <CardContent className="space-y-4 p-5">
                     <div className="flex items-start justify-between gap-2">
                       <h3 className="line-clamp-2 font-medium leading-snug">{p.name}</h3>
@@ -128,36 +146,6 @@ export default function ProjectsPage() {
         </div>
       )}
     </div>
-  );
-}
-
-function KpiStat({
-  label,
-  value,
-  icon: Icon,
-  tone,
-  isLoading,
-  isMoney,
-}: {
-  label: string;
-  value: number | string;
-  icon: typeof Boxes;
-  tone: string;
-  isLoading: boolean;
-  isMoney?: boolean;
-}) {
-  return (
-    <TremorCard className="border border-border bg-card/60 transition-colors hover:border-foreground/20">
-      <div className="flex items-center justify-between">
-        <Text className="text-muted-foreground">{label}</Text>
-        <Icon className={`size-4 ${tone}`} />
-      </div>
-      {isLoading ? (
-        <Skeleton className="mt-3 h-8 w-20" />
-      ) : (
-        <Metric className={`mt-1 ${tone} ${isMoney ? 'text-2xl' : ''}`}>{value}</Metric>
-      )}
-    </TremorCard>
   );
 }
 

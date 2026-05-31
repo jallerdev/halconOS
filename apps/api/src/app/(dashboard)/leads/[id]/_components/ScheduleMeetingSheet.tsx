@@ -147,7 +147,7 @@ export function ScheduleMeetingSheet({
               Integración con Google no configurada en el servidor.
             </div>
           ) : !connected ? (
-            <div className="space-y-3 rounded-lg border border-border/60 bg-secondary/30 p-4 text-sm">
+            <div className="space-y-3 rounded-lg border border-border/60 bg-card/60 p-4 text-sm">
               <p>Para agendar reuniones necesitas conectar tu Google.</p>
               <Button asChild className="w-full">
                 <a href="/api/google/auth/start">

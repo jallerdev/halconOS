@@ -264,7 +264,7 @@ export function LeadsTable() {
       )}
 
       {/* Tabla */}
-      <div className="rounded-xl border border-border/60 bg-card/40">
+      <div className="rounded-xl border border-border/60 bg-card/60">
         <div className="max-h-[calc(100vh-22rem)] overflow-auto rounded-xl">
           <Table>
             <TableHeader>

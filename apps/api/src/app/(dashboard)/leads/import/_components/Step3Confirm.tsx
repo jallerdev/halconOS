@@ -88,7 +88,7 @@ export function Step3Confirm({
 
   if (summary) {
     return (
-      <div className="space-y-5 rounded-xl border border-border/60 bg-card/30 p-6">
+      <div className="space-y-5 rounded-xl border border-border/60 bg-card/60 p-6">
         <div className="flex items-center gap-3">
           <CheckCircle2 className="size-7 text-emerald-300" />
           <div>
@@ -128,7 +128,7 @@ export function Step3Confirm({
   }
 
   return (
-    <div className="space-y-5 rounded-xl border border-border/60 bg-card/30 p-6">
+    <div className="space-y-5 rounded-xl border border-border/60 bg-card/60 p-6">
       <div>
         <h3 className="text-sm font-medium">Listo para importar</h3>
         <p className="mt-1 text-sm text-muted-foreground">

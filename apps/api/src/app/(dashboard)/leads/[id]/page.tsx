@@ -190,7 +190,7 @@ export default function LeadDetailPage() {
                 href={lead.mapsUrl ?? '#'}
                 target="_blank"
                 rel="noreferrer"
-                className="group relative block h-32 overflow-hidden rounded-lg border border-border/60 bg-secondary/30"
+                className="group relative block h-32 overflow-hidden rounded-lg border border-border/60 bg-card/60"
               >
                 <div
                   className="absolute inset-0 opacity-40"

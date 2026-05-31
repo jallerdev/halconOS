@@ -1,6 +1,6 @@
 'use client';
 
-import { Check, Copy, Eye, EyeOff, KeyRound, Loader2, Plus, Trash2, Video } from 'lucide-react';
+import { Check, Copy, Eye, EyeOff, Loader2, Plus, Trash2, Video } from 'lucide-react';
 import { useSearchParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
@@ -15,6 +15,7 @@ import {
 } from '~/components/ui/card';
 import { ConfirmDialog } from '~/components/confirm-dialog';
 import { Input } from '~/components/ui/input';
+import { PageHeader } from '~/components/page-header';
 import { trpc } from '~/lib/trpc';
 
 function fmtDate(d: Date | string | null) {
@@ -207,15 +208,10 @@ export default function SettingsPage() {
 
   return (
     <div className="mx-auto max-w-3xl space-y-6 px-4 py-8">
-      <div>
-        <h1 className="flex items-center gap-2 text-2xl font-semibold tracking-tight">
-          <KeyRound className="size-6 text-primary" /> Ajustes
-        </h1>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Keys de leads entrantes para tu landing. Cada key guarda los leads en{' '}
-          <strong>tu organización</strong>.
-        </p>
-      </div>
+      <PageHeader
+        title="Ajustes"
+        description="Integraciones, keys de leads entrantes y configuración de tu cuenta."
+      />
 
       {isForbidden ? (
         <Card>

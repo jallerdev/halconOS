@@ -3,13 +3,14 @@
 import { AlertTriangle, CalendarClock, CalendarDays, Star } from 'lucide-react';
 import Link from 'next/link';
 import { toast } from 'sonner';
-import { Card as TremorCard, Metric, Text } from '@tremor/react';
 
 import type { inferRouterOutputs } from '@trpc/server';
 
 import type { AppRouter } from '~/server/routers/_app';
 import { BusinessAvatar } from '~/components/business-avatar';
+import { KpiStrip, type KpiSpec } from '~/components/kpi-strip';
 import { LeadStatusBadge } from '~/components/lead-status-badge';
+import { PageHeader } from '~/components/page-header';
 import { ScoreBadge } from '~/components/score-badge';
 import { WhatsAppButton } from '~/components/whatsapp-button';
 import { Button } from '~/components/ui/button';
@@ -21,33 +22,34 @@ import { UpcomingMeetings } from './_components/UpcomingMeetings';
 export default function TodayPage() {
   const { data, isLoading } = trpc.leads.followUps.useQuery();
 
+  const items: KpiSpec[] = data
+    ? [
+        {
+          label: 'Vencidos',
+          value: data.counts.overdue,
+          icon: AlertTriangle,
+          hint: data.counts.overdue === 0 ? 'todo al día' : 'sin contactar',
+        },
+        {
+          label: 'Hoy',
+          value: data.counts.today,
+          icon: CalendarDays,
+          hint: 'programados para hoy',
+        },
+        {
+          label: 'Próximos',
+          value: data.counts.upcoming,
+          icon: CalendarClock,
+          hint: 'siguientes 7 días',
+        },
+      ]
+    : [];
+
   return (
     <div className="mx-auto max-w-[1000px] space-y-8 px-6 py-8 lg:px-10">
-      <header>
-        <h1 className="text-2xl font-semibold tracking-tight">Hoy</h1>
-        <p className="mt-1 text-sm text-muted-foreground">Seguimientos programados de tus leads.</p>
-      </header>
+      <PageHeader title="Hoy" description="Seguimientos programados de tus leads." />
 
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-        <KpiStat
-          label="Vencidos"
-          value={data?.counts.overdue ?? 0}
-          tone="rose"
-          isLoading={isLoading}
-        />
-        <KpiStat
-          label="Hoy"
-          value={data?.counts.today ?? 0}
-          tone="amber"
-          isLoading={isLoading}
-        />
-        <KpiStat
-          label="Próximos"
-          value={data?.counts.upcoming ?? 0}
-          tone="sky"
-          isLoading={isLoading}
-        />
-      </div>
+      <KpiStrip items={items} accent="violet" isLoading={isLoading} cols={3} />
 
       <UpcomingMeetings />
 
@@ -95,39 +97,6 @@ export default function TodayPage() {
 }
 
 type Item = inferRouterOutputs<AppRouter>['leads']['followUps']['today'][number];
-
-const TONE_CLASSES = {
-  rose: { value: 'text-rose-400', dot: 'bg-rose-500' },
-  amber: { value: 'text-amber-400', dot: 'bg-amber-500' },
-  sky: { value: 'text-sky-400', dot: 'bg-sky-500' },
-} as const;
-
-function KpiStat({
-  label,
-  value,
-  tone,
-  isLoading,
-}: {
-  label: string;
-  value: number;
-  tone: keyof typeof TONE_CLASSES;
-  isLoading: boolean;
-}) {
-  const classes = TONE_CLASSES[tone];
-  return (
-    <TremorCard className="border border-border bg-card/60">
-      <div className="flex items-center gap-2">
-        <span className={`size-2 rounded-full ${classes.dot}`} />
-        <Text className="text-muted-foreground">{label}</Text>
-      </div>
-      {isLoading ? (
-        <Skeleton className="mt-2 h-9 w-16" />
-      ) : (
-        <Metric className={`mt-1 ${classes.value}`}>{value}</Metric>
-      )}
-    </TremorCard>
-  );
-}
 
 function Bucket({
   title,
@@ -182,7 +151,7 @@ function Row({ lead }: { lead: Item }) {
   const due = lead.nextFollowUpAt ? new Date(lead.nextFollowUpAt) : null;
 
   return (
-    <div className="flex items-center gap-3 rounded-lg border border-border/60 bg-card/50 p-3">
+    <div className="flex items-center gap-3 rounded-lg border border-border/60 bg-card/60 p-3">
       <BusinessAvatar name={lead.businessName} size="sm" />
       <div className="min-w-0 flex-1">
         <Link href={`/leads/${lead.id}`} className="truncate text-sm font-medium hover:text-primary">

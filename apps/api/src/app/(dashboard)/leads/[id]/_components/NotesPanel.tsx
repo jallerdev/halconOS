@@ -25,7 +25,7 @@ export function NotesPanel({ leadId }: { leadId: string }) {
 
   return (
     <div className="space-y-4">
-      <div className="rounded-lg border border-border/60 bg-secondary/30 p-3">
+      <div className="rounded-lg border border-border/60 bg-card/60 p-3">
         <textarea
           value={draft}
           onChange={(e) => setDraft(e.target.value)}
