@@ -142,7 +142,7 @@ export default function ImportLeadsPage() {
 
       {step === 'confirm' && validatedAtMap && (
         <>
-          <div className="flex items-center gap-2 rounded-md border border-border bg-card/92 px-3 py-2 text-xs backdrop-blur-xl">
+          <div className="flex items-center gap-2 rounded-md border border-border bg-card/98 px-3 py-2 text-xs">
             <Sparkles className="size-3.5 text-[hsl(var(--violet))]" />
             <span className="text-muted-foreground">
               Archivo: <strong className="text-foreground">{file?.fileName}</strong> ·{' '}

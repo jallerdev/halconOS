@@ -1,11 +1,12 @@
 'use client';
 
-import { Check, Copy, FileText, Lightbulb, Loader2, MessageCircle, Sparkles } from 'lucide-react';
+import { Check, Copy, FileText, Lightbulb, Loader2, Sparkles } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { useState } from 'react';
 
 import type { AiKind } from '@halcon-os/shared/schemas';
 import { Button } from '~/components/ui/button';
+import { WhatsAppIcon } from '~/components/icons/whatsapp-icon';
 import { trpc } from '~/lib/trpc';
 
 type LeadLike = {
@@ -21,7 +22,7 @@ type LeadLike = {
 const TOOLS: { kind: AiKind; label: string; icon: LucideIcon }[] = [
   { kind: 'strategy', label: 'Estrategia de venta', icon: Lightbulb },
   { kind: 'proposal', label: 'Propuesta comercial', icon: FileText },
-  { kind: 'message', label: 'Mensaje de contacto', icon: MessageCircle },
+  { kind: 'message', label: 'Mensaje de contacto', icon: WhatsAppIcon as unknown as LucideIcon },
   { kind: 'landing', label: 'Copy de landing', icon: Sparkles },
 ];
 

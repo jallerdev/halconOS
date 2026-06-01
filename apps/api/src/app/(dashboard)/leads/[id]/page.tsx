@@ -367,7 +367,7 @@ function Signal({
   value: string;
 }) {
   return (
-    <div className="hx-lift-sm flex items-center gap-3 rounded-xl border border-border bg-card/92 px-4 py-3 backdrop-blur-xl">
+    <div className="hx-lift-sm flex items-center gap-3 rounded-xl border border-border bg-card/98 px-4 py-3">
       <span className="grid size-9 shrink-0 place-items-center rounded-[10px] bg-[hsl(var(--violet))]/14 text-[hsl(var(--violet))]">
         <Icon className="size-4" />
       </span>

@@ -1,10 +1,11 @@
 'use client';
 
-import { Loader2, MessageCircle } from 'lucide-react';
+import { Loader2 } from 'lucide-react';
 import { useState } from 'react';
 import { toast } from '~/hooks/use-toast';
 
 import { Button, type ButtonProps } from '~/components/ui/button';
+import { WhatsAppIcon } from '~/components/icons/whatsapp-icon';
 import { waLink } from '~/lib/leads-ui';
 import { trpc } from '~/lib/trpc';
 
@@ -84,7 +85,7 @@ export function WhatsAppButton({
       disabled={busy}
       className="hx-press border-transparent bg-[#25d366] text-white shadow-sm shadow-[#25d366]/30 hover:bg-[#1faa56] focus-visible:ring-[#25d366]/40"
     >
-      {busy ? <Loader2 className="size-4 animate-spin" /> : <MessageCircle className="size-4" />}
+      {busy ? <Loader2 className="size-4 animate-spin" /> : <WhatsAppIcon className="size-4" />}
       {label}
     </Button>
   );

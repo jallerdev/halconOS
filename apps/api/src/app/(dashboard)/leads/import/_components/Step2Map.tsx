@@ -63,7 +63,7 @@ export function Step2Map({
 
   return (
     <div className="space-y-6">
-      <section className="rounded-xl border border-border bg-card/92 p-5">
+      <section className="rounded-xl border border-border bg-card/98 p-5">
         <div className="mb-4 flex items-center justify-between">
           <div>
             <h3 className="text-sm font-medium">Asigna columnas</h3>

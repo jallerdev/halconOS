@@ -150,7 +150,7 @@ function Column({
       </div>
       <div
         ref={setNodeRef}
-        className={`flex min-h-[60vh] flex-1 flex-col gap-2 rounded-xl border border-border p-2 backdrop-blur-xl transition-colors ${
+        className={`flex min-h-[60vh] flex-1 flex-col gap-2 rounded-xl border border-border p-2 transition-colors ${
           isOver ? 'border-[hsl(var(--violet))]/50 bg-[hsl(var(--violet))]/5' : 'bg-card/55'
         }`}
       >

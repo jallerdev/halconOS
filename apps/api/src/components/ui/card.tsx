@@ -3,13 +3,13 @@ import * as React from 'react';
 import { cn } from '~/lib/utils';
 
 // Atrevida customizado — no regenerar con shadcn CLI.
-// Surface elevated: bg-card/92 + border + shadow-card + backdrop-blur-xl.
+// Surface elevated: bg-card/98 + border + shadow-card + backdrop-blur-xl.
 const Card = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivElement>>(
   ({ className, ...props }, ref) => (
     <div
       ref={ref}
       className={cn(
-        'rounded-xl border border-border bg-card/92 text-card-foreground shadow-card backdrop-blur-xl',
+        'rounded-xl border border-border bg-card/98 text-card-foreground shadow-card',
         className,
       )}
       {...props}
