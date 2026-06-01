@@ -11,7 +11,8 @@ import {
 } from '@dnd-kit/core';
 import { useDroppable } from '@dnd-kit/core';
 import { useDraggable } from '@dnd-kit/core';
-import { Star } from 'lucide-react';
+import { ArrowRight, Inbox, Star } from 'lucide-react';
+import Link from 'next/link';
 import { useState } from 'react';
 import { toast } from '~/hooks/use-toast';
 
@@ -89,6 +90,10 @@ export function KanbanBoard() {
     const overId = e.over?.id as LeadStatus | undefined;
     const card = e.active.data.current?.card as Card | undefined;
     if (!overId || !card || card.status === overId) return;
+    // Safety: el kanban no muestra NEW, pero por si una columna acepta el
+    // drop con id='NEW' (no debería), bloqueamos manualmente la regresión
+    // a inbox para evitar que los leads se "pierdan" del tablero.
+    if (overId === 'NEW') return;
     updateStatus.mutate(
       { id: card.id, status: overId },
       { onSuccess: () => toast.success(`${card.businessName} → ${LEAD_STATUS_LABEL[overId]}`) },
@@ -99,10 +104,17 @@ export function KanbanBoard() {
     return <div className="p-10 text-sm text-muted-foreground">Cargando pipeline…</div>;
   }
 
+  // El kanban excluye el estado NEW deliberadamente — los leads nuevos
+  // viven en /leads (inbox) hasta que el usuario los promueve manualmente
+  // al pipeline desde la fila "Añadir al pipeline" (NEW → CONTACTED).
+  const pipelineStatuses = LEAD_STATUS.filter((s) => s !== 'NEW');
+  const newCount = data?.find((c) => c.status === 'NEW')?.count ?? 0;
+
   return (
     <DndContext sensors={sensors} onDragStart={onDragStart} onDragEnd={onDragEnd}>
+      {newCount > 0 && <NewInboxHint count={newCount} />}
       <div className="flex gap-3 overflow-x-auto pb-4">
-        {LEAD_STATUS.map((status) => {
+        {pipelineStatuses.map((status) => {
           const col = data?.find((c) => c.status === status);
           return (
             <Column
@@ -191,6 +203,33 @@ function DraggableCard({ card, onPeek }: { card: Card; onPeek: (id: string) => v
     >
       <LeadCard card={card} />
     </div>
+  );
+}
+
+// Banner que aparece cuando hay leads NEW en el inbox. Los leads NEW no
+// entran al kanban por sí solos — el usuario decide cuáles promueve desde
+// /leads (acción "Añadir al pipeline" → status NEW → CONTACTED).
+function NewInboxHint({ count }: { count: number }) {
+  return (
+    <Link
+      href="/leads"
+      className="hx-press mb-4 flex items-center gap-3 rounded-xl border border-[hsl(var(--violet))]/30 bg-[hsl(var(--violet))]/8 p-4 transition-colors hover:border-[hsl(var(--violet))]/55 hover:bg-[hsl(var(--violet))]/12"
+    >
+      <span className="grid size-10 shrink-0 place-items-center rounded-[10px] bg-[hsl(var(--violet))]/16 text-[hsl(var(--violet))]">
+        <Inbox className="size-5" />
+      </span>
+      <div className="min-w-0 flex-1">
+        <p className="text-sm font-semibold">
+          Tienes {count.toLocaleString('es-CO')} {count === 1 ? 'lead nuevo' : 'leads nuevos'} en el inbox
+        </p>
+        <p className="mt-0.5 text-xs text-muted-foreground">
+          Revísalos en la lista y añade al pipeline los que decidas trabajar.
+        </p>
+      </div>
+      <span className="inline-flex items-center gap-1.5 text-[13px] font-medium text-[hsl(var(--violet))]">
+        Ir al inbox <ArrowRight className="size-3.5" />
+      </span>
+    </Link>
   );
 }
 
