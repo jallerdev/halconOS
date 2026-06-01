@@ -46,10 +46,3 @@ export const ACCENT_BG_SOFT: Record<AccentColor, string> = {
   violet: 'bg-[hsl(var(--violet))]/14',
   teal: 'bg-[hsl(var(--teal))]/14',
 };
-
-// Mapeo a colores Tremor (charts). Tremor no soporta arbitrary HSL —
-// hay que dar slug de su paleta.
-export const TREMOR_COLOR: Record<AccentColor, string> = {
-  violet: 'violet',
-  teal: 'teal',
-};

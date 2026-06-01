@@ -2,14 +2,11 @@
 
 import type { LucideIcon } from 'lucide-react';
 import { ArrowDownRight, ArrowUpRight } from 'lucide-react';
-import { SparkAreaChart } from '@tremor/react';
 
-import {
-  TREMOR_COLOR,
-  type AccentColor,
-} from '~/lib/design-tokens';
+import { type AccentColor } from '~/lib/design-tokens';
 import { CountUp } from '~/components/count-up';
 import { Skeleton } from '~/components/ui/skeleton';
+import { Sparkline } from '~/components/sparkline';
 import { cn } from '~/lib/utils';
 
 export type KpiSpec = {
@@ -27,8 +24,8 @@ export type KpiSpec = {
 
 type Props = {
   items: KpiSpec[];
-  // Mantengo prop por retrocompatibilidad. En "Atrevida" todas las páginas
-  // usan violet — pasar 'teal' sólo si es métrica de éxito puro.
+  // En "Atrevida" todas las páginas usan violet. Pasar 'teal' sólo si es
+  // métrica de éxito puro (proyectos entregados, dinero ganado).
   accent?: AccentColor;
   isLoading?: boolean;
   cols?: 3 | 4;
@@ -36,7 +33,8 @@ type Props = {
 
 // Componente único para los KPI strips del dashboard. Look "Atrevida":
 // stripe gradient violet→teal arriba, ico con gradient suave, número
-// display tabnum, spark monocromático violet, delta pill teal/rose.
+// display tabnum, spark inline SVG (nuestro propio Sparkline, sin libs
+// externas), delta pill teal/rose.
 //
 // Una sola fuente de verdad para spacing, tipografía, hover, skeleton.
 // NO crear "KpiCard"/"KpiStat"/"MetricCard" en paralelo: extender aquí.
@@ -45,6 +43,8 @@ export function KpiStrip({ items, accent = 'violet', isLoading, cols = 4 }: Prop
     cols === 3
       ? 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3'
       : 'grid-cols-1 sm:grid-cols-2 xl:grid-cols-4';
+
+  const sparkTextClass = accent === 'teal' ? 'text-[hsl(var(--teal))]' : 'text-[hsl(var(--violet))]';
 
   if (isLoading) {
     return (
@@ -63,8 +63,6 @@ export function KpiStrip({ items, accent = 'violet', isLoading, cols = 4 }: Prop
       </div>
     );
   }
-
-  const sparkColor = TREMOR_COLOR[accent];
 
   return (
     <div className={cn('hx-stagger grid gap-5', colsClass)}>
@@ -109,15 +107,11 @@ export function KpiStrip({ items, accent = 'violet', isLoading, cols = 4 }: Prop
             </div>
 
             {item.spark && item.spark.length > 1 ? (
-              <SparkAreaChart
-                data={item.spark.map((n, idx) => ({ idx, value: n }))}
-                index="idx"
-                categories={['value']}
-                colors={[sparkColor]}
-                className="mt-4 h-10 w-full"
-              />
+              <div className={cn('mt-4 h-[38px] w-full', sparkTextClass)}>
+                <Sparkline data={item.spark} height={38} strokeWidth={2} />
+              </div>
             ) : (
-              <div className="mt-4 h-10" />
+              <div className="mt-4 h-[38px]" />
             )}
 
             <div className="mt-3 flex h-5 items-center gap-2">
