@@ -74,8 +74,16 @@ export function WhatsAppButton({
     }
   }
 
+  // Verde de marca WhatsApp #25d366 — usado tanto en el design system del
+  // handoff como en la guía de marca oficial. Sólido para el primario,
+  // shadow propio del color.
   return (
-    <Button size={size} variant="whatsapp" onClick={onClick} disabled={busy}>
+    <Button
+      size={size}
+      onClick={onClick}
+      disabled={busy}
+      className="hx-press border-transparent bg-[#25d366] text-white shadow-sm shadow-[#25d366]/30 hover:bg-[#1faa56] focus-visible:ring-[#25d366]/40"
+    >
       {busy ? <Loader2 className="size-4 animate-spin" /> : <MessageCircle className="size-4" />}
       {label}
     </Button>

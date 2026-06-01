@@ -19,7 +19,7 @@ export function ThemeToggle({ className }: { className?: string }) {
       aria-label="Cambiar tema"
       onClick={() => setTheme(isDark ? 'light' : 'dark')}
       className={cn(
-        'inline-flex size-9 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-accent hover:text-foreground',
+        'hx-press inline-flex size-9 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-accent hover:text-foreground',
         className,
       )}
     >

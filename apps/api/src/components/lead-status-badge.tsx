@@ -1,4 +1,7 @@
+import { ChevronDown } from 'lucide-react';
+
 import type { LeadStatus } from '@halcon-os/shared/enums';
+import { STATUS_HUE } from '~/lib/design-tokens';
 import { cn } from '~/lib/utils';
 
 const LABEL: Record<LeadStatus, string> = {
@@ -11,39 +14,34 @@ const LABEL: Record<LeadStatus, string> = {
   LOST: 'Perdido',
 };
 
-const TONE: Record<LeadStatus, string> = {
-  NEW: 'bg-sky-500/10 text-sky-300 ring-sky-500/20',
-  CONTACTED: 'bg-blue-500/10 text-blue-300 ring-blue-500/20',
-  QUALIFIED: 'bg-violet-500/10 text-violet-300 ring-violet-500/20',
-  PROPOSAL_SENT: 'bg-indigo-500/10 text-indigo-300 ring-indigo-500/20',
-  NEGOTIATION: 'bg-amber-500/10 text-amber-300 ring-amber-500/20',
-  WON: 'bg-emerald-500/10 text-emerald-300 ring-emerald-500/20',
-  LOST: 'bg-rose-500/10 text-rose-300 ring-rose-500/20',
-};
-
-const DOT: Record<LeadStatus, string> = {
-  NEW: 'bg-sky-400',
-  CONTACTED: 'bg-blue-400',
-  QUALIFIED: 'bg-violet-400',
-  PROPOSAL_SENT: 'bg-indigo-400',
-  NEGOTIATION: 'bg-amber-400',
-  WON: 'bg-emerald-400',
-  LOST: 'bg-rose-400',
-};
-
 export const LEAD_STATUS_LABEL = LABEL;
 
-export function LeadStatusBadge({ status, className }: { status: LeadStatus; className?: string }) {
+// LeadStatusBadge — pill con dot + label. Match del handoff: height 24,
+// padding 0 10px, rounded-pill, gap 6, dot 6x6.
+// Hue desde STATUS_HUE (single source of truth en design-tokens.ts).
+export function LeadStatusBadge({
+  status,
+  withChevron,
+  className,
+}: {
+  status: LeadStatus;
+  withChevron?: boolean;
+  className?: string;
+}) {
+  const hue = STATUS_HUE[status];
   return (
     <span
       className={cn(
-        'inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-xs font-medium ring-1 ring-inset',
-        TONE[status],
+        'inline-flex h-6 items-center gap-1.5 whitespace-nowrap rounded-full border px-2.5 text-[11.5px] font-medium',
+        hue.bg,
+        hue.text,
+        hue.border,
         className,
       )}
     >
-      <span className={cn('size-1.5 rounded-full', DOT[status])} />
+      <span className={cn('size-1.5 rounded-full', hue.dot)} />
       {LABEL[status]}
+      {withChevron && <ChevronDown className="ml-px size-3 opacity-55" />}
     </span>
   );
 }
