@@ -158,8 +158,8 @@ function Column({
       </div>
       <div
         ref={setNodeRef}
-        className={`flex min-h-[60vh] flex-1 flex-col gap-2 rounded-xl border border-border/50 p-2 transition-colors ${
-          isOver ? 'border-primary/50 bg-primary/5' : 'bg-card/60'
+        className={`flex min-h-[60vh] flex-1 flex-col gap-2 rounded-xl border border-border p-2 backdrop-blur-xl transition-colors ${
+          isOver ? 'border-[hsl(var(--violet))]/50 bg-[hsl(var(--violet))]/5' : 'bg-card/55'
         }`}
       >
         {cards.map((card) => (
@@ -205,8 +205,8 @@ function DraggableCard({ card, onPeek }: { card: Card; onPeek: (id: string) => v
 function LeadCard({ card, dragging }: { card: Card; dragging?: boolean }) {
   return (
     <div
-      className={`cursor-grab rounded-lg border border-border/60 bg-card p-3 shadow-sm active:cursor-grabbing ${
-        dragging ? 'rotate-2 shadow-xl shadow-black/40' : 'hover:border-border'
+      className={`hx-lift-sm cursor-grab rounded-lg border border-border bg-card-2/85 p-3 shadow-card active:cursor-grabbing ${
+        dragging ? 'rotate-2 shadow-pop' : 'hover:border-border-strong hover:bg-card-2'
       }`}
     >
       <div className="flex items-start gap-2">

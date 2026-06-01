@@ -1,55 +1,55 @@
 // Design tokens — fuente única de verdad para tratamientos de superficie y
-// acentos por página. Si una clase de fondo / borde no aparece aquí, NO
-// agregarla al dashboard a mano: extender este archivo primero.
+// acentos del producto. Sistema "Atrevida": una sola marca dual violet/teal
+// para TODO el dashboard. Nada de un accent por página (eso era ruido visual).
+//
+// Fuente de verdad de los HSL: globals.css (--violet, --teal, --card, etc).
+// Si necesitas variantes de fondo / borde nuevas, AMPLIA este archivo antes
+// de meter clases sueltas en componentes.
 
 export const SURFACE = {
-  // Background de página completa.
+  // Background de página completa (transparente — debajo está el AppBg blob).
   base: 'bg-background',
   // Único nivel "elevado" — cards, top bar, sidebar, popovers persistentes.
-  // bg-card/60 + border + blur da una sensación translúcida consistente sobre
-  // los blobs de fondo de la landing/dashboard.
-  elevated: 'bg-card/60 border border-border backdrop-blur-xl',
-  // Variante sin border para casos sutiles (ej. row hover de tabla).
+  elevated: 'border border-border bg-card/72 backdrop-blur-xl',
+  // Variante sin border, más translúcida (ej. row hover de tabla).
   subtle: 'bg-card/40',
 } as const;
 
 export const HOVER = {
-  border: 'hover:border-foreground/20',
+  border: 'hover:border-border-strong',
   bg: 'hover:bg-accent',
   text: 'hover:text-foreground',
 } as const;
 
-// Acento monocromático por página. Cuando una página usa KpiStrip o charts
-// debe pasar este accent en vez de mezclar 4 colores random en el mismo grid.
-// Las páginas no listadas (ej. /leads/import) heredan el accent de su parent.
-export const PAGE_ACCENT = {
-  leads: 'sky',
-  today: 'violet',
-  pipeline: 'amber',
-  projects: 'emerald',
-  settings: 'blue',
-  discover: 'sky',
-  notifications: 'violet',
+// Sistema de acento. El producto entero respira violet (marca) + teal
+// (datos/positivo). Las páginas YA NO eligen accent — todas heredan estos
+// tokens. AccentColor queda como alias por retrocompatibilidad con el
+// KpiStrip / charts que aún reciben prop `accent`; los valores son slugs
+// que Tremor/Tailwind entiende.
+export const BRAND = {
+  violet: 'hsl(252 100% 68%)',
+  teal: 'hsl(168 76% 46%)',
+  gradient: 'linear-gradient(135deg, hsl(252 100% 68%), hsl(168 76% 46%))',
 } as const;
 
-export type AccentColor = (typeof PAGE_ACCENT)[keyof typeof PAGE_ACCENT];
+export type AccentColor = 'violet' | 'teal';
 
-// Mapeos de utility classes derivados del accent. Útil cuando un componente
-// necesita aplicar texto / fondo / borde tinted sin pasar la string a Tailwind
-// dinámicamente (Tailwind no resuelve interpolación arbitraria — tienen que
-// estar literalmente en el código para que el purger los detecte).
+// Acento por contexto: KPI strips, charts, badges. SIEMPRE pasar 'violet'
+// como default — usar 'teal' sólo para señales explícitamente positivas
+// (datos, conversión, dinero).
 export const ACCENT_TEXT: Record<AccentColor, string> = {
-  sky: 'text-sky-400',
-  violet: 'text-violet-400',
-  amber: 'text-amber-400',
-  emerald: 'text-emerald-400',
-  blue: 'text-blue-400',
+  violet: 'text-[hsl(var(--violet))]',
+  teal: 'text-[hsl(var(--teal))]',
 };
 
 export const ACCENT_BG_SOFT: Record<AccentColor, string> = {
-  sky: 'bg-sky-500/15',
-  violet: 'bg-violet-500/15',
-  amber: 'bg-amber-500/15',
-  emerald: 'bg-emerald-500/15',
-  blue: 'bg-blue-500/15',
+  violet: 'bg-[hsl(var(--violet))]/14',
+  teal: 'bg-[hsl(var(--teal))]/14',
+};
+
+// Mapeo a colores Tremor (charts). Tremor no soporta arbitrary HSL —
+// hay que dar slug de su paleta.
+export const TREMOR_COLOR: Record<AccentColor, string> = {
+  violet: 'violet',
+  teal: 'teal',
 };

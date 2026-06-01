@@ -221,7 +221,7 @@ export function LeadsTable() {
 
       {/* Barra de acciones en lote */}
       {selected.size > 0 && (
-        <div className="flex flex-wrap items-center gap-2 rounded-lg border border-primary/30 bg-primary/5 px-3 py-2">
+        <div className="flex flex-wrap items-center gap-2 rounded-lg border border-[hsl(var(--violet))]/30 bg-[hsl(var(--violet))]/6 px-3 py-2">
           <span className="text-sm font-medium">{selected.size} seleccionados</span>
           <div className="mx-1 h-4 w-px bg-border" />
           <DropdownMenu>
@@ -264,8 +264,8 @@ export function LeadsTable() {
       )}
 
       {/* Tabla */}
-      <div className="rounded-xl border border-border/60 bg-card/60">
-        <div className="max-h-[calc(100vh-22rem)] overflow-auto rounded-xl">
+      <div className="overflow-hidden rounded-xl border border-border bg-card/72 shadow-card backdrop-blur-xl">
+        <div className="max-h-[calc(100vh-22rem)] overflow-auto">
           <Table>
             <TableHeader>
               <TableRow className="hover:bg-transparent">
@@ -305,7 +305,7 @@ export function LeadsTable() {
                     animate={{ opacity: 1 }}
                     transition={{ duration: 0.2, delay: Math.min(i * 0.01, 0.2) }}
                     onClick={() => setPeekId(l.id)}
-                    className={`group cursor-pointer border-b border-l-2 border-border/40 ${STATUS_BORDER[l.status]} transition-colors hover:bg-accent/40 ${selected.has(l.id) ? 'bg-primary/5' : ''}`}
+                    className={`group hx-table-row cursor-pointer border-b border-l-2 border-border/40 ${STATUS_BORDER[l.status]} hover:bg-accent/50 ${selected.has(l.id) ? 'bg-[hsl(var(--violet))]/7' : ''}`}
                   >
                     <TableCell onClick={(e) => e.stopPropagation()}>
                       <input

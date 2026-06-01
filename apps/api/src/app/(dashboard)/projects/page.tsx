@@ -80,13 +80,14 @@ export default function ProjectsPage() {
     : [];
 
   return (
-    <div className="mx-auto max-w-[1400px] space-y-8 px-6 py-8 lg:px-10">
+    <div className="hx-page mx-auto max-w-[1480px] space-y-8 px-6 py-8 lg:px-10">
       <PageHeader
+        eyebrow="Ejecución"
         title="Proyectos"
         description="Ejecución de los leads ganados — del kickoff a la entrega."
       />
 
-      <KpiStrip items={items} accent="emerald" isLoading={isLoading} />
+      <KpiStrip items={items} accent="teal" isLoading={isLoading} />
 
       {isLoading ? (
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">

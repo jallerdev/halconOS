@@ -2,14 +2,34 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ════════════════════════════════════════════════════════════════════════
+   HalcónOS · Design System (dirección «Atrevida»)
+   Tokens, fondo atmosférico, motion + micro-interacciones.
+   Fuente de verdad: design_handoff_halcon/reference/tokens.css
+   ════════════════════════════════════════════════════════════════════════ */
+
 @layer base {
-  /* Modo claro (default) — estilo brillante tipo ClickUp */
+  :root {
+    /* ── Marca / acento dual ─────────────────────────────────────────── */
+    --violet: 252 100% 68%;
+    --teal: 168 76% 46%;
+
+    /* ── Forma ──────────────────────────────────────────────────────── */
+    --radius: 0.75rem;            /* 12px base shadcn */
+    --radius-sm: 0.5rem;          /* 8px */
+    --radius-lg: 1.125rem;        /* 18px atrevida */
+    --radius-pill: 999px;
+  }
+
+  /* ── Tema claro (default) ─────────────────────────────────────────── */
   :root {
     color-scheme: light;
 
-    --background: 0 0% 100%;
+    --background: 240 20% 99%;
+    --bg-tint: 252 60% 99%;
     --foreground: 240 10% 8%;
     --card: 0 0% 100%;
+    --card-2: 240 20% 98%;
     --card-foreground: 240 10% 8%;
     --popover: 0 0% 100%;
     --popover-foreground: 240 10% 8%;
@@ -18,24 +38,32 @@
     --secondary: 240 6% 96%;
     --secondary-foreground: 240 10% 12%;
     --muted: 240 6% 96%;
-    --muted-foreground: 240 4% 42%;
+    --muted-foreground: 240 4% 46%;
     --accent: 240 6% 95%;
     --accent-foreground: 240 10% 12%;
     --destructive: 0 72% 51%;
     --destructive-foreground: 0 0% 100%;
     --border: 240 6% 90%;
+    --border-strong: 240 6% 84%;
     --input: 240 6% 90%;
     --ring: 252 100% 68%;
-    --radius: 0.75rem;
+
+    --shadow-color: 240 30% 20%;
+    --shadow-card: 0 1px 2px hsl(var(--shadow-color) / 0.06),
+      0 4px 16px hsl(var(--shadow-color) / 0.05);
+    --shadow-pop: 0 8px 30px hsl(var(--shadow-color) / 0.12);
+    --score-track: 240 6% 90%;
   }
 
-  /* Modo oscuro — OLED premium */
+  /* ── Tema oscuro (OLED premium) ───────────────────────────────────── */
   .dark {
     color-scheme: dark;
 
     --background: 240 10% 3.9%;
+    --bg-tint: 250 30% 5%;
     --foreground: 0 0% 98%;
     --card: 240 6% 7%;
+    --card-2: 240 6% 9%;
     --card-foreground: 0 0% 98%;
     --popover: 240 8% 6%;
     --popover-foreground: 0 0% 98%;
@@ -50,8 +78,14 @@
     --destructive: 0 72% 51%;
     --destructive-foreground: 0 0% 98%;
     --border: 240 4% 16%;
+    --border-strong: 240 4% 22%;
     --input: 240 4% 16%;
     --ring: 252 100% 68%;
+
+    --shadow-color: 0 0% 0%;
+    --shadow-card: 0 1px 2px hsl(0 0% 0% / 0.3), 0 2px 8px hsl(0 0% 0% / 0.18);
+    --shadow-pop: 0 12px 40px hsl(0 0% 0% / 0.55);
+    --score-track: 240 4% 20%;
   }
 
   * {
@@ -68,9 +102,214 @@
     -webkit-font-smoothing: antialiased;
     text-rendering: optimizeLegibility;
   }
+
+  .tabnum {
+    font-variant-numeric: tabular-nums;
+  }
 }
 
-/* Scrollbar sutil estilo Linear */
+/* ════════════════════════════════════════════════════════════════════════
+   Fondo atmosférico — dos blobs blur fijos detrás del contenido. Sólo en
+   el dashboard (montado en (dashboard)/layout.tsx vía <AppBg />).
+   ════════════════════════════════════════════════════════════════════════ */
+.app-bg {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  overflow: hidden;
+}
+.app-bg::before,
+.app-bg::after {
+  content: '';
+  position: absolute;
+  width: 50vw;
+  height: 50vw;
+  border-radius: 50%;
+  filter: blur(120px);
+}
+.app-bg::before {
+  top: -12vw;
+  left: 8vw;
+  background: hsl(var(--violet));
+  opacity: 0.12;
+}
+.app-bg::after {
+  bottom: -16vw;
+  right: 4vw;
+  background: hsl(var(--teal));
+  opacity: 0.08;
+}
+.dark .app-bg::before {
+  opacity: 0.26;
+}
+.dark .app-bg::after {
+  opacity: 0.2;
+}
+
+/* ════════════════════════════════════════════════════════════════════════
+   Motion · micro-interacciones (translate-only para que nada quede
+   invisible si un frame se salta — nunca animar opacity:0 con fill:both).
+   ════════════════════════════════════════════════════════════════════════ */
+@keyframes hxFadeUp {
+  from {
+    transform: translateY(10px);
+  }
+  to {
+    transform: none;
+  }
+}
+@keyframes hxRiseIn {
+  from {
+    transform: translateY(14px) scale(0.995);
+  }
+  to {
+    transform: none;
+  }
+}
+@keyframes hxScaleIn {
+  from {
+    transform: scale(0.97);
+  }
+  to {
+    transform: none;
+  }
+}
+@keyframes hxShimmer {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hx-page,
+  .hx-stagger > *,
+  .hx-scale-in {
+    animation: none !important;
+  }
+}
+
+/* Entrada de página al navegar — translate-only. */
+.hx-page {
+  animation: hxRiseIn 0.42s cubic-bezier(0.22, 0.61, 0.36, 1) both;
+}
+
+/* Stagger para listas / grids. Hijos entran con un retraso incremental. */
+.hx-stagger > * {
+  animation: hxFadeUp 0.44s cubic-bezier(0.22, 0.61, 0.36, 1) both;
+}
+.hx-stagger > *:nth-child(1) {
+  animation-delay: 0.02s;
+}
+.hx-stagger > *:nth-child(2) {
+  animation-delay: 0.06s;
+}
+.hx-stagger > *:nth-child(3) {
+  animation-delay: 0.1s;
+}
+.hx-stagger > *:nth-child(4) {
+  animation-delay: 0.14s;
+}
+.hx-stagger > *:nth-child(5) {
+  animation-delay: 0.18s;
+}
+.hx-stagger > *:nth-child(6) {
+  animation-delay: 0.22s;
+}
+.hx-stagger > *:nth-child(7) {
+  animation-delay: 0.26s;
+}
+.hx-stagger > *:nth-child(8) {
+  animation-delay: 0.3s;
+}
+.hx-stagger > *:nth-child(n + 9) {
+  animation-delay: 0.34s;
+}
+
+/* Hover-lift utilitario para cards / KPIs / signals. */
+.hx-lift {
+  transition:
+    transform 0.18s cubic-bezier(0.22, 0.61, 0.36, 1),
+    border-color 0.15s,
+    box-shadow 0.18s,
+    background 0.15s;
+  will-change: transform;
+}
+.hx-lift:hover {
+  transform: translateY(-3px);
+  box-shadow: var(--shadow-pop);
+}
+.hx-lift-sm {
+  transition: transform 0.18s cubic-bezier(0.22, 0.61, 0.36, 1);
+}
+.hx-lift-sm:hover {
+  transform: translateY(-2px);
+}
+
+/* Botón primario con barrido de brillo (shimmer) en hover. */
+.hx-btn-shine {
+  position: relative;
+  overflow: hidden;
+}
+.hx-btn-shine::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  transform: translateX(-120%);
+  background: linear-gradient(
+    110deg,
+    transparent 30%,
+    hsl(0 0% 100% / 0.18) 50%,
+    transparent 70%
+  );
+  pointer-events: none;
+}
+.hx-btn-shine:hover::after {
+  animation: hxShimmer 0.7s ease;
+}
+
+/* Pulsación al presionar. */
+.hx-press {
+  transition: transform 0.08s;
+}
+.hx-press:active {
+  transform: scale(0.96);
+}
+
+/* Stripe top en KPIs estilo Atrevida (violet→teal). */
+.hx-stripe::before {
+  content: '';
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 2px;
+  background: linear-gradient(90deg, hsl(var(--violet)), hsl(var(--teal)));
+  opacity: 0.8;
+}
+
+/* Eyebrow gradient text — para titulares con sub-label arriba. */
+.hx-eyebrow {
+  display: block;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  margin-bottom: 7px;
+  background: linear-gradient(90deg, hsl(var(--violet)), hsl(var(--teal)));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+/* Mark gradient (avatar de organización JV). */
+.hx-mark-gradient {
+  background: linear-gradient(135deg, hsl(var(--violet)), hsl(var(--teal)));
+  color: #fff;
+}
+
+/* Scrollbar sutil estilo Linear. */
 ::-webkit-scrollbar {
   width: 10px;
   height: 10px;
@@ -79,12 +318,22 @@
   background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  background: hsl(240 4% 18%);
+  background: hsl(var(--border-strong));
   border-radius: 9999px;
   border: 2px solid transparent;
   background-clip: content-box;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: hsl(240 4% 26%);
+  background: hsl(var(--muted-foreground) / 0.6);
   background-clip: content-box;
+}
+
+/* Tabla: borde violet izquierdo al hover. */
+.hx-table-row {
+  transition:
+    background 0.14s,
+    box-shadow 0.14s;
+}
+.hx-table-row:hover {
+  box-shadow: inset 3px 0 0 hsl(var(--violet) / 0.5);
 }

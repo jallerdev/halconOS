@@ -14,10 +14,21 @@ export function CountUp({
   suffix?: string;
   decimals?: number;
 }) {
-  const [display, setDisplay] = useState(0);
-  const prev = useRef(0);
+  // CRÍTICO de robustez: inicializamos en el valor final, NO en 0. Si la
+  // animación no llega a correr (pestaña en background, frame skip), el
+  // número queda visible igual. Solo el efecto cliente reinicia el conteo.
+  const [display, setDisplay] = useState(value);
+  const prev = useRef(value);
 
   useEffect(() => {
+    const reduceMotion =
+      typeof window !== 'undefined' &&
+      window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+    if (reduceMotion) {
+      setDisplay(value);
+      prev.current = value;
+      return;
+    }
     const controls = animate(prev.current, value, {
       duration,
       ease: [0.22, 1, 0.36, 1],

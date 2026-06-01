@@ -9,10 +9,11 @@ import { openNewLeadSheet } from '../../_components/NewLeadSheet';
 export function PipelineHeader() {
   return (
     <PageHeader
+      eyebrow="Kanban"
       title="Pipeline"
-      description="Arrastra leads entre etapas. Top 25 por score en cada columna."
+      description="Arrastra leads entre etapas · top por score en cada columna."
       actions={
-        <Button onClick={openNewLeadSheet}>
+        <Button onClick={openNewLeadSheet} className="hx-btn-shine hx-press">
           <Plus />
           Nuevo lead
         </Button>

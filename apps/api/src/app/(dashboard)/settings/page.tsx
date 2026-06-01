@@ -207,8 +207,9 @@ export default function SettingsPage() {
   };
 
   return (
-    <div className="mx-auto max-w-3xl space-y-6 px-4 py-8">
+    <div className="hx-page mx-auto max-w-3xl space-y-6 px-4 py-8">
       <PageHeader
+        eyebrow="Configuración"
         title="Ajustes"
         description="Integraciones, keys de leads entrantes y configuración de tu cuenta."
       />

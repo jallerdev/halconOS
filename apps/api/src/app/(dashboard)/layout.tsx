@@ -1,6 +1,7 @@
 import { auth } from '@clerk/nextjs/server';
 import type { ReactNode } from 'react';
 
+import { AppBg } from './_components/AppBg';
 import { CommandPalette } from './_components/CommandPalette';
 import { NewLeadSheet } from './_components/NewLeadSheet';
 import { OrgGate } from './_components/OrgGate';
@@ -22,7 +23,8 @@ export default async function DashboardLayout({ children }: { children: ReactNod
 
   return (
     <SidebarProvider>
-      <div className="flex min-h-screen">
+      <AppBg />
+      <div className="relative z-[1] flex min-h-screen">
         <Sidebar />
         <div className="flex min-w-0 flex-1 flex-col">
           <TopBar />

@@ -46,8 +46,12 @@ export default function TodayPage() {
     : [];
 
   return (
-    <div className="mx-auto max-w-[1000px] space-y-8 px-6 py-8 lg:px-10">
-      <PageHeader title="Hoy" description="Seguimientos programados de tus leads." />
+    <div className="hx-page mx-auto max-w-[1100px] space-y-8 px-6 py-8 lg:px-10">
+      <PageHeader
+        eyebrow="Esta semana"
+        title="Hoy"
+        description="Seguimientos programados de tus leads."
+      />
 
       <KpiStrip items={items} accent="violet" isLoading={isLoading} cols={3} />
 
