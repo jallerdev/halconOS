@@ -130,14 +130,14 @@ export function ScheduleMeetingSheet({
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent className="flex w-full flex-col gap-0 p-0 sm:max-w-md">
-        <header className="border-b border-border/60 px-6 py-5">
+        <header className="border-b border-border px-[22px] pb-[18px] pt-5">
           <SheetTitle className="flex items-center gap-2">
             <Video className="size-5 text-primary" /> Agendar reunión
           </SheetTitle>
           <SheetDescription>{businessName}</SheetDescription>
         </header>
 
-        <div className="flex-1 space-y-5 overflow-y-auto px-6 py-5">
+        <div className="flex-1 space-y-4 overflow-y-auto px-[22px] py-5">
           {googleStatus.isLoading ? (
             <div className="flex justify-center py-12 text-muted-foreground">
               <Loader2 className="animate-spin" />
@@ -147,7 +147,7 @@ export function ScheduleMeetingSheet({
               Integración con Google no configurada en el servidor.
             </div>
           ) : !connected ? (
-            <div className="space-y-3 rounded-lg border border-border/60 bg-card/60 p-4 text-sm">
+            <div className="space-y-3 rounded-lg border border-border bg-card/60 p-4 text-sm">
               <p>Para agendar reuniones necesitas conectar tu Google.</p>
               <Button asChild className="w-full">
                 <a href="/api/google/auth/start">
@@ -163,7 +163,7 @@ export function ScheduleMeetingSheet({
                   Los invitados recibieron un email con el evento.
                 </p>
                 <div className="mt-3 flex items-center gap-2">
-                  <code className="flex-1 overflow-x-auto rounded border border-border/60 bg-background px-3 py-2 font-mono text-xs">
+                  <code className="flex-1 overflow-x-auto rounded border border-border bg-background px-3 py-2 font-mono text-xs">
                     {createdMeetUrl}
                   </code>
                   <Button variant="outline" size="icon" onClick={copy} title="Copiar">
@@ -241,7 +241,7 @@ export function ScheduleMeetingSheet({
           )}
         </div>
 
-        <footer className="flex items-center justify-end gap-2 border-t border-border/60 px-6 py-4">
+        <footer className="flex items-center justify-end gap-2 border-t border-border px-[22px] py-4">
           <Button variant="ghost" onClick={close} disabled={schedule.isPending}>
             {createdMeetUrl ? 'Cerrar' : 'Cancelar'}
           </Button>

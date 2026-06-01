@@ -49,7 +49,7 @@ export function LeadPeek({
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent className="gap-0 p-0">
+      <SheetContent variant="wide" className="gap-0 p-0">
         {!lead ? (
           <div className="flex h-full items-center justify-center text-sm text-muted-foreground">
             <SheetTitle className="sr-only">Cargando lead</SheetTitle>
@@ -58,12 +58,12 @@ export function LeadPeek({
         ) : (
           <div className="flex h-full flex-col">
             {/* Header */}
-            <div className="border-b border-border/60 p-6">
+            <div className="border-b border-border px-[22px] pb-[18px] pt-5">
               <div className="flex items-start gap-3">
-                <BusinessAvatar name={lead.businessName} size="md" />
+                <BusinessAvatar name={lead.businessName} size="lg" />
                 <div className="min-w-0 flex-1">
                   <SheetTitle className="truncate pr-8">{lead.businessName}</SheetTitle>
-                  <p className="mt-0.5 truncate text-sm text-muted-foreground">
+                  <p className="mt-0.5 truncate text-[12.5px] text-muted-foreground">
                     {[lead.category, lead.city].filter(Boolean).join(' · ') || '—'}
                   </p>
                   <div className="mt-3 flex flex-wrap items-center gap-2">
@@ -97,14 +97,14 @@ export function LeadPeek({
                     onClick={() => updateStatus.mutate({ id: lead.id, status: 'CONTACTED' })}
                     disabled={updateStatus.isPending}
                   >
-                    <KanbanSquare className="size-4" /> Añadir al pipeline
+                    <KanbanSquare className="size-4" /> Pipeline
                   </Button>
                 )}
               </div>
             </div>
 
             {/* Body scrollable */}
-            <div className="flex-1 space-y-5 overflow-y-auto p-6">
+            <div className="flex-1 space-y-5 overflow-y-auto px-[22px] py-5">
               <div className="grid grid-cols-2 gap-3">
                 <Stat label="Rating" value={lead.googleRating ? `★ ${lead.googleRating}` : '—'} />
                 <Stat label="Reseñas" value={lead.reviewCount?.toLocaleString('es-CO') ?? '—'} />
@@ -113,15 +113,15 @@ export function LeadPeek({
               </div>
 
               {lead.address && (
-                <div className="flex items-start gap-2 text-sm text-muted-foreground">
+                <div className="flex items-start gap-2 text-[13px] text-muted-foreground">
                   <MapPin className="mt-0.5 size-4 shrink-0" />
                   <span>{lead.address}</span>
                 </div>
               )}
 
               {/* Seguimiento */}
-              <div className="flex items-center justify-between rounded-lg border border-border/60 bg-secondary/20 p-3">
-                <div className="flex items-center gap-2 text-sm">
+              <div className="flex items-center justify-between rounded-md border border-border bg-card-2/40 p-3">
+                <div className="flex items-center gap-2 text-[13px]">
                   <CalendarClock className="size-4 text-muted-foreground" />
                   <span className="text-muted-foreground">Próximo seguimiento</span>
                 </div>
@@ -134,15 +134,15 @@ export function LeadPeek({
                       date: e.target.value ? new Date(e.target.value).toISOString() : null,
                     })
                   }
-                  className="rounded-md border border-border bg-background px-2 py-1 text-sm text-foreground outline-none focus:border-ring [color-scheme:dark]"
+                  className="rounded-md border border-border-strong bg-background px-2 py-1 text-[13px] text-foreground outline-none focus:border-[hsl(var(--violet))] [color-scheme:dark]"
                 />
               </div>
 
               {/* Estrategia rápida */}
-              <div className="rounded-lg border border-border/60 bg-secondary/20 p-4">
+              <div className="rounded-md border border-border bg-card-2/40 p-4">
                 <div className="mb-2 flex items-center justify-between">
-                  <span className="flex items-center gap-1.5 text-sm font-medium">
-                    <Sparkles className="size-4 text-primary" /> Estrategia de venta
+                  <span className="flex items-center gap-1.5 text-[13px] font-semibold">
+                    <Sparkles className="size-4 text-[hsl(var(--violet))]" /> Estrategia de venta
                   </span>
                   <Button
                     size="sm"
@@ -154,11 +154,11 @@ export function LeadPeek({
                   </Button>
                 </div>
                 {lead.aiSalesAngle ? (
-                  <p className="whitespace-pre-wrap text-sm text-muted-foreground">
+                  <p className="whitespace-pre-wrap text-[13px] leading-[1.55] text-muted-foreground">
                     {lead.aiSalesAngle}
                   </p>
                 ) : (
-                  <p className="text-sm text-muted-foreground">
+                  <p className="text-[13px] text-muted-foreground">
                     Genera el ángulo de venta para este negocio con IA.
                   </p>
                 )}
@@ -166,7 +166,7 @@ export function LeadPeek({
             </div>
 
             {/* Footer */}
-            <div className="border-t border-border/60 p-4">
+            <div className="border-t border-border px-[22px] py-4">
               <Button variant="outline" className="w-full" asChild>
                 <Link href={`/leads/${lead.id}`}>
                   <ExternalLink className="size-4" /> Ver perfil completo
@@ -182,9 +182,9 @@ export function LeadPeek({
 
 function Stat({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-lg border border-border/60 bg-card/50 p-3">
-      <div className="text-xs text-muted-foreground">{label}</div>
-      <div className="mt-0.5 font-mono text-sm">{value}</div>
+    <div className="rounded-md border border-border bg-card-2/40 px-3 py-2.5">
+      <div className="text-[10px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">{label}</div>
+      <div className="mt-0.5 font-mono text-[13px] tabular-nums">{value}</div>
     </div>
   );
 }

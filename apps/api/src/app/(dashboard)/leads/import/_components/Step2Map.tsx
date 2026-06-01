@@ -63,7 +63,7 @@ export function Step2Map({
 
   return (
     <div className="space-y-6">
-      <section className="rounded-xl border border-border/60 bg-card/60 p-5">
+      <section className="rounded-xl border border-border bg-card/72 p-5">
         <div className="mb-4 flex items-center justify-between">
           <div>
             <h3 className="text-sm font-medium">Asigna columnas</h3>
@@ -102,9 +102,9 @@ export function Step2Map({
 
       <section>
         <h3 className="mb-2 text-sm font-medium">Vista previa · primeras 5 filas</h3>
-        <div className="overflow-x-auto rounded-xl border border-border/60">
+        <div className="overflow-x-auto rounded-xl border border-border">
           <table className="w-full text-xs">
-            <thead className="bg-secondary/40">
+            <thead className="bg-card-2/40">
               <tr>
                 <th className="px-3 py-2 text-left font-medium">#</th>
                 {TARGET_FIELDS.map(({ value, label }) => (

@@ -148,17 +148,19 @@ export function NewLeadSheet() {
 
   return (
     <Sheet open={open} onOpenChange={(v) => (v ? setOpen(true) : close())}>
-      <SheetContent className="flex w-full flex-col gap-0 p-0 sm:max-w-md">
-        <header className="border-b border-border/60 px-6 py-5">
+      <SheetContent className="flex flex-col gap-0 p-0">
+        <header className="border-b border-border px-[22px] pb-[18px] pt-5">
           <SheetTitle>Nuevo lead</SheetTitle>
           <SheetDescription>
             Crea un lead a mano. Solo el nombre del negocio es obligatorio.
           </SheetDescription>
         </header>
 
-        <div className="flex-1 space-y-5 overflow-y-auto px-6 py-5">
+        <div className="flex-1 space-y-4 overflow-y-auto px-[22px] py-5">
           <div className="space-y-1.5">
-            <Label htmlFor="nl-business">Negocio *</Label>
+            <Label htmlFor="nl-business">
+              Negocio <span className="text-[hsl(var(--violet))]">*</span>
+            </Label>
             <Input
               id="nl-business"
               autoFocus
@@ -270,15 +272,11 @@ export function NewLeadSheet() {
             {form.tags.length > 0 && (
               <div className="flex flex-wrap gap-1.5">
                 {form.tags.map((t) => (
-                  <span
-                    key={t}
-                    className="inline-flex items-center gap-1 rounded-full border border-border/60 bg-secondary/40 px-2 py-0.5 text-xs"
-                  >
+                  <span key={t} className="hx-tag-chip">
                     {t}
                     <button
                       type="button"
                       onClick={() => removeTag(t)}
-                      className="text-muted-foreground hover:text-foreground"
                       aria-label={`Quitar ${t}`}
                     >
                       <X className="size-3" />
@@ -302,7 +300,7 @@ export function NewLeadSheet() {
           </div>
         </div>
 
-        <footer className="flex items-center justify-end gap-2 border-t border-border/60 px-6 py-4">
+        <footer className="flex items-center justify-end gap-2 border-t border-border px-[22px] py-4">
           <Button variant="ghost" onClick={close} disabled={isPending}>
             Cancelar
           </Button>

@@ -88,7 +88,7 @@ export function Step3Confirm({
 
   if (summary) {
     return (
-      <div className="space-y-5 rounded-xl border border-border/60 bg-card/60 p-6">
+      <div className="space-y-5 rounded-xl border border-border bg-card/72 p-6">
         <div className="flex items-center gap-3">
           <CheckCircle2 className="size-7 text-emerald-300" />
           <div>
@@ -128,7 +128,7 @@ export function Step3Confirm({
   }
 
   return (
-    <div className="space-y-5 rounded-xl border border-border/60 bg-card/60 p-6">
+    <div className="space-y-5 rounded-xl border border-border bg-card/72 p-6">
       <div>
         <h3 className="text-sm font-medium">Listo para importar</h3>
         <p className="mt-1 text-sm text-muted-foreground">
@@ -143,7 +143,7 @@ export function Step3Confirm({
 
       {running && (
         <div>
-          <div className="h-2 overflow-hidden rounded-full bg-secondary/40">
+          <div className="h-2 overflow-hidden rounded-full bg-card-2/40">
             <div
               className="h-full bg-primary transition-all"
               style={{ width: `${(progress / validRows.length) * 100}%` }}

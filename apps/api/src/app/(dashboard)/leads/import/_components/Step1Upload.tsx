@@ -84,20 +84,27 @@ export function Step1Upload({ onParsed }: { onParsed: (parsed: ParsedFile) => vo
         if (file) void handleFile(file);
       }}
       className={cn(
-        'flex flex-col items-center justify-center gap-3 rounded-xl border-2 border-dashed border-border/70 bg-secondary/20 px-8 py-16 text-center transition-colors',
-        dragging && 'border-primary/70 bg-primary/5',
+        'flex flex-col items-center justify-center gap-4 rounded-xl border-2 border-dashed bg-card-2/40 px-8 py-16 text-center transition-colors',
+        dragging
+          ? 'border-[hsl(var(--violet))]/55 bg-[hsl(var(--violet))]/7'
+          : 'border-border-strong',
       )}
     >
-      <div className="rounded-full border border-border/60 bg-background p-3">
+      <div
+        className="grid size-14 place-items-center rounded-[13px] text-[hsl(var(--violet))]"
+        style={{
+          background: 'linear-gradient(135deg, hsl(var(--violet) / 0.18), hsl(var(--teal) / 0.18))',
+        }}
+      >
         {loading ? (
-          <Loader2 className="size-6 animate-spin text-muted-foreground" />
+          <Loader2 className="size-6 animate-spin" />
         ) : (
-          <FileSpreadsheet className="size-6 text-muted-foreground" />
+          <FileSpreadsheet className="size-6" />
         )}
       </div>
       <div>
-        <p className="text-sm font-medium">Arrastra tu CSV o XLSX</p>
-        <p className="text-xs text-muted-foreground">
+        <p className="text-[15px] font-semibold">Arrastra tu CSV o XLSX</p>
+        <p className="mt-1 text-xs text-muted-foreground">
           O usa el botón para elegirlo · máx 5 MB y {MAX_ROWS.toLocaleString('es-CO')} filas
         </p>
       </div>
