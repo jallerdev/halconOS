@@ -184,6 +184,62 @@
   }
 }
 
+/* Dropdown/menu enter — scale + translateY + opacity. */
+@keyframes hxMenuIn {
+  from {
+    opacity: 0;
+    transform: translateY(-4px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* Toast slide-in desde la derecha. */
+@keyframes hxToastIn {
+  from {
+    opacity: 0;
+    transform: translateX(28px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* Progress bar de toast — drena de scaleX 1 → 0 en duration del toast. */
+@keyframes hxToastBar {
+  from {
+    transform: scaleX(1);
+  }
+  to {
+    transform: scaleX(0);
+  }
+}
+
+/* Modal/dialog enter — scale 0.94 → 1. */
+@keyframes hxModalIn {
+  from {
+    opacity: 0;
+    transform: scale(0.94);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* Sheet slide-in desde la derecha. */
+@keyframes hxSheetIn {
+  from {
+    transform: translateX(100%);
+  }
+  to {
+    transform: none;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .hx-page,
   .hx-stagger > *,
@@ -369,4 +425,129 @@
 .act-item-new:hover {
   border-color: hsl(var(--teal) / 0.55);
   background: hsl(var(--teal) / 0.1);
+}
+
+/* ════════════════════════════════════════════════════════════════════════
+   Sheet stripe — accent gradient en el borde izquierdo del drawer.
+   Aplicar sobre el SheetContent (el ::before va dentro).
+   ════════════════════════════════════════════════════════════════════════ */
+.hx-sheet-stripe::before {
+  content: '';
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 2px;
+  background: linear-gradient(180deg, hsl(var(--violet)), hsl(var(--teal)));
+  opacity: 0.9;
+  pointer-events: none;
+}
+
+/* ════════════════════════════════════════════════════════════════════════
+   Modal icon box — bloque cuadrado con tone (danger / success / info).
+   Va arriba del título en AlertDialog.
+   ════════════════════════════════════════════════════════════════════════ */
+.hx-modal-ico {
+  width: 44px;
+  height: 44px;
+  border-radius: 13px;
+  display: grid;
+  place-items: center;
+  margin-bottom: 16px;
+}
+.hx-modal-ico-danger {
+  background: hsl(0 72% 56% / 0.14);
+  color: hsl(0 75% 65%);
+}
+.hx-modal-ico-success {
+  background: hsl(var(--teal) / 0.14);
+  color: hsl(var(--teal));
+}
+.hx-modal-ico-info {
+  background: hsl(var(--violet) / 0.14);
+  color: hsl(var(--violet));
+}
+
+/* ════════════════════════════════════════════════════════════════════════
+   Tag chip — para TagInput en NewLeadSheet.
+   ════════════════════════════════════════════════════════════════════════ */
+.hx-tag-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 26px;
+  padding: 0 4px 0 10px;
+  border-radius: 999px;
+  border: 1px solid hsl(var(--border-strong));
+  background: hsl(var(--card-2) / 0.6);
+  font-size: 12.5px;
+  color: hsl(var(--foreground));
+}
+.hx-tag-chip button {
+  display: grid;
+  place-items: center;
+  width: 18px;
+  height: 18px;
+  border-radius: 999px;
+  color: hsl(var(--muted-foreground));
+  transition: background 0.12s, color 0.12s;
+}
+.hx-tag-chip button:hover {
+  background: hsl(var(--accent));
+  color: hsl(var(--foreground));
+}
+
+/* ════════════════════════════════════════════════════════════════════════
+   Field — label + input con la estética del diseño Atrevida.
+   El .hx-field-input se aplica a Input/Textarea/Select trigger en sheets.
+   ════════════════════════════════════════════════════════════════════════ */
+.hx-field {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  margin-bottom: 16px;
+}
+.hx-field-label {
+  font-size: 12.5px;
+  font-weight: 550;
+  color: hsl(var(--foreground));
+}
+.hx-field-label .req {
+  color: hsl(var(--violet));
+  margin-left: 2px;
+}
+.hx-field-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+/* ════════════════════════════════════════════════════════════════════════
+   Map placeholder — para LocationCard / LeadPeek. Gradients radiales
+   violet/teal sobre un background grid de líneas sutiles.
+   ════════════════════════════════════════════════════════════════════════ */
+.hx-map-placeholder {
+  position: relative;
+  border-radius: var(--radius);
+  overflow: hidden;
+  background-color: hsl(var(--card-2));
+  background-image:
+    radial-gradient(circle at 30% 30%, hsl(var(--violet) / 0.2), transparent 50%),
+    radial-gradient(circle at 70% 70%, hsl(var(--teal) / 0.18), transparent 50%),
+    linear-gradient(hsl(var(--border) / 0.5) 1px, transparent 1px),
+    linear-gradient(90deg, hsl(var(--border) / 0.5) 1px, transparent 1px);
+  background-size: cover, cover, 24px 24px, 24px 24px;
+}
+
+/* ════════════════════════════════════════════════════════════════════════
+   Glow dot — para Settings GoogleConn cuando está conectado.
+   ════════════════════════════════════════════════════════════════════════ */
+.hx-glow-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  background: hsl(var(--teal));
+  box-shadow: 0 0 12px hsl(var(--teal) / 0.7);
+}
+.hx-glow-dot-off {
+  background: hsl(var(--muted-foreground));
+  box-shadow: none;
 }
