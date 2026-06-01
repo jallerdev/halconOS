@@ -13,7 +13,8 @@ import {
   Trash2,
 } from 'lucide-react';
 import Link from 'next/link';
-import { useMemo, useState } from 'react';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
+import { useCallback, useMemo, useState } from 'react';
 
 import { toast } from '~/hooks/use-toast';
 
@@ -54,14 +55,52 @@ import { trpc } from '~/lib/trpc';
 const PAGE_SIZE = 50;
 type Sort = 'recent' | 'rating' | 'reviews' | 'name' | 'score';
 
+const VALID_SORTS = ['recent', 'rating', 'reviews', 'name', 'score'] as const;
+
+function parseSort(v: string | null): Sort {
+  return (VALID_SORTS as readonly string[]).includes(v ?? '') ? (v as Sort) : 'score';
+}
+
 export function LeadsTable() {
   const utils = trpc.useUtils();
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
 
-  const [q, setQ] = useState('');
-  const [city, setCity] = useState<string | undefined>();
-  const [category, setCategory] = useState<string | undefined>();
-  const [sort, setSort] = useState<Sort>('score');
-  const [cursor, setCursor] = useState(0);
+  // Filtros persistidos en la URL — sobreviven a navegar a /leads/[id] y
+  // volver, refresh y bookmark. Reseteamos `cursor` cuando cambia cualquier
+  // filtro (no quieres quedarte en página 4 después de cambiar de ciudad).
+  const q = searchParams.get('q') ?? '';
+  const city = searchParams.get('city') ?? undefined;
+  const category = searchParams.get('category') ?? undefined;
+  const sort = parseSort(searchParams.get('sort'));
+  const cursor = Math.max(0, Number(searchParams.get('cursor') ?? 0) || 0);
+
+  // Patcheamos un set de keys en la URL en una sola operación (un solo
+  // router.replace). Pasar `null` borra la key del query string.
+  const patchParams = useCallback(
+    (patch: Record<string, string | null | undefined>) => {
+      const params = new URLSearchParams(searchParams.toString());
+      for (const [key, value] of Object.entries(patch)) {
+        if (value === null || value === undefined || value === '') {
+          params.delete(key);
+        } else {
+          params.set(key, value);
+        }
+      }
+      const query = params.toString();
+      router.replace(query ? `${pathname}?${query}` : pathname, { scroll: false });
+    },
+    [pathname, router, searchParams],
+  );
+
+  const setQ = (v: string) => patchParams({ q: v, cursor: null });
+  const setCity = (v: string | undefined) => patchParams({ city: v ?? null, cursor: null });
+  const setCategory = (v: string | undefined) =>
+    patchParams({ category: v ?? null, cursor: null });
+  const setSort = (v: Sort) => patchParams({ sort: v === 'score' ? null : v, cursor: null });
+  const setCursor = (v: number) => patchParams({ cursor: v > 0 ? String(v) : null });
+
   const [exporting, setExporting] = useState(false);
   const [peekId, setPeekId] = useState<string | null>(null);
   const [selected, setSelected] = useState<Set<string>>(new Set());
@@ -104,10 +143,10 @@ export function LeadsTable() {
     },
   });
 
-  const resetAnd = (fn: () => void) => {
-    setCursor(0);
-    fn();
-  };
+  // Los setters de filtro ya resetean el cursor internamente (un solo
+  // router.replace por interacción). Este wrapper queda como no-op por
+  // compat con los handlers que ya lo usan.
+  const resetAnd = (fn: () => void) => fn();
 
   const toggleOne = (id: string) =>
     setSelected((prev) => {
