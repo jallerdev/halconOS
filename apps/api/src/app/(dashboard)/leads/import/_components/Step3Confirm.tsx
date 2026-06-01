@@ -2,7 +2,7 @@
 
 import { CheckCircle2, ChevronLeft, Loader2, RotateCcw, UploadCloud } from 'lucide-react';
 import { useState } from 'react';
-import { toast } from 'sonner';
+import { toast } from '~/hooks/use-toast';
 
 import { Button } from '~/components/ui/button';
 import { trpc } from '~/lib/trpc';

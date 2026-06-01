@@ -2,7 +2,7 @@
 
 import { CalendarClock, ExternalLink, KanbanSquare, MapPin, Phone, Sparkles } from 'lucide-react';
 import Link from 'next/link';
-import { toast } from 'sonner';
+import { toast } from '~/hooks/use-toast';
 
 import { BusinessAvatar } from '~/components/business-avatar';
 import { ScoreBadge } from '~/components/score-badge';

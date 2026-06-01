@@ -2,7 +2,7 @@
 
 import { AlertTriangle, CalendarClock, CalendarDays, Star } from 'lucide-react';
 import Link from 'next/link';
-import { toast } from 'sonner';
+import { toast } from '~/hooks/use-toast';
 
 import type { inferRouterOutputs } from '@trpc/server';
 

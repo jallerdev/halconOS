@@ -2,7 +2,7 @@
 
 import { FileSpreadsheet, Loader2, Upload } from 'lucide-react';
 import { useRef, useState } from 'react';
-import { toast } from 'sonner';
+import { toast } from '~/hooks/use-toast';
 
 import { Button } from '~/components/ui/button';
 import { cn } from '~/lib/utils';

@@ -3,7 +3,7 @@
 import { Check, Copy, Eye, EyeOff, Loader2, Plus, Trash2, Video } from 'lucide-react';
 import { useSearchParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
-import { toast } from 'sonner';
+import { toast } from '~/hooks/use-toast';
 
 import { Button } from '~/components/ui/button';
 import {

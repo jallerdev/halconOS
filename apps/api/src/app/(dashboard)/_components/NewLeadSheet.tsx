@@ -2,7 +2,7 @@
 
 import { Loader2, Plus, X } from 'lucide-react';
 import { useEffect, useState } from 'react';
-import { toast } from 'sonner';
+import { toast } from '~/hooks/use-toast';
 
 import { LEAD_SOURCE, LEAD_STATUS } from '@halcon-os/shared/enums';
 

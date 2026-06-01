@@ -2,7 +2,7 @@
 
 import { Loader2, MessageCircle } from 'lucide-react';
 import { useState } from 'react';
-import { toast } from 'sonner';
+import { toast } from '~/hooks/use-toast';
 
 import { Button, type ButtonProps } from '~/components/ui/button';
 import { waLink } from '~/lib/leads-ui';

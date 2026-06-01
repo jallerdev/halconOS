@@ -17,7 +17,7 @@ import {
 } from 'lucide-react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
-import { toast } from 'sonner';
+import { toast } from '~/hooks/use-toast';
 
 import { BusinessAvatar } from '~/components/business-avatar';
 import { CopyButton } from '~/components/copy-button';

@@ -2,7 +2,7 @@
 
 import { CalendarPlus, Check, Copy, ExternalLink, Loader2, Video } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
-import { toast } from 'sonner';
+import { toast } from '~/hooks/use-toast';
 
 import { Button } from '~/components/ui/button';
 import { Combobox } from '~/components/ui/combobox';

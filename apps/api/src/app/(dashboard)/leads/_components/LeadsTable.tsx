@@ -15,7 +15,7 @@ import {
 import Link from 'next/link';
 import { useMemo, useState } from 'react';
 
-import { toast } from 'sonner';
+import { toast } from '~/hooks/use-toast';
 
 import { LEAD_STATUS as LEAD_STATUS_LIST, type LeadStatus } from '@halcon-os/shared/enums';
 import { BusinessAvatar } from '~/components/business-avatar';
