@@ -174,25 +174,45 @@ export const leadsRouter = router({
       const perColumn = input?.perColumn ?? 20;
       const owner = eq(leads.orgId, ctx.orgId);
 
+      // Para la columna NEW del kanban solo cuentan los leads "promovidos"
+      // (pipelinePromotedAt no nulo). El resto vive en /leads como inbox.
+      // Para los demás status el filtro de promoción es irrelevante.
+      const newColumnFilter = sql`${leads.pipelinePromotedAt} is not null`;
+
       const counts = await ctx.db
         .select({ status: leads.status, count: sql<number>`count(*)::int` })
         .from(leads)
-        .where(owner)
+        .where(
+          and(
+            owner,
+            sql`(${leads.status} <> 'NEW' or ${leads.pipelinePromotedAt} is not null)`,
+          ),
+        )
         .groupBy(leads.status);
       const countMap = Object.fromEntries(counts.map((c) => [c.status, c.count]));
 
+      // Aparte, el conteo de leads NEW que SIGUEN en el inbox (no promovidos).
+      // Lo expongo como `inboxCount` para que el banner del kanban sepa
+      // cuántos quedan sin mover.
+      const inboxRows = await ctx.db
+        .select({ inboxCount: sql<number>`count(*)::int` })
+        .from(leads)
+        .where(and(owner, eq(leads.status, 'NEW'), sql`${leads.pipelinePromotedAt} is null`));
+      const inboxCount = inboxRows[0]?.inboxCount ?? 0;
+
       const columns = await Promise.all(
         LEAD_STATUS.map(async (status) => {
+          const extraFilter = status === 'NEW' ? newColumnFilter : sql`true`;
           const items = await ctx.db
             .select({ ...getTableColumns(leads), score: scoreExpr })
             .from(leads)
-            .where(and(owner, eq(leads.status, status)))
+            .where(and(owner, eq(leads.status, status), extraFilter))
             .orderBy(sql`${scoreExpr} desc nulls last`)
             .limit(perColumn);
           return { status, count: countMap[status] ?? 0, items };
         }),
       );
-      return columns;
+      return { columns, inboxCount };
     }),
 
   // KPIs para las tarjetas del dashboard.
@@ -518,6 +538,35 @@ export const leadsRouter = router({
       const [updated] = await ctx.db
         .update(leads)
         .set({ status: input.status, updatedAt: new Date() })
+        .where(and(eq(leads.id, input.id), eq(leads.orgId, ctx.orgId)))
+        .returning();
+      if (!updated) throw new TRPCError({ code: 'NOT_FOUND' });
+      return updated;
+    }),
+
+  // Pasa un lead NEW del inbox al kanban (columna "Por contactar"). Solo
+  // sella el timestamp — el status sigue siendo NEW. Si el lead ya tiene
+  // otro status, este endpoint es idempotente (no hace nada útil pero no
+  // rompe).
+  promoteToPipeline: orgProcedure
+    .input(idSchema)
+    .mutation(async ({ ctx, input }) => {
+      const [updated] = await ctx.db
+        .update(leads)
+        .set({ pipelinePromotedAt: new Date(), updatedAt: new Date() })
+        .where(and(eq(leads.id, input.id), eq(leads.orgId, ctx.orgId)))
+        .returning();
+      if (!updated) throw new TRPCError({ code: 'NOT_FOUND' });
+      return updated;
+    }),
+
+  // Devuelve un lead del kanban al inbox. Solo limpia el timestamp.
+  removeFromPipeline: orgProcedure
+    .input(idSchema)
+    .mutation(async ({ ctx, input }) => {
+      const [updated] = await ctx.db
+        .update(leads)
+        .set({ pipelinePromotedAt: null, updatedAt: new Date() })
         .where(and(eq(leads.id, input.id), eq(leads.orgId, ctx.orgId)))
         .returning();
       if (!updated) throw new TRPCError({ code: 'NOT_FOUND' });

@@ -57,6 +57,13 @@
       "when": 1780121855832,
       "tag": "0007_wet_jazinda",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1780337055559,
+      "tag": "0008_lonely_chronomancer",
+      "breakpoints": true
     }
   ]
 }

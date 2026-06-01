@@ -49,9 +49,9 @@ export function KanbanBoard() {
       const prev = utils.leads.pipeline.getData({ perColumn: 25 });
       utils.leads.pipeline.setData({ perColumn: 25 }, (old) => {
         if (!old) return old;
-        type Item = (typeof old)[number]['items'][number];
+        type Item = (typeof old)['columns'][number]['items'][number];
         let moved: Item | undefined;
-        const stripped = old.map((col) => {
+        const stripped = old.columns.map((col) => {
           const found = col.items.find((i) => i.id === id);
           if (found) {
             moved = found;
@@ -61,11 +61,12 @@ export function KanbanBoard() {
         });
         if (!moved) return old;
         const movedCard: Item = { ...moved, status };
-        return stripped.map((col) =>
+        const columns = stripped.map((col) =>
           col.status === status
             ? { ...col, count: col.count + 1, items: [movedCard, ...col.items] }
             : col,
         );
+        return { ...old, columns };
       });
       return { prev };
     },
@@ -90,10 +91,6 @@ export function KanbanBoard() {
     const overId = e.over?.id as LeadStatus | undefined;
     const card = e.active.data.current?.card as Card | undefined;
     if (!overId || !card || card.status === overId) return;
-    // Safety: el kanban no muestra NEW, pero por si una columna acepta el
-    // drop con id='NEW' (no debería), bloqueamos manualmente la regresión
-    // a inbox para evitar que los leads se "pierdan" del tablero.
-    if (overId === 'NEW') return;
     updateStatus.mutate(
       { id: card.id, status: overId },
       { onSuccess: () => toast.success(`${card.businessName} → ${LEAD_STATUS_LABEL[overId]}`) },
@@ -104,18 +101,18 @@ export function KanbanBoard() {
     return <div className="p-10 text-sm text-muted-foreground">Cargando pipeline…</div>;
   }
 
-  // El kanban excluye el estado NEW deliberadamente — los leads nuevos
-  // viven en /leads (inbox) hasta que el usuario los promueve manualmente
-  // al pipeline desde la fila "Añadir al pipeline" (NEW → CONTACTED).
-  const pipelineStatuses = LEAD_STATUS.filter((s) => s !== 'NEW');
-  const newCount = data?.find((c) => c.status === 'NEW')?.count ?? 0;
+  // El kanban incluye TODOS los status. La columna NEW solo muestra leads
+  // que el usuario "promovió" manualmente desde /leads (inbox). Los leads
+  // NEW sin promover viven solo en /leads hasta que el usuario los mete
+  // al tablero con la acción "Añadir al pipeline".
+  const inboxCount = data?.inboxCount ?? 0;
 
   return (
     <DndContext sensors={sensors} onDragStart={onDragStart} onDragEnd={onDragEnd}>
-      {newCount > 0 && <NewInboxHint count={newCount} />}
+      {inboxCount > 0 && <NewInboxHint count={inboxCount} />}
       <div className="flex gap-3 overflow-x-auto pb-4">
-        {pipelineStatuses.map((status) => {
-          const col = data?.find((c) => c.status === status);
+        {LEAD_STATUS.map((status) => {
+          const col = data?.columns.find((c) => c.status === status);
           return (
             <Column
               key={status}
@@ -149,12 +146,15 @@ function Column({
   onPeek: (id: string) => void;
 }) {
   const { setNodeRef, isOver } = useDroppable({ id: status });
+  // En el contexto del kanban, "NEW" se llama "Por contactar" (queue
+  // curado por el usuario). En el resto del producto sigue siendo "Nuevo".
+  const label = status === 'NEW' ? 'Por contactar' : LEAD_STATUS_LABEL[status];
   return (
     <div className="flex w-72 shrink-0 flex-col">
       <div className="mb-2 flex items-center justify-between px-1">
         <div className="flex items-center gap-2">
           <span className={`size-2 rounded-full ${STATUS_HUE[status].dot}`} />
-          <span className="text-sm font-medium">{LEAD_STATUS_LABEL[status]}</span>
+          <span className="text-sm font-medium">{label}</span>
         </div>
         <span className="rounded-full bg-muted px-2 py-0.5 font-mono text-[11px] text-muted-foreground">
           {count.toLocaleString('es-CO')}

@@ -116,6 +116,14 @@ export function LeadsTable() {
       utils.leads.stats.invalidate();
     },
   });
+  const promote = trpc.leads.promoteToPipeline.useMutation({
+    onSuccess: () => {
+      utils.leads.search.invalidate();
+      utils.leads.pipeline.invalidate();
+      toast.success('Añadido al pipeline');
+    },
+    onError: (e) => toast.error(e.message),
+  });
   const del = trpc.leads.delete.useMutation({
     onSuccess: () => {
       utils.leads.search.invalidate();
@@ -398,12 +406,7 @@ export function LeadsTable() {
                         <RowActions
                           id={l.id}
                           status={l.status}
-                          onAddToPipeline={() =>
-                            updateStatus.mutate(
-                              { id: l.id, status: 'CONTACTED' },
-                              { onSuccess: () => toast.success('Añadido al pipeline') },
-                            )
-                          }
+                          onAddToPipeline={() => promote.mutate({ id: l.id })}
                           onDelete={() => setPendingDelete({ id: l.id, name: l.businessName })}
                         />
                       </div>

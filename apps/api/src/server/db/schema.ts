@@ -121,6 +121,12 @@ export const leads = agencySchema.table(
     nextFollowUpAt: timestamp('next_follow_up_at', { withTimezone: true }),
     lastContactedAt: timestamp('last_contacted_at', { withTimezone: true }),
 
+    // Cuándo el usuario decidió mover este lead del inbox al pipeline kanban.
+    // Sólo aplica a leads NEW: si está poblado, el lead aparece en la columna
+    // "Por contactar" del kanban; si es null, vive solo en /leads (inbox).
+    // Para leads con status != NEW este campo es irrelevante.
+    pipelinePromotedAt: timestamp('pipeline_promoted_at', { withTimezone: true }),
+
     projectId: uuid('project_id'),
     convertedAt: timestamp('converted_at', { withTimezone: true }),
 
