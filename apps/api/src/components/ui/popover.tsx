@@ -5,6 +5,7 @@ import * as React from 'react';
 
 import { cn } from '~/lib/utils';
 
+// Atrevida customizado — match dropdown-menu (bg-card/98 + blur + shadow-pop).
 const Popover = PopoverPrimitive.Root;
 const PopoverTrigger = PopoverPrimitive.Trigger;
 
@@ -18,7 +19,7 @@ const PopoverContent = React.forwardRef<
       align={align}
       sideOffset={sideOffset}
       className={cn(
-        'z-50 w-64 rounded-lg border border-border/70 bg-popover/95 p-1 text-popover-foreground shadow-lg shadow-black/40 backdrop-blur-xl outline-none',
+        'z-50 w-64 rounded-md border border-border-strong bg-card/98 p-1.5 text-foreground shadow-pop backdrop-blur-[24px] outline-none',
         'data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95',
         className,
       )}

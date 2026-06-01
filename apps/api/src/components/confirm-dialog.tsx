@@ -1,5 +1,6 @@
 'use client';
 
+import { AlertTriangle, HelpCircle } from 'lucide-react';
 import { useState, type ReactNode } from 'react';
 
 import {
@@ -27,6 +28,8 @@ type ConfirmDialogProps = {
   disabled?: boolean;
 };
 
+// ConfirmDialog — wrapper de AlertDialog con el modal-icon-box arriba del
+// título (handoff .modal-ico). Danger → rosa, default → violet.
 export function ConfirmDialog({
   trigger,
   title,
@@ -45,6 +48,8 @@ export function ConfirmDialog({
     setOpen(false);
   };
 
+  const Icon = destructive ? AlertTriangle : HelpCircle;
+
   return (
     <AlertDialog open={open} onOpenChange={setOpen}>
       <AlertDialogTrigger asChild disabled={disabled}>
@@ -52,6 +57,9 @@ export function ConfirmDialog({
       </AlertDialogTrigger>
       <AlertDialogContent>
         <AlertDialogHeader>
+          <span className={cn('hx-modal-ico', destructive ? 'hx-modal-ico-danger' : 'hx-modal-ico-info')}>
+            <Icon className="size-[22px]" />
+          </span>
           <AlertDialogTitle>{title}</AlertDialogTitle>
           {description && <AlertDialogDescription>{description}</AlertDialogDescription>}
         </AlertDialogHeader>
