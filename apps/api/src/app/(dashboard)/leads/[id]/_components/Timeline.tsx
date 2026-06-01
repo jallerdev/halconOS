@@ -1,7 +1,10 @@
 import { CheckCircle2, FileText, Flag, MapPin, UserPlus } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 
-type Event = { icon: LucideIcon; title: string; date: Date | null; tone: string };
+// Timeline — eventos del lead a lo largo del tiempo. Cada evento tiene un
+// dot circular con tone propio (sky/violet/amber/teal). Match con el
+// .timeline / .tl-item del handoff.
+type Event = { icon: LucideIcon; title: string; date: Date | null; bg: string; text: string };
 
 export function Timeline({
   createdAt,
@@ -23,25 +26,29 @@ export function Timeline({
       icon: MapPin,
       title: 'Extraído de Google Maps',
       date: d(scrapedAt),
-      tone: 'text-sky-400 bg-sky-500/10',
+      bg: 'bg-sky-500/15',
+      text: 'text-sky-400',
     },
     {
       icon: UserPlus,
       title: 'Lead agregado al pipeline',
       date: d(createdAt),
-      tone: 'text-violet-400 bg-violet-500/10',
+      bg: 'bg-[hsl(var(--violet))]/15',
+      text: 'text-[hsl(var(--violet))]',
     },
     status !== 'NEW' && {
       icon: Flag,
       title: 'Estado actualizado',
       date: d(updatedAt),
-      tone: 'text-amber-400 bg-amber-500/10',
+      bg: 'bg-amber-500/15',
+      text: 'text-amber-400',
     },
     convertedAt && {
       icon: CheckCircle2,
       title: 'Convertido a proyecto',
       date: d(convertedAt),
-      tone: 'text-emerald-400 bg-emerald-500/10',
+      bg: 'bg-[hsl(var(--teal))]/15',
+      text: 'text-[hsl(var(--teal))]',
     },
   ].filter(Boolean) as Event[];
 
@@ -51,16 +58,16 @@ export function Timeline({
       : '—';
 
   return (
-    <ol className="relative ml-3 border-l border-border/60">
+    <ol className="relative ml-3 border-l border-border">
       {events.map((e, i) => (
         <li key={i} className="mb-6 ml-6 last:mb-0">
           <span
-            className={`absolute -left-3 flex size-6 items-center justify-center rounded-full ring-4 ring-background ${e.tone}`}
+            className={`absolute -left-3 grid size-6 place-items-center rounded-full ring-4 ring-card ${e.bg} ${e.text}`}
           >
             <e.icon className="size-3" />
           </span>
           <div className="flex flex-col">
-            <span className="text-sm font-medium text-foreground">{e.title}</span>
+            <span className="text-[13.5px] font-semibold text-foreground">{e.title}</span>
             <span className="text-xs text-muted-foreground">{fmt(e.date)}</span>
           </div>
         </li>

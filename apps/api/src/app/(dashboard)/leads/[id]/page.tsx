@@ -3,35 +3,39 @@
 import {
   Building2,
   ChevronRight,
+  DollarSign,
   FileText,
   Globe,
-  History,
   Loader2,
   Mail,
   MapPin,
-  Paperclip,
   Phone,
   Sparkles,
   Star,
+  Tag,
+  TrendingUp,
 } from 'lucide-react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
-
 import { toast } from 'sonner';
 
 import { BusinessAvatar } from '~/components/business-avatar';
+import { CopyButton } from '~/components/copy-button';
 import { ScoreBadge } from '~/components/score-badge';
 import { StatusSelect } from '~/components/status-select';
 import { WhatsAppButton } from '~/components/whatsapp-button';
 import { Button } from '~/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '~/components/ui/card';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '~/components/ui/tabs';
 import { trpc } from '~/lib/trpc';
 import { AiPanel } from './_components/AiPanel';
 import { MeetingsPanel } from './_components/MeetingsPanel';
 import { NotesPanel } from './_components/NotesPanel';
 import { Timeline } from './_components/Timeline';
 
+// Lead Detail — layout de 2 columnas según el design handoff:
+//   • Sidebar izquierdo (340px): Contacto / Ubicación / Datos del negocio
+//   • Main: Signals (4-col) + Reuniones + Notas + Timeline + AI Panel
+// SIN tabs — todas las secciones viven apiladas (decisión del usuario).
 export default function LeadDetailPage() {
   const { id } = useParams<{ id: string }>();
   const utils = trpc.useUtils();
@@ -58,21 +62,20 @@ export default function LeadDetailPage() {
   });
 
   if (isLoading) {
-    return <div className="px-6 py-10 text-muted-foreground lg:px-10">Cargando…</div>;
+    return (
+      <div className="flex items-center justify-center px-6 py-20 text-muted-foreground">
+        <Loader2 className="size-5 animate-spin" />
+      </div>
+    );
   }
   if (!lead) {
     return <div className="px-6 py-10 text-muted-foreground lg:px-10">Lead no encontrado.</div>;
   }
 
-
   return (
-    <div className="mx-auto max-w-[1400px] px-6 py-8 lg:px-10">
+    <div className="hx-page mx-auto max-w-[1480px] px-6 py-8 lg:px-10">
       {/* Breadcrumbs */}
       <nav className="flex items-center gap-1.5 text-sm text-muted-foreground">
-        <Link href="/leads" className="transition-colors hover:text-foreground">
-          Inicio
-        </Link>
-        <ChevronRight className="size-3.5" />
         <Link href="/leads" className="transition-colors hover:text-foreground">
           Leads
         </Link>
@@ -80,13 +83,15 @@ export default function LeadDetailPage() {
         <span className="truncate text-foreground">{lead.businessName}</span>
       </nav>
 
-      {/* Header del perfil */}
+      {/* Header del perfil — avatar 56x56 + nombre + meta + actions */}
       <header className="mt-5 flex flex-wrap items-start justify-between gap-4">
         <div className="flex items-start gap-4">
-          <BusinessAvatar name={lead.businessName} size="md" className="size-14 rounded-xl text-base" />
-          <div>
+          <BusinessAvatar name={lead.businessName} size="lg" />
+          <div className="min-w-0">
             <div className="flex flex-wrap items-center gap-3">
-              <h1 className="text-2xl font-semibold tracking-tight">{lead.businessName}</h1>
+              <h1 className="text-[28px] font-bold leading-tight tracking-[-0.025em]">
+                {lead.businessName}
+              </h1>
               <StatusSelect
                 value={lead.status}
                 onChange={(s) =>
@@ -96,7 +101,7 @@ export default function LeadDetailPage() {
                   )
                 }
               />
-              <ScoreBadge score={lead.score} />
+              <ScoreBadge score={lead.score} size="md" />
             </div>
             <div className="mt-1.5 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-muted-foreground">
               {lead.category && <span>{lead.category}</span>}
@@ -147,58 +152,56 @@ export default function LeadDetailPage() {
         </div>
       </header>
 
-      {/* Grid 2 columnas */}
-      <div className="mt-8 grid grid-cols-1 gap-6 lg:grid-cols-3">
-        {/* Columna izquierda: información */}
-        <div className="space-y-6 lg:col-span-1">
+      {/* Signals — 4 boxes con métricas clave del lead */}
+      <Signals
+        score={lead.score}
+        rating={lead.googleRating}
+        reviewCount={lead.reviewCount}
+        hasWebsite={lead.hasWebsite ?? false}
+      />
+
+      {/* Grid 2 columnas — sidebar (Contacto/Ubicación/Datos) + main (paneles) */}
+      <div className="mt-8 grid grid-cols-1 gap-6 lg:grid-cols-[340px_1fr]">
+        <aside className="space-y-4">
+          {/* Contacto */}
           <Card>
             <CardHeader>
-              <CardTitle className="text-sm">Contacto</CardTitle>
+              <CardTitle>Contacto</CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
-              <InfoRow icon={Phone} label="Teléfono" value={lead.phone ?? '—'} mono />
-              <InfoRow icon={Phone} label="Tel. internacional" value={lead.phoneIntl ?? '—'} mono />
-              <InfoRow icon={Mail} label="Email" value={lead.email ?? '—'} />
-              <div className="flex flex-wrap gap-2 pt-1">
-                <WhatsAppButton
-                  leadId={lead.id}
-                  phone={lead.phone}
-                  phoneIntl={lead.phoneIntl}
-                  aiFirstMessage={lead.aiFirstMessage}
-                  businessName={lead.businessName}
-                />
-                {lead.websiteUrl && (
-                  <Button size="sm" variant="secondary" asChild>
-                    <a href={lead.websiteUrl} target="_blank" rel="noreferrer">
-                      <Globe className="size-4" /> Web
-                    </a>
-                  </Button>
-                )}
-              </div>
+              <CopyableRow icon={Phone} label="Teléfono" value={lead.phone} mono />
+              <CopyableRow icon={Phone} label="Internacional" value={lead.phoneIntl} mono />
+              <CopyableRow icon={Mail} label="Email" value={lead.email} />
+              {lead.websiteUrl && (
+                <div className="flex items-center gap-3 pt-1">
+                  <Globe className="size-4 shrink-0 text-muted-foreground" />
+                  <a
+                    href={lead.websiteUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="truncate text-[13px] text-[hsl(var(--violet))] hover:underline"
+                  >
+                    {lead.websiteUrl}
+                  </a>
+                </div>
+              )}
             </CardContent>
           </Card>
 
+          {/* Ubicación + mapa placeholder con grid + gradients radiales */}
           <Card>
             <CardHeader>
-              <CardTitle className="text-sm">Ubicación</CardTitle>
+              <CardTitle>Ubicación</CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
-              <InfoRow icon={MapPin} label="Dirección" value={lead.address ?? '—'} />
-              <InfoRow icon={Building2} label="Ciudad" value={lead.city ?? '—'} />
-              {/* Placeholder mapa */}
+              <CopyableRow icon={MapPin} label="Dirección" value={lead.address} />
+              <CopyableRow icon={Building2} label="Ciudad" value={lead.city} />
               <a
                 href={lead.mapsUrl ?? '#'}
                 target="_blank"
                 rel="noreferrer"
-                className="group relative block h-32 overflow-hidden rounded-lg border border-border/60 bg-card/60"
+                className="hx-map-placeholder group relative block h-32"
               >
-                <div
-                  className="absolute inset-0 opacity-40"
-                  style={{
-                    backgroundImage:
-                      'radial-gradient(circle at 30% 40%, hsl(252 100% 68% / 0.3), transparent 50%), radial-gradient(circle at 70% 70%, hsl(200 100% 60% / 0.2), transparent 50%)',
-                  }}
-                />
                 <div className="absolute inset-0 flex items-center justify-center gap-2 text-sm text-muted-foreground transition-colors group-hover:text-foreground">
                   <MapPin className="size-4" /> Ver en Google Maps
                 </div>
@@ -206,75 +209,52 @@ export default function LeadDetailPage() {
             </CardContent>
           </Card>
 
+          {/* Datos del negocio */}
           <Card>
             <CardHeader>
-              <CardTitle className="text-sm">Datos del negocio</CardTitle>
+              <CardTitle>Datos del negocio</CardTitle>
             </CardHeader>
-            <CardContent className="space-y-3">
-              <InfoRow icon={Star} label="Rating" value={lead.googleRating ? `${lead.googleRating} / 5` : '—'} mono />
-              <InfoRow icon={FileText} label="Reseñas" value={lead.reviewCount?.toLocaleString('es-CO') ?? '—'} mono />
-              <InfoRow icon={Globe} label="Tiene web" value={lead.hasWebsite ? 'Sí' : 'No'} />
-              <InfoRow icon={Building2} label="Nivel de precio" value={lead.priceLevel ?? '—'} />
+            <CardContent className="grid grid-cols-2 gap-3">
+              <DataCell label="Rating" value={lead.googleRating ?? '—'} mono />
+              <DataCell
+                label="Reseñas"
+                value={lead.reviewCount?.toLocaleString('es-CO') ?? '—'}
+                mono
+              />
+              <DataCell label="Tiene web" value={lead.hasWebsite ? 'Sí' : 'No'} />
+              <DataCell label="Precio" value={lead.priceLevel ?? '—'} />
             </CardContent>
           </Card>
-        </div>
+        </aside>
 
-        {/* Columna derecha: gestión y actividad */}
-        <div className="lg:col-span-2">
+        {/* Main — 4 paneles apilados (cada uno se renderiza como Card autocontenida) */}
+        <div className="space-y-4">
+          <MeetingsPanel
+            leadId={lead.id}
+            businessName={lead.businessName}
+            leadEmail={lead.email}
+          />
+          <NotesPanel leadId={lead.id} />
           <Card>
-            <CardContent className="pt-5">
-              <Tabs defaultValue="notes">
-                <TabsList>
-                  <TabsTrigger value="notes">
-                    <FileText className="size-4" /> Notas
-                  </TabsTrigger>
-                  <TabsTrigger value="timeline">
-                    <History className="size-4" /> Historial
-                  </TabsTrigger>
-                  <TabsTrigger value="files">
-                    <Paperclip className="size-4" /> Archivos
-                  </TabsTrigger>
-                </TabsList>
-
-                <TabsContent value="notes">
-                  <NotesPanel leadId={lead.id} />
-                </TabsContent>
-                <TabsContent value="timeline">
-                  <Timeline
-                    createdAt={lead.createdAt}
-                    updatedAt={lead.updatedAt}
-                    convertedAt={lead.convertedAt}
-                    scrapedAt={lead.scrapedAt}
-                    status={lead.status}
-                  />
-                </TabsContent>
-                <TabsContent value="files">
-                  <div className="flex flex-col items-center justify-center rounded-lg border border-dashed border-border/60 py-12 text-center">
-                    <Paperclip className="size-5 text-muted-foreground" />
-                    <p className="mt-3 text-sm font-medium">Sin archivos</p>
-                    <p className="mt-1 text-sm text-muted-foreground">
-                      Próximamente: adjunta propuestas y contratos.
-                    </p>
-                  </div>
-                </TabsContent>
-              </Tabs>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Tag className="size-4 text-[hsl(var(--violet))]" /> Historial
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <Timeline
+                createdAt={lead.createdAt}
+                updatedAt={lead.updatedAt}
+                convertedAt={lead.convertedAt}
+                scrapedAt={lead.scrapedAt}
+                status={lead.status}
+              />
             </CardContent>
           </Card>
-
-          {/* Reuniones */}
-          <div className="mt-6">
-            <MeetingsPanel
-              leadId={lead.id}
-              businessName={lead.businessName}
-              leadEmail={lead.email}
-            />
-          </div>
-
-          {/* IA */}
-          <Card className="mt-6">
+          <Card>
             <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-sm">
-                <Sparkles className="size-4 text-primary" /> Estrategia de venta (IA)
+              <CardTitle className="flex items-center gap-2">
+                <Sparkles className="size-4 text-[hsl(var(--violet))]" /> Estrategia de venta · IA
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -287,7 +267,50 @@ export default function LeadDetailPage() {
   );
 }
 
-function InfoRow({
+// ─────────────────────── Signals ───────────────────────
+
+function Signals({
+  score,
+  rating,
+  reviewCount,
+  hasWebsite,
+}: {
+  score: number | null;
+  rating: string | null;
+  reviewCount: number | null;
+  hasWebsite: boolean;
+}) {
+  const items = [
+    { label: 'Score', value: score?.toString() ?? '—', icon: TrendingUp },
+    { label: 'Rating', value: rating ?? '—', icon: Star },
+    { label: 'Reseñas', value: reviewCount?.toLocaleString('es-CO') ?? '—', icon: FileText },
+    { label: 'Sitio web', value: hasWebsite ? 'Sí' : 'No', icon: Globe },
+  ];
+  return (
+    <div className="hx-stagger mt-7 grid grid-cols-2 gap-3 sm:grid-cols-4">
+      {items.map(({ label, value, icon: Icon }) => (
+        <div
+          key={label}
+          className="hx-lift-sm flex items-center gap-3 rounded-xl border border-border bg-card/72 px-4 py-3 backdrop-blur-xl"
+        >
+          <span className="grid size-9 shrink-0 place-items-center rounded-[10px] bg-[hsl(var(--teal))]/14 text-[hsl(var(--teal))]">
+            <Icon className="size-4" />
+          </span>
+          <div className="min-w-0">
+            <div className="text-[10px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">
+              {label}
+            </div>
+            <div className="truncate font-mono text-base font-bold tabular-nums">{value}</div>
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+// ─────────────────────── Copyable row ───────────────────────
+
+function CopyableRow({
   icon: Icon,
   label,
   value,
@@ -295,17 +318,44 @@ function InfoRow({
 }: {
   icon: import('lucide-react').LucideIcon;
   label: string;
-  value: string;
+  value: string | null;
   mono?: boolean;
 }) {
   return (
-    <div className="flex items-start gap-3">
+    <div className="group flex items-start gap-3">
       <Icon className="mt-0.5 size-4 shrink-0 text-muted-foreground" />
-      <div className="min-w-0">
-        <div className="text-xs text-muted-foreground">{label}</div>
-        <div className={`truncate text-sm text-foreground ${mono ? 'font-mono' : ''}`}>{value}</div>
+      <div className="min-w-0 flex-1">
+        <div className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
+          {label}
+        </div>
+        <div className={`truncate text-[13px] text-foreground ${mono ? 'font-mono' : ''}`}>
+          {value ?? '—'}
+        </div>
       </div>
+      {value && <CopyButton value={value} label={`Copiar ${label.toLowerCase()}`} />}
     </div>
   );
 }
 
+// ─────────────────────── Data cell (grid 2x2) ───────────────────────
+
+function DataCell({
+  label,
+  value,
+  mono,
+}: {
+  label: string;
+  value: string | number;
+  mono?: boolean;
+}) {
+  return (
+    <div className="rounded-md border border-border bg-card-2/40 px-3 py-2.5">
+      <div className="text-[10px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">
+        {label}
+      </div>
+      <div className={`mt-0.5 text-[13px] text-foreground ${mono ? 'font-mono tabular-nums' : ''}`}>
+        {value}
+      </div>
+    </div>
+  );
+}

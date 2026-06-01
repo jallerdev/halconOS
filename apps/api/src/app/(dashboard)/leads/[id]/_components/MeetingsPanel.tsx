@@ -60,8 +60,8 @@ export function MeetingsPanel({
     <>
       <Card>
         <CardHeader className="flex flex-row items-center justify-between">
-          <CardTitle className="flex items-center gap-2 text-sm">
-            <Video className="size-4 text-primary" /> Reuniones
+          <CardTitle className="flex items-center gap-2">
+            <Video className="size-4 text-[hsl(var(--violet))]" /> Reuniones
           </CardTitle>
           <Button size="sm" onClick={() => setOpen(true)}>
             <CalendarPlus /> Agendar
@@ -77,20 +77,28 @@ export function MeetingsPanel({
               Aún no hay reuniones. Agenda la primera con Google Meet.
             </p>
           ) : (
-            <ul className="divide-y divide-border/60">
+            <ul className="hx-stagger space-y-2">
               {[...upcoming, ...past].map((m) => {
                 const isPast = m.startsAt && new Date(m.startsAt).getTime() < now;
                 return (
-                  <li key={m.id} className="flex items-start gap-3 py-3">
+                  <li
+                    key={m.id}
+                    className="hx-lift-sm flex items-start gap-3 rounded-md border border-border bg-card-2/40 p-3 transition-colors hover:border-[hsl(var(--violet))]/45 hover:bg-[hsl(var(--violet))]/6"
+                  >
+                    <span className="grid size-[34px] shrink-0 place-items-center rounded-[10px] bg-[hsl(var(--violet))]/16 text-[hsl(var(--violet))]">
+                      <Video className="size-[17px]" />
+                    </span>
                     <div className="min-w-0 flex-1">
-                      <p className="truncate text-sm font-medium">{m.title}</p>
-                      <p className="mt-0.5 text-xs text-muted-foreground">
-                        {fmtRange(m.startsAt, m.endsAt)}
+                      <p className="flex items-center gap-2 truncate text-[13.5px] font-semibold">
+                        {m.title}
                         {isPast && (
-                          <span className="ml-2 rounded-full bg-muted px-1.5 text-[10px] uppercase tracking-wide">
+                          <span className="rounded-full bg-muted px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
                             Pasada
                           </span>
                         )}
+                      </p>
+                      <p className="mt-0.5 text-xs text-muted-foreground">
+                        {fmtRange(m.startsAt, m.endsAt)}
                       </p>
                       {m.attendees.length > 0 && (
                         <p className="mt-1 truncate text-xs text-muted-foreground">

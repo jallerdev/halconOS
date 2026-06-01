@@ -40,11 +40,12 @@ export function AiPanel({ lead }: { lead: LeadLike }) {
         {TOOLS.map((t) => (
           <button
             key={t.kind}
+            type="button"
             onClick={() => setActive(t.kind)}
-            className={`inline-flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-sm transition-colors ${
+            className={`hx-press inline-flex items-center gap-1.5 rounded-md border px-3 py-1.5 text-[13px] font-medium transition-colors ${
               active === t.kind
-                ? 'border-primary/40 bg-primary/10 text-foreground'
-                : 'border-border/60 text-muted-foreground hover:bg-accent/50 hover:text-foreground'
+                ? 'border-[hsl(var(--violet))]/45 bg-[hsl(var(--violet))]/12 text-foreground'
+                : 'border-border text-muted-foreground hover:bg-accent hover:text-foreground'
             }`}
           >
             <t.icon className="size-4" />
@@ -81,9 +82,9 @@ function ToolContent({
   const hasContent = blocks.some((b) => b.body);
 
   return (
-    <div className="rounded-lg border border-border/60 bg-secondary/20 p-4">
+    <div className="rounded-md border border-border bg-card-2/40 p-4">
       {error && (
-        <div className="mb-3 rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-xs text-destructive">
+        <div className="mb-3 rounded-md border border-rose-500/30 bg-rose-500/10 px-3 py-2 text-xs text-rose-300">
           {error}
         </div>
       )}
@@ -95,12 +96,14 @@ function ToolContent({
               b.body && (
                 <div key={b.title} className="group">
                   <div className="mb-1 flex items-center justify-between">
-                    <span className="text-xs font-medium uppercase tracking-wide text-primary">
+                    <span className="text-[11px] font-semibold uppercase tracking-[0.06em] text-[hsl(var(--violet))]">
                       {b.title}
                     </span>
                     <CopyButton text={b.body} />
                   </div>
-                  <p className="whitespace-pre-wrap text-sm text-muted-foreground">{b.body}</p>
+                  <p className="whitespace-pre-wrap text-[13.5px] leading-[1.55] text-muted-foreground">
+                    {b.body}
+                  </p>
                 </div>
               ),
           )}
