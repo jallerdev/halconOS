@@ -5,6 +5,7 @@ import {
   ArrowUpDown,
   Download,
   Eye,
+  Inbox,
   KanbanSquare,
   MoreVertical,
   Pencil,
@@ -124,6 +125,14 @@ export function LeadsTable() {
     },
     onError: (e) => toast.error(e.message),
   });
+  const removeFromPipeline = trpc.leads.removeFromPipeline.useMutation({
+    onSuccess: () => {
+      utils.leads.search.invalidate();
+      utils.leads.pipeline.invalidate();
+      toast.success('Sacado del pipeline');
+    },
+    onError: (e) => toast.error(e.message),
+  });
   const del = trpc.leads.delete.useMutation({
     onSuccess: () => {
       utils.leads.search.invalidate();
@@ -149,6 +158,22 @@ export function LeadsTable() {
       setSelected(new Set());
       toast.success(`${r.deleted} leads eliminados`);
     },
+  });
+  const bulkPromote = trpc.leads.bulkPromoteToPipeline.useMutation({
+    onSuccess: (r) => {
+      invalidateAll();
+      setSelected(new Set());
+      toast.success(`${r.updated} ${r.updated === 1 ? 'lead añadido' : 'leads añadidos'} al pipeline`);
+    },
+    onError: (e) => toast.error(e.message),
+  });
+  const bulkRemove = trpc.leads.bulkRemoveFromPipeline.useMutation({
+    onSuccess: (r) => {
+      invalidateAll();
+      setSelected(new Set());
+      toast.success(`${r.updated} ${r.updated === 1 ? 'lead sacado' : 'leads sacados'} del pipeline`);
+    },
+    onError: (e) => toast.error(e.message),
   });
 
   // Los setters de filtro ya resetean el cursor internamente (un solo
@@ -178,6 +203,18 @@ export function LeadsTable() {
   const items = search.data?.items ?? [];
   const pageStart = total === 0 ? 0 : cursor + 1;
   const pageEnd = Math.min(cursor + PAGE_SIZE, total);
+
+  // Para los botones bulk "Añadir/Quitar del pipeline" necesitamos saber
+  // qué leads seleccionados son NEW no-promovidos vs NEW promovidos. Solo
+  // contamos lo visible (la página actual); leads en otras páginas que
+  // estén seleccionados se procesan pero no contribuyen al label/count.
+  const selectedLeads = items.filter((l) => selected.has(l.id));
+  const promotableIds = selectedLeads
+    .filter((l) => l.status === 'NEW' && l.pipelinePromotedAt == null)
+    .map((l) => l.id);
+  const demotableIds = selectedLeads
+    .filter((l) => l.status === 'NEW' && l.pipelinePromotedAt != null)
+    .map((l) => l.id);
 
   const allOnPageSelected = items.length > 0 && items.every((l) => selected.has(l.id));
   const toggleAllOnPage = () =>
@@ -279,6 +316,28 @@ export function LeadsTable() {
               ))}
             </DropdownMenuContent>
           </DropdownMenu>
+          {promotableIds.length > 0 && (
+            <Button
+              variant="secondary"
+              size="sm"
+              disabled={bulkPromote.isPending}
+              onClick={() => bulkPromote.mutate({ ids: promotableIds })}
+            >
+              <KanbanSquare className="size-4" />
+              Añadir al pipeline ({promotableIds.length})
+            </Button>
+          )}
+          {demotableIds.length > 0 && (
+            <Button
+              variant="ghost"
+              size="sm"
+              disabled={bulkRemove.isPending}
+              onClick={() => bulkRemove.mutate({ ids: demotableIds })}
+            >
+              <Inbox className="size-4" />
+              Sacar del pipeline ({demotableIds.length})
+            </Button>
+          )}
           <ConfirmDialog
             title={`¿Eliminar ${selected.size} ${selected.size === 1 ? 'lead' : 'leads'}?`}
             description="Esta acción no se puede deshacer. Los leads seleccionados se borrarán permanentemente."
@@ -406,7 +465,9 @@ export function LeadsTable() {
                         <RowActions
                           id={l.id}
                           status={l.status}
+                          inPipeline={l.pipelinePromotedAt != null}
                           onAddToPipeline={() => promote.mutate({ id: l.id })}
+                          onRemoveFromPipeline={() => removeFromPipeline.mutate({ id: l.id })}
                           onDelete={() => setPendingDelete({ id: l.id, name: l.businessName })}
                         />
                       </div>
@@ -508,12 +569,16 @@ function SortableHead({
 function RowActions({
   id,
   status,
+  inPipeline,
   onAddToPipeline,
+  onRemoveFromPipeline,
   onDelete,
 }: {
   id: string;
   status: LeadStatus;
+  inPipeline: boolean;
   onAddToPipeline: () => void;
+  onRemoveFromPipeline: () => void;
   onDelete: () => void;
 }) {
   return (
@@ -537,9 +602,15 @@ function RowActions({
         {status === 'NEW' && (
           <>
             <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={onAddToPipeline}>
-              <KanbanSquare /> Añadir al pipeline
-            </DropdownMenuItem>
+            {inPipeline ? (
+              <DropdownMenuItem onClick={onRemoveFromPipeline}>
+                <Inbox /> Sacar del pipeline
+              </DropdownMenuItem>
+            ) : (
+              <DropdownMenuItem onClick={onAddToPipeline}>
+                <KanbanSquare /> Añadir al pipeline
+              </DropdownMenuItem>
+            )}
           </>
         )}
         <DropdownMenuSeparator />

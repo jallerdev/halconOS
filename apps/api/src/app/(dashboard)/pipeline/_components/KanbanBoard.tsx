@@ -3,7 +3,10 @@
 import {
   DndContext,
   DragOverlay,
+  KeyboardSensor,
   PointerSensor,
+  TouchSensor,
+  closestCorners,
   useSensor,
   useSensors,
   type DragEndEvent,
@@ -11,7 +14,8 @@ import {
 } from '@dnd-kit/core';
 import { useDroppable } from '@dnd-kit/core';
 import { useDraggable } from '@dnd-kit/core';
-import { ArrowRight, Inbox, Star } from 'lucide-react';
+import { restrictToWindowEdges } from '@dnd-kit/modifiers';
+import { ArrowRight, Inbox, Star, X } from 'lucide-react';
 import Link from 'next/link';
 import { useState } from 'react';
 import { toast } from '~/hooks/use-toast';
@@ -42,6 +46,15 @@ export function KanbanBoard() {
   const { data, isLoading } = trpc.leads.pipeline.useQuery({ perColumn: 25 });
   const [activeCard, setActiveCard] = useState<Card | null>(null);
   const [peekId, setPeekId] = useState<string | null>(null);
+
+  const removeFromPipeline = trpc.leads.removeFromPipeline.useMutation({
+    onSuccess: () => {
+      utils.leads.pipeline.invalidate();
+      utils.leads.search.invalidate();
+      toast.success('Sacado del pipeline');
+    },
+    onError: (e) => toast.error(e.message),
+  });
 
   const updateStatus = trpc.leads.updateStatus.useMutation({
     onMutate: async ({ id, status }) => {
@@ -81,7 +94,17 @@ export function KanbanBoard() {
     },
   });
 
-  const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 6 } }));
+  // Sensors:
+  //   • PointerSensor con `distance: 8` — el drag se activa solo después
+  //     de mover 8px (los micro-movimientos del click no disparan drag).
+  //   • TouchSensor con `delay: 200` — en móvil hace falta long-press
+  //     para diferenciar drag de scroll.
+  //   • KeyboardSensor — accesibilidad (mover con flechas + espacio).
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
+    useSensor(TouchSensor, { activationConstraint: { delay: 200, tolerance: 5 } }),
+    useSensor(KeyboardSensor),
+  );
 
   function onDragStart(e: DragStartEvent) {
     setActiveCard((e.active.data.current?.card as Card) ?? null);
@@ -108,7 +131,14 @@ export function KanbanBoard() {
   const inboxCount = data?.inboxCount ?? 0;
 
   return (
-    <DndContext sensors={sensors} onDragStart={onDragStart} onDragEnd={onDragEnd}>
+    <DndContext
+      sensors={sensors}
+      collisionDetection={closestCorners}
+      modifiers={[restrictToWindowEdges]}
+      onDragStart={onDragStart}
+      onDragCancel={() => setActiveCard(null)}
+      onDragEnd={onDragEnd}
+    >
       {inboxCount > 0 && <NewInboxHint count={inboxCount} />}
       <div className="flex gap-3 overflow-x-auto pb-4">
         {LEAD_STATUS.map((status) => {
@@ -120,11 +150,14 @@ export function KanbanBoard() {
               count={col?.count ?? 0}
               cards={(col?.items as Card[]) ?? []}
               onPeek={setPeekId}
+              onRemoveFromPipeline={(id) => removeFromPipeline.mutate({ id })}
             />
           );
         })}
       </div>
-      <DragOverlay>{activeCard ? <LeadCard card={activeCard} dragging /> : null}</DragOverlay>
+      <DragOverlay dropAnimation={{ duration: 200, easing: 'cubic-bezier(0.22, 1, 0.36, 1)' }}>
+        {activeCard ? <LeadCard card={activeCard} dragging /> : null}
+      </DragOverlay>
       <LeadPeek
         leadId={peekId}
         open={!!peekId}
@@ -139,11 +172,13 @@ function Column({
   count,
   cards,
   onPeek,
+  onRemoveFromPipeline,
 }: {
   status: LeadStatus;
   count: number;
   cards: Card[];
   onPeek: (id: string) => void;
+  onRemoveFromPipeline: (id: string) => void;
 }) {
   const { setNodeRef, isOver } = useDroppable({ id: status });
   // En el contexto del kanban, "NEW" se llama "Por contactar" (queue
@@ -162,16 +197,27 @@ function Column({
       </div>
       <div
         ref={setNodeRef}
-        className={`flex min-h-[60vh] flex-1 flex-col gap-2 rounded-xl border border-border p-2 transition-colors ${
-          isOver ? 'border-[hsl(var(--violet))]/50 bg-[hsl(var(--violet))]/5' : 'bg-card/55'
+        className={`flex min-h-[60vh] flex-1 flex-col gap-2 rounded-xl border-2 p-2 transition-colors ${
+          isOver
+            ? 'border-[hsl(var(--violet))]/60 bg-[hsl(var(--violet))]/8'
+            : 'border-dashed border-border bg-card-2/30'
         }`}
       >
         {cards.map((card) => (
-          <DraggableCard key={card.id} card={card} onPeek={onPeek} />
+          <DraggableCard
+            key={card.id}
+            card={card}
+            onPeek={onPeek}
+            onRemoveFromPipeline={status === 'NEW' ? onRemoveFromPipeline : undefined}
+          />
         ))}
         {cards.length === 0 && (
-          <div className="flex flex-1 items-center justify-center text-xs text-muted-foreground">
-            Vacío
+          <div
+            className={`flex flex-1 items-center justify-center rounded-md p-4 text-center text-xs transition-colors ${
+              isOver ? 'text-[hsl(var(--violet))]' : 'text-muted-foreground'
+            }`}
+          >
+            {isOver ? 'Suelta aquí' : 'Vacío'}
           </div>
         )}
         {count > cards.length && (
@@ -184,24 +230,34 @@ function Column({
   );
 }
 
-function DraggableCard({ card, onPeek }: { card: Card; onPeek: (id: string) => void }) {
+function DraggableCard({
+  card,
+  onPeek,
+  onRemoveFromPipeline,
+}: {
+  card: Card;
+  onPeek: (id: string) => void;
+  onRemoveFromPipeline?: (id: string) => void;
+}) {
   const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
     id: card.id,
     data: { card },
   });
+  // Sutil pero útil: cuando estás arrastrando, ocultamos casi por completo
+  // la card original (la copia "real" la pinta DragOverlay).
   return (
     <div
       ref={setNodeRef}
       {...listeners}
       {...attributes}
       onClick={() => {
-        // dnd-kit ya filtra clicks vs drags via activationConstraint.distance=6.
-        // Si llegó aquí, fue un click real (no drag).
+        // PointerSensor con `distance: 8` ya filtra los clicks pequeños.
+        // Llegar acá significa que el usuario hizo click real, no drag.
         if (!isDragging) onPeek(card.id);
       }}
-      className={isDragging ? 'opacity-30' : ''}
+      className={`relative ${isDragging ? 'opacity-20' : ''}`}
     >
-      <LeadCard card={card} />
+      <LeadCard card={card} onRemoveFromPipeline={onRemoveFromPipeline} />
     </div>
   );
 }
@@ -233,13 +289,38 @@ function NewInboxHint({ count }: { count: number }) {
   );
 }
 
-function LeadCard({ card, dragging }: { card: Card; dragging?: boolean }) {
+function LeadCard({
+  card,
+  dragging,
+  onRemoveFromPipeline,
+}: {
+  card: Card;
+  dragging?: boolean;
+  onRemoveFromPipeline?: (id: string) => void;
+}) {
   return (
     <div
-      className={`hx-lift-sm cursor-grab rounded-lg border border-border bg-card-2/85 p-3 shadow-card active:cursor-grabbing ${
+      className={`hx-lift-sm group/card relative cursor-grab rounded-lg border border-border bg-card-2/85 p-3 shadow-card active:cursor-grabbing ${
         dragging ? 'rotate-2 shadow-pop' : 'hover:border-border-strong hover:bg-card-2'
       }`}
     >
+      {onRemoveFromPipeline && !dragging && (
+        // X aparece sólo en hover sobre cards de la columna "Por contactar".
+        // stopPropagation para que no abra el peek ni inicie drag.
+        <button
+          type="button"
+          aria-label="Sacar del pipeline"
+          title="Sacar del pipeline"
+          onPointerDown={(e) => e.stopPropagation()}
+          onClick={(e) => {
+            e.stopPropagation();
+            onRemoveFromPipeline(card.id);
+          }}
+          className="absolute right-1.5 top-1.5 z-10 grid size-6 place-items-center rounded-md text-muted-foreground opacity-0 transition-opacity hover:bg-rose-500/15 hover:text-rose-400 group-hover/card:opacity-100"
+        >
+          <X className="size-3.5" />
+        </button>
+      )}
       <div className="flex items-start gap-2">
         <BusinessAvatar name={card.businessName} size="sm" />
         <div className="min-w-0 flex-1">

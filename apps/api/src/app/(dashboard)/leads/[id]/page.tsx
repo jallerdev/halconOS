@@ -8,6 +8,8 @@ import {
   FileText,
   Globe,
   History,
+  Inbox,
+  KanbanSquare,
   Loader2,
   Mail,
   MapPin,
@@ -74,6 +76,25 @@ export default function LeadDetailPage() {
 
   const generateProposal = trpc.leads.generateAi.useMutation({
     onSuccess: () => utils.leads.byId.invalidate({ id }),
+  });
+
+  const promote = trpc.leads.promoteToPipeline.useMutation({
+    onSuccess: () => {
+      utils.leads.byId.invalidate({ id });
+      utils.leads.pipeline.invalidate();
+      utils.leads.search.invalidate();
+      toast.success('Añadido al pipeline');
+    },
+    onError: (e) => toast.error(e.message),
+  });
+  const removeFromPipeline = trpc.leads.removeFromPipeline.useMutation({
+    onSuccess: () => {
+      utils.leads.byId.invalidate({ id });
+      utils.leads.pipeline.invalidate();
+      utils.leads.search.invalidate();
+      toast.success('Sacado del pipeline');
+    },
+    onError: (e) => toast.error(e.message),
   });
 
   if (isLoading) {
@@ -168,6 +189,24 @@ export default function LeadDetailPage() {
             aiFirstMessage={lead.aiFirstMessage}
             businessName={lead.businessName}
           />
+          {lead.status === 'NEW' &&
+            (lead.pipelinePromotedAt ? (
+              <Button
+                variant="outline"
+                onClick={() => removeFromPipeline.mutate({ id })}
+                disabled={removeFromPipeline.isPending}
+              >
+                <Inbox className="size-4" /> Sacar del pipeline
+              </Button>
+            ) : (
+              <Button
+                variant="outline"
+                onClick={() => promote.mutate({ id })}
+                disabled={promote.isPending}
+              >
+                <KanbanSquare className="size-4" /> Añadir al pipeline
+              </Button>
+            ))}
           <Button
             onClick={() => generateProposal.mutate({ id, kind: 'proposal' })}
             disabled={generateProposal.isPending}

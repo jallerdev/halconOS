@@ -642,6 +642,31 @@ export const leadsRouter = router({
     return { updated: res.length };
   }),
 
+  // Promueve N leads NEW al kanban "Por contactar" de una sola vez.
+  // Idempotente — leads ya promovidos solo refrescan su timestamp.
+  bulkPromoteToPipeline: orgProcedure
+    .input(bulkIdsSchema)
+    .mutation(async ({ ctx, input }) => {
+      const res = await ctx.db
+        .update(leads)
+        .set({ pipelinePromotedAt: new Date(), updatedAt: new Date() })
+        .where(and(eq(leads.orgId, ctx.orgId), inArray(leads.id, input.ids)))
+        .returning({ id: leads.id });
+      return { updated: res.length };
+    }),
+
+  // Devuelve N leads del kanban al inbox.
+  bulkRemoveFromPipeline: orgProcedure
+    .input(bulkIdsSchema)
+    .mutation(async ({ ctx, input }) => {
+      const res = await ctx.db
+        .update(leads)
+        .set({ pipelinePromotedAt: null, updatedAt: new Date() })
+        .where(and(eq(leads.orgId, ctx.orgId), inArray(leads.id, input.ids)))
+        .returning({ id: leads.id });
+      return { updated: res.length };
+    }),
+
   bulkDelete: orgProcedure.input(bulkIdsSchema).mutation(async ({ ctx, input }) => {
     await ctx.db
       .delete(notes)
