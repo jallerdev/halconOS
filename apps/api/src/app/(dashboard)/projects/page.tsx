@@ -110,7 +110,7 @@ export default function ProjectsPage() {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.25, delay: i * 0.03 }}
               >
-                <Card className="hx-lift hx-stripe group relative h-full overflow-hidden bg-gradient-to-br from-card/98 to-card/90">
+                <Card className="hx-lift hx-stripe group relative h-full overflow-hidden bg-gradient-to-br from-card/88 to-card/72">
                   <CardContent className="space-y-4 px-[22px] pb-5 pt-5">
                     <div className="flex items-start justify-between gap-2">
                       <h3 className="line-clamp-2 font-semibold leading-snug tracking-[-0.01em]">{p.name}</h3>

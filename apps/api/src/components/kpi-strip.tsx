@@ -52,7 +52,7 @@ export function KpiStrip({ items, accent = 'violet', isLoading, cols = 4 }: Prop
         {Array.from({ length: cols }).map((_, i) => (
           <div
             key={i}
-            className="rounded-xl border border-border bg-card/98 p-5 shadow-card"
+            className="rounded-xl border border-border bg-card/80 p-5 shadow-card backdrop-blur-2xl"
           >
             <Skeleton className="h-3 w-24" />
             <Skeleton className="mt-3 h-9 w-32" />
@@ -72,8 +72,8 @@ export function KpiStrip({ items, accent = 'violet', isLoading, cols = 4 }: Prop
           <div
             key={item.label}
             className={cn(
-              'hx-lift hx-stripe relative overflow-hidden rounded-xl border border-border p-5 shadow-card',
-              'bg-gradient-to-br from-card/98 to-card/90',
+              'hx-lift hx-stripe relative overflow-hidden rounded-xl border border-border p-5 shadow-card backdrop-blur-2xl',
+              'bg-gradient-to-br from-card/88 to-card/72',
             )}
           >
             <div className="flex items-start justify-between gap-3">

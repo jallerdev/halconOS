@@ -255,7 +255,7 @@ export function LeadsTable() {
       )}
 
       {/* Tabla */}
-      <div className="overflow-hidden rounded-xl border border-border bg-card/98 shadow-card">
+      <div className="overflow-hidden rounded-xl border border-border bg-card/80 shadow-card backdrop-blur-2xl">
         <div className="max-h-[calc(100vh-22rem)] overflow-auto">
           <Table>
             <TableHeader>
