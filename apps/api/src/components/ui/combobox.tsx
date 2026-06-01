@@ -39,7 +39,7 @@ export function Combobox({
       <PopoverTrigger asChild>
         <button
           className={cn(
-            'inline-flex h-9 items-center justify-between gap-2 rounded-md border border-border bg-secondary/40 px-3 text-sm transition-colors hover:bg-accent/60 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring',
+            'inline-flex h-9 items-center justify-between gap-2 rounded-md border border-border bg-card-2/60 px-3 text-sm transition-colors hover:bg-accent/60 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring',
             className,
           )}
         >
@@ -50,7 +50,7 @@ export function Combobox({
         </button>
       </PopoverTrigger>
       <PopoverContent className="w-64 p-0">
-        <div className="flex items-center gap-2 border-b border-border/60 px-3 py-2">
+        <div className="flex items-center gap-2 border-b border-border px-3 py-2">
           <Search className="size-3.5 text-muted-foreground" />
           <input
             autoFocus

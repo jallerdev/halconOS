@@ -259,7 +259,7 @@ export default function SettingsPage() {
                     Guárdala ahora — no se vuelve a mostrar.
                   </p>
                   <div className="mt-2 flex items-center gap-2">
-                    <code className="flex-1 overflow-x-auto rounded border border-border/60 bg-background px-3 py-2 font-mono text-xs">
+                    <code className="flex-1 overflow-x-auto rounded border border-border bg-background px-3 py-2 font-mono text-xs">
                       {newSecret}
                     </code>
                     <Button variant="outline" size="icon" onClick={copySecret} title="Copiar">

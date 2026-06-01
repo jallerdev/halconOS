@@ -64,7 +64,7 @@ export default function TodayPage() {
           ))}
         </div>
       ) : !data || data.counts.overdue + data.counts.today + data.counts.upcoming === 0 ? (
-        <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-border/60 py-20 text-center">
+        <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-border py-20 text-center">
           <CalendarClock className="size-6 text-muted-foreground" />
           <p className="mt-4 text-sm font-medium">No tienes seguimientos programados</p>
           <p className="mt-1 text-sm text-muted-foreground">
