@@ -18,7 +18,7 @@ export const SURFACE = {
   // Background de página completa (transparente — debajo está AppBg).
   base: 'bg-background',
   // Único nivel "elevado" — cards, top bar, sidebar, popovers persistentes.
-  elevated: 'border border-border bg-card/72 backdrop-blur-xl',
+  elevated: 'border border-border bg-card/92 backdrop-blur-xl',
   // Variante sin border, más translúcida (ej. row hover de tabla).
   subtle: 'bg-card/40',
 } as const;
