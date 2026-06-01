@@ -21,18 +21,19 @@ import { PageHeader } from '~/components/page-header';
 import { Badge } from '~/components/ui/badge';
 import { Card, CardContent } from '~/components/ui/card';
 import { Skeleton } from '~/components/ui/skeleton';
+import { PROJECT_STATUS_HUE } from '~/lib/design-tokens';
 import { trpc } from '~/lib/trpc';
 
 const STATUS_META: Record<
   ProjectStatus,
-  { label: string; icon: typeof Boxes; tone: string; ring: string }
+  { label: string; icon: typeof Boxes }
 > = {
-  PLANNING: { label: 'Planeación', icon: Hourglass, tone: 'text-sky-400', ring: 'border-sky-500/30 bg-sky-500/5' },
-  IN_PROGRESS: { label: 'En curso', icon: Rocket, tone: 'text-violet-400', ring: 'border-violet-500/30 bg-violet-500/5' },
-  REVIEW: { label: 'Revisión', icon: Clock, tone: 'text-amber-400', ring: 'border-amber-500/30 bg-amber-500/5' },
-  DELIVERED: { label: 'Entregado', icon: CheckCircle2, tone: 'text-emerald-400', ring: 'border-emerald-500/30 bg-emerald-500/5' },
-  ON_HOLD: { label: 'Pausado', icon: PauseCircle, tone: 'text-zinc-400', ring: 'border-zinc-500/30 bg-zinc-500/5' },
-  CANCELLED: { label: 'Cancelado', icon: XCircle, tone: 'text-rose-400', ring: 'border-rose-500/30 bg-rose-500/5' },
+  PLANNING: { label: 'Planeación', icon: Hourglass },
+  IN_PROGRESS: { label: 'En curso', icon: Rocket },
+  REVIEW: { label: 'Revisión', icon: Clock },
+  DELIVERED: { label: 'Entregado', icon: CheckCircle2 },
+  ON_HOLD: { label: 'Pausado', icon: PauseCircle },
+  CANCELLED: { label: 'Cancelado', icon: XCircle },
 };
 
 function formatCOP(value: string | number): string {
@@ -101,6 +102,7 @@ export default function ProjectsPage() {
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
           {data.map((p, i) => {
             const meta = STATUS_META[p.status as ProjectStatus];
+            const hue = PROJECT_STATUS_HUE[p.status as ProjectStatus];
             return (
               <motion.div
                 key={p.id}
@@ -108,11 +110,11 @@ export default function ProjectsPage() {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.25, delay: i * 0.03 }}
               >
-                <Card className="group h-full overflow-hidden transition-colors hover:border-foreground/20">
-                  <CardContent className="space-y-4 p-5">
+                <Card className="hx-lift hx-stripe group relative h-full overflow-hidden bg-gradient-to-br from-card/85 to-card/55">
+                  <CardContent className="space-y-4 px-[22px] pb-5 pt-5">
                     <div className="flex items-start justify-between gap-2">
-                      <h3 className="line-clamp-2 font-medium leading-snug">{p.name}</h3>
-                      <Badge variant="outline" className={`shrink-0 ${meta.ring} ${meta.tone}`}>
+                      <h3 className="line-clamp-2 font-semibold leading-snug tracking-[-0.01em]">{p.name}</h3>
+                      <Badge variant="outline" className={`shrink-0 ${hue.border} ${hue.bg} ${hue.text}`}>
                         <meta.icon className="mr-1 size-3" />
                         {meta.label}
                       </Badge>
@@ -122,8 +124,8 @@ export default function ProjectsPage() {
                       <p className="line-clamp-2 text-xs text-muted-foreground">{p.description}</p>
                     )}
 
-                    <div className="flex items-center justify-between border-t border-border/60 pt-3 text-xs">
-                      <div className="flex items-center gap-1.5 font-mono tabular-nums text-emerald-400">
+                    <div className="flex items-center justify-between border-t border-border pt-3 text-xs">
+                      <div className="flex items-center gap-1.5 font-mono tabular-nums text-[hsl(var(--teal))]">
                         <DollarSign className="size-3" />
                         {formatCOP(p.amount)}
                       </div>
@@ -135,7 +137,7 @@ export default function ProjectsPage() {
 
                     <Link
                       href={`/leads/${p.leadId}`}
-                      className="inline-flex items-center gap-1 text-xs text-muted-foreground transition-colors hover:text-primary"
+                      className="inline-flex items-center gap-1 text-xs text-muted-foreground transition-colors hover:text-[hsl(var(--violet))]"
                     >
                       Ver lead origen <ExternalLink className="size-3" />
                     </Link>
@@ -152,17 +154,22 @@ export default function ProjectsPage() {
 
 function EmptyState() {
   return (
-    <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-border/60 py-20 text-center">
-      <div className="rounded-full bg-secondary/50 p-3 text-muted-foreground">
+    <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-border py-20 text-center">
+      <div
+        className="grid size-12 place-items-center rounded-[13px] text-[hsl(var(--violet))]"
+        style={{
+          background: 'linear-gradient(135deg, hsl(var(--violet) / 0.18), hsl(var(--teal) / 0.18))',
+        }}
+      >
         <Boxes className="size-6" />
       </div>
-      <p className="mt-4 text-sm font-medium">Aún no hay proyectos</p>
+      <p className="mt-4 text-sm font-semibold">Aún no hay proyectos</p>
       <p className="mt-1 max-w-sm text-sm text-muted-foreground">
         Cuando ganes un lead, conviértelo en proyecto desde su detalle para empezar la ejecución.
       </p>
       <Link
         href="/leads"
-        className="mt-5 text-sm text-primary transition-colors hover:underline"
+        className="mt-5 text-sm text-[hsl(var(--violet))] transition-colors hover:underline"
       >
         Ir a los leads →
       </Link>

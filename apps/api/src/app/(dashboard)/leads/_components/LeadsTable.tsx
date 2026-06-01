@@ -25,6 +25,7 @@ import { LeadPeek } from './LeadPeek';
 import { ScoreBadge } from '~/components/score-badge';
 import { StatusSelect } from '~/components/status-select';
 import { WhatsAppButton } from '~/components/whatsapp-button';
+import { STATUS_HUE } from '~/lib/design-tokens';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -52,16 +53,6 @@ import { trpc } from '~/lib/trpc';
 
 const PAGE_SIZE = 50;
 type Sort = 'recent' | 'rating' | 'reviews' | 'name' | 'score';
-
-const STATUS_BORDER: Record<LeadStatus, string> = {
-  NEW: 'border-l-sky-500/50',
-  CONTACTED: 'border-l-blue-500/50',
-  QUALIFIED: 'border-l-violet-500/50',
-  PROPOSAL_SENT: 'border-l-indigo-500/50',
-  NEGOTIATION: 'border-l-amber-500/50',
-  WON: 'border-l-emerald-500/50',
-  LOST: 'border-l-rose-500/50',
-};
 
 export function LeadsTable() {
   const utils = trpc.useUtils();
@@ -305,7 +296,8 @@ export function LeadsTable() {
                     animate={{ opacity: 1 }}
                     transition={{ duration: 0.2, delay: Math.min(i * 0.01, 0.2) }}
                     onClick={() => setPeekId(l.id)}
-                    className={`group hx-table-row cursor-pointer border-b border-l-2 border-border/40 ${STATUS_BORDER[l.status]} hover:bg-accent/50 ${selected.has(l.id) ? 'bg-[hsl(var(--violet))]/7' : ''}`}
+                    className={`group hx-table-row cursor-pointer border-b border-l-2 border-border/40 hover:bg-accent/50 ${selected.has(l.id) ? 'bg-[hsl(var(--violet))]/7' : ''}`}
+                    style={{ borderLeftColor: STATUS_HUE[l.status].hsl }}
                   >
                     <TableCell onClick={(e) => e.stopPropagation()}>
                       <input

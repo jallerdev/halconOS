@@ -74,18 +74,18 @@ function KeyRow({
   };
 
   return (
-    <li className="flex items-center gap-3 py-3">
+    <li className="hx-lift-sm flex items-center gap-3 rounded-md border border-border bg-card-2/40 p-3 transition-colors hover:border-[hsl(var(--violet))]/45 hover:bg-[hsl(var(--violet))]/6">
       <div className="min-w-0 flex-1">
         <div className="flex items-center gap-2">
-          <span className="truncate text-sm font-medium">{k.name}</span>
+          <span className="truncate text-sm font-semibold">{k.name}</span>
           {k.revokedAt && (
-            <span className="rounded-full bg-rose-500/15 px-2 py-0.5 text-[10px] font-medium text-rose-300">
+            <span className="rounded-full bg-rose-500/15 px-2 py-0.5 text-[10px] font-semibold text-rose-300">
               Revocada
             </span>
           )}
         </div>
         {revealed ? (
-          <code className="mt-1 block max-w-full overflow-x-auto rounded border border-border/60 bg-background px-2 py-1 font-mono text-xs">
+          <code className="mt-1 block max-w-full overflow-x-auto rounded-md border border-border bg-background px-2 py-1 font-mono text-xs">
             {revealed}
           </code>
         ) : (
@@ -296,14 +296,17 @@ export default function SettingsPage() {
                 </p>
               ) : googleStatus.data.connected ? (
                 <div className="flex items-center justify-between gap-3">
-                  <div className="min-w-0">
-                    <p className="text-sm">
-                      Conectado como{' '}
-                      <strong className="text-foreground">{googleStatus.data.email}</strong>
-                    </p>
-                    <p className="mt-0.5 text-xs text-muted-foreground">
-                      Puedes agendar reuniones desde cualquier lead.
-                    </p>
+                  <div className="flex min-w-0 items-center gap-3">
+                    <span className="hx-glow-dot" aria-label="conectado" />
+                    <div className="min-w-0">
+                      <p className="text-sm">
+                        Conectado como{' '}
+                        <strong className="text-foreground">{googleStatus.data.email}</strong>
+                      </p>
+                      <p className="mt-0.5 text-xs text-muted-foreground">
+                        Puedes agendar reuniones desde cualquier lead.
+                      </p>
+                    </div>
                   </div>
                   <ConfirmDialog
                     title="¿Desconectar tu cuenta de Google?"
@@ -321,9 +324,12 @@ export default function SettingsPage() {
                 </div>
               ) : (
                 <div className="flex items-center justify-between gap-3">
-                  <p className="text-sm text-muted-foreground">
-                    Conecta tu Google para agendar reuniones con Meet sobre los leads.
-                  </p>
+                  <div className="flex min-w-0 items-center gap-3">
+                    <span className="hx-glow-dot hx-glow-dot-off" aria-label="desconectado" />
+                    <p className="text-sm text-muted-foreground">
+                      Conecta tu Google para agendar reuniones con Meet sobre los leads.
+                    </p>
+                  </div>
                   <Button asChild>
                     <a href="/api/google/auth/start">
                       <Video /> Conectar Google
@@ -348,7 +354,7 @@ export default function SettingsPage() {
                   Aún no tienes keys. Genera una arriba.
                 </p>
               ) : (
-                <ul className="divide-y divide-border/60">
+                <ul className="hx-stagger space-y-2">
                   {list.data.map((k) => (
                     <KeyRow key={k.id} k={k} disableRevoke={revoke.isPending} onRevoke={(id) => revoke.mutate({ id })} />
                   ))}

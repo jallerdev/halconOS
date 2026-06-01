@@ -118,16 +118,16 @@ function Bucket({
   return (
     <section>
       <div className="mb-3 flex items-center gap-2">
-        <Icon className={`size-4 ${tone}`} />
-        <h2 className="text-sm font-semibold uppercase tracking-wide">{title}</h2>
-        <span className="rounded-full bg-secondary/60 px-2 py-0.5 text-xs text-muted-foreground">
+        <Icon className={`size-[15px] ${tone}`} />
+        <h2 className="text-[11px] font-bold uppercase tracking-[0.1em]">{title}</h2>
+        <span className="inline-grid h-[18px] min-w-[18px] place-items-center rounded-full bg-muted px-1.5 text-[10px] font-bold text-muted-foreground">
           {items.length}
         </span>
       </div>
       {items.length === 0 ? (
         <p className="px-1 text-sm text-muted-foreground">{empty}</p>
       ) : (
-        <div className="space-y-2">
+        <div className="hx-stagger space-y-2">
           {items.map((l) => (
             <Row key={l.id} lead={l} />
           ))}
@@ -155,10 +155,13 @@ function Row({ lead }: { lead: Item }) {
   const due = lead.nextFollowUpAt ? new Date(lead.nextFollowUpAt) : null;
 
   return (
-    <div className="flex items-center gap-3 rounded-lg border border-border/60 bg-card/60 p-3">
-      <BusinessAvatar name={lead.businessName} size="sm" />
+    <div className="hx-lift-sm flex items-center gap-3 rounded-md border border-border bg-card-2/50 p-3 transition-colors hover:border-[hsl(var(--violet))]/45 hover:bg-[hsl(var(--violet))]/6">
+      <BusinessAvatar name={lead.businessName} size="md" />
       <div className="min-w-0 flex-1">
-        <Link href={`/leads/${lead.id}`} className="truncate text-sm font-medium hover:text-primary">
+        <Link
+          href={`/leads/${lead.id}`}
+          className="truncate text-[13.5px] font-semibold hover:text-[hsl(var(--violet))]"
+        >
           {lead.businessName}
         </Link>
         <div className="mt-0.5 flex items-center gap-2 text-xs text-muted-foreground">

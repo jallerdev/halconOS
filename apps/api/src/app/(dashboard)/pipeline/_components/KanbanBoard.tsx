@@ -19,6 +19,7 @@ import { LEAD_STATUS, type LeadStatus } from '@halcon-os/shared/enums';
 import { BusinessAvatar } from '~/components/business-avatar';
 import { LEAD_STATUS_LABEL } from '~/components/lead-status-badge';
 import { ScoreBadge } from '~/components/score-badge';
+import { STATUS_HUE } from '~/lib/design-tokens';
 import { trpc } from '~/lib/trpc';
 
 import { LeadPeek } from '../../leads/_components/LeadPeek';
@@ -34,15 +35,6 @@ type Card = {
   status: LeadStatus;
 };
 
-const COLUMN_ACCENT: Record<LeadStatus, string> = {
-  NEW: 'bg-sky-500',
-  CONTACTED: 'bg-blue-500',
-  QUALIFIED: 'bg-violet-500',
-  PROPOSAL_SENT: 'bg-indigo-500',
-  NEGOTIATION: 'bg-amber-500',
-  WON: 'bg-emerald-500',
-  LOST: 'bg-rose-500',
-};
 
 export function KanbanBoard() {
   const utils = trpc.useUtils();
@@ -149,10 +141,10 @@ function Column({
     <div className="flex w-72 shrink-0 flex-col">
       <div className="mb-2 flex items-center justify-between px-1">
         <div className="flex items-center gap-2">
-          <span className={`size-2 rounded-full ${COLUMN_ACCENT[status]}`} />
+          <span className={`size-2 rounded-full ${STATUS_HUE[status].dot}`} />
           <span className="text-sm font-medium">{LEAD_STATUS_LABEL[status]}</span>
         </div>
-        <span className="rounded-full bg-secondary/60 px-2 py-0.5 text-xs text-muted-foreground">
+        <span className="rounded-full bg-muted px-2 py-0.5 font-mono text-[11px] text-muted-foreground">
           {count.toLocaleString('es-CO')}
         </span>
       </div>
