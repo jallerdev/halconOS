@@ -337,3 +337,36 @@
 .hx-table-row:hover {
   box-shadow: inset 3px 0 0 hsl(var(--violet) / 0.5);
 }
+
+/* ════════════════════════════════════════════════════════════════════════
+   Activity drawer · ítems clickeables. Estilo de la referencia
+   design_handoff_halcon (.act-item / .act-new).
+   ════════════════════════════════════════════════════════════════════════ */
+.act-item {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  width: 100%;
+  text-align: left;
+  padding: 12px;
+  border-radius: var(--radius-sm);
+  background: hsl(var(--card-2) / 0.5);
+  border: 1px solid hsl(var(--border));
+  color: inherit;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.act-item:hover {
+  border-color: hsl(var(--violet) / 0.45);
+  background: hsl(var(--violet) / 0.06);
+}
+
+/* Variante "nueva" — accent teal para arrivals (Fase 3). */
+.act-item-new {
+  background: hsl(var(--teal) / 0.07);
+  border-color: hsl(var(--teal) / 0.3);
+}
+.act-item-new:hover {
+  border-color: hsl(var(--teal) / 0.55);
+  background: hsl(var(--teal) / 0.1);
+}
