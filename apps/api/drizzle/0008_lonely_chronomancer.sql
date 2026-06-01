@@ -1,0 +1,1 @@
+ALTER TABLE "agency_os"."leads" ADD COLUMN "pipeline_promoted_at" timestamp with time zone;
