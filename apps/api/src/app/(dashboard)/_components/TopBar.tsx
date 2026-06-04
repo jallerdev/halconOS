@@ -16,7 +16,7 @@ const clerkEnabled = Boolean(process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY);
 export function TopBar() {
   return (
     <TooltipProvider delayDuration={200}>
-      <header className="sticky top-0 z-20 flex h-14 shrink-0 items-center justify-end gap-3 border-b border-border bg-card/60 px-[18px] backdrop-blur-xl">
+      <header className="sticky top-0 z-30 flex h-14 shrink-0 items-center justify-end gap-3 border-b border-border bg-background/95 px-[18px] backdrop-blur-xl supports-[backdrop-filter]:bg-background/80">
         <div className="flex items-center gap-1">
           <NotificationBell />
           <ThemeToggle />
