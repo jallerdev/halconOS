@@ -19,7 +19,23 @@ const config: Config = {
         'bg-tint': 'hsl(var(--bg-tint))',
         foreground: 'hsl(var(--foreground))',
         violet: 'hsl(var(--violet))',
-        teal: 'hsl(var(--teal))',
+        // Teal — escala completa (Tailwind defaults) + DEFAULT = nuestro token.
+        // Antes se sobrescribía a un solo color y rompía `to-teal-400`, `text-teal-600`,
+        // `bg-teal-500/15`, etc.: el gradiente de marca fadeaba a transparente.
+        teal: {
+          DEFAULT: 'hsl(var(--teal))',
+          50: '#f0fdfa',
+          100: '#ccfbf1',
+          200: '#99f6e4',
+          300: '#5eead4',
+          400: '#2dd4bf',
+          500: '#14b8a6',
+          600: '#0d9488',
+          700: '#0f766e',
+          800: '#115e59',
+          900: '#134e4a',
+          950: '#042f2e',
+        },
         primary: {
           DEFAULT: 'hsl(var(--primary))',
           foreground: 'hsl(var(--primary-foreground))',
