@@ -22,7 +22,7 @@ import {
 } from 'lucide-react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { toast } from '~/hooks/use-toast';
 
 import { BusinessAvatar } from '~/components/business-avatar';
@@ -57,6 +57,17 @@ export default function LeadDetailPage() {
   const utils = trpc.useUtils();
   const { data: lead, isLoading } = trpc.leads.byId.useQuery({ id });
   const [tab, setTab] = useState<'notes' | 'timeline' | 'files'>('notes');
+
+  // Breadcrumb-back con filtros: LeadsTable guarda su última query string en
+  // sessionStorage; la leemos en cliente para reconstruir el href y no perder
+  // los filtros al volver desde el detalle.
+  const [backHref, setBackHref] = useState('/leads');
+  useEffect(() => {
+    const saved = typeof window !== 'undefined'
+      ? sessionStorage.getItem('halcon:leads:lastFilters')
+      : null;
+    if (saved) setBackHref(`/leads?${saved}`);
+  }, []);
 
   const updateStatus = trpc.leads.updateStatus.useMutation({
     onMutate: async (input) => {
@@ -127,7 +138,7 @@ export default function LeadDetailPage() {
     <div className="hx-page mx-auto max-w-[1480px] px-6 py-8 lg:px-10">
       {/* Breadcrumbs */}
       <nav className="flex items-center gap-1.5 text-sm text-muted-foreground">
-        <Link href="/leads" className="transition-colors hover:text-foreground">
+        <Link href={backHref} className="transition-colors hover:text-foreground">
           Leads
         </Link>
         <ChevronRight className="size-3.5" />

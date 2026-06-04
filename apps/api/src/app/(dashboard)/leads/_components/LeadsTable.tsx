@@ -15,7 +15,7 @@ import {
 } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 
 import { toast } from '~/hooks/use-toast';
 
@@ -101,6 +101,17 @@ export function LeadsTable() {
     patchParams({ category: v ?? null, cursor: null });
   const setSort = (v: Sort) => patchParams({ sort: v === 'score' ? null : v, cursor: null });
   const setCursor = (v: number) => patchParams({ cursor: v > 0 ? String(v) : null });
+
+  // Persistimos el último query string de /leads en sessionStorage para que la
+  // breadcrumb de /leads/[id] pueda construir un href que conserve los filtros
+  // (la breadcrumb no puede leer el referrer y la URL ya no contiene los params
+  // en el detalle). Sólo guardamos cuando hay algo que guardar — null borra.
+  useEffect(() => {
+    const str = searchParams.toString();
+    if (typeof window === 'undefined') return;
+    if (str) sessionStorage.setItem('halcon:leads:lastFilters', str);
+    else sessionStorage.removeItem('halcon:leads:lastFilters');
+  }, [searchParams]);
 
   const [exporting, setExporting] = useState(false);
   const [peekId, setPeekId] = useState<string | null>(null);
