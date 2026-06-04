@@ -195,57 +195,72 @@ export function Landing() {
         </div>
       </header>
 
-      {/* ── Hero ── */}
-      <section className="mx-auto max-w-6xl px-6 pb-10 pt-20 text-center md:pt-28">
-        <motion.div initial="hidden" animate="show" transition={{ staggerChildren: 0.1 }}>
+      {/* ── Hero (2-col en lg+: copy izq, mockup der) ── */}
+      <section className="mx-auto max-w-6xl px-6 pb-10 pt-20 md:pt-28">
+        <div className="grid items-center gap-14 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.05fr)] lg:gap-12">
+          {/* Copy */}
           <motion.div
-            variants={fadeUp}
-            transition={{ duration: 0.5 }}
-            className="mx-auto inline-flex items-center gap-2 rounded-full border border-primary/30 bg-primary/[0.08] px-3.5 py-1.5 text-xs font-medium text-primary"
+            initial="hidden"
+            animate="show"
+            transition={{ staggerChildren: 0.1 }}
+            className="text-center lg:text-left"
           >
-            <span className="relative flex size-2">
-              <span className="absolute inline-flex size-full animate-ping rounded-full bg-primary/60" />
-              <span className="relative inline-flex size-2 rounded-full bg-primary" />
-            </span>
-            CRM con IA · hecho para agencias de LatAm
+            <motion.div
+              variants={fadeUp}
+              transition={{ duration: 0.5 }}
+              className="inline-flex items-center gap-2 rounded-full border border-primary/30 bg-primary/[0.08] px-3.5 py-1.5 text-xs font-medium text-primary"
+            >
+              <span className="relative flex size-2">
+                <span className="absolute inline-flex size-full animate-ping rounded-full bg-primary/60" />
+                <span className="relative inline-flex size-2 rounded-full bg-primary" />
+              </span>
+              CRM con IA · hecho para agencias de LatAm
+            </motion.div>
+
+            <motion.h1
+              variants={fadeUp}
+              transition={{ duration: 0.5 }}
+              className="mt-7 text-balance text-5xl font-extrabold leading-[0.98] tracking-tight md:text-6xl xl:text-7xl"
+            >
+              Caza clientes como un <span className={GRAD}>halcón</span>.
+            </motion.h1>
+
+            <motion.p
+              variants={fadeUp}
+              transition={{ duration: 0.5 }}
+              className="mx-auto mt-6 max-w-xl text-pretty text-lg text-muted-foreground lg:mx-0"
+            >
+              HalcónOS descubre negocios reales con Google Maps, escribe tus propuestas con IA y unifica
+              WhatsApp, email y pipeline en un solo lugar. Sin Excel. Sin chats sueltos. Sin excusas.
+            </motion.p>
+
+            <motion.div
+              variants={fadeUp}
+              transition={{ duration: 0.5 }}
+              className="mt-9 flex flex-wrap items-center justify-center gap-4 lg:justify-start"
+            >
+              <MagneticButton href="/sign-up">
+                Empezar gratis <ArrowRight className="size-4" />
+              </MagneticButton>
+              <MagneticButton href="#features" variant="outline">
+                Ver cómo funciona
+              </MagneticButton>
+            </motion.div>
+
+            <motion.p
+              variants={fadeUp}
+              transition={{ duration: 0.5 }}
+              className="mt-4 text-xs text-muted-foreground"
+            >
+              14 días gratis · Sin tarjeta · Cancela cuando quieras
+            </motion.p>
           </motion.div>
 
-          <motion.h1
-            variants={fadeUp}
-            transition={{ duration: 0.5 }}
-            className="mx-auto mt-7 max-w-4xl text-balance text-5xl font-extrabold leading-[0.98] tracking-tight md:text-7xl"
-          >
-            Caza clientes como un <span className={GRAD}>halcón</span>.
-          </motion.h1>
-
-          <motion.p
-            variants={fadeUp}
-            transition={{ duration: 0.5 }}
-            className="mx-auto mt-6 max-w-2xl text-pretty text-lg text-muted-foreground"
-          >
-            HalcónOS descubre negocios reales con Google Maps, escribe tus propuestas con IA y unifica
-            WhatsApp, email y pipeline en un solo lugar. Sin Excel. Sin chats sueltos. Sin excusas.
-          </motion.p>
-
-          <motion.div
-            variants={fadeUp}
-            transition={{ duration: 0.5 }}
-            className="mt-9 flex flex-wrap items-center justify-center gap-4"
-          >
-            <MagneticButton href="/sign-up">
-              Empezar gratis <ArrowRight className="size-4" />
-            </MagneticButton>
-            <MagneticButton href="#features" variant="outline">
-              Ver cómo funciona
-            </MagneticButton>
-          </motion.div>
-
-          <motion.p variants={fadeUp} transition={{ duration: 0.5 }} className="mt-4 text-xs text-muted-foreground">
-            14 días gratis · Sin tarjeta · Cancela cuando quieras
-          </motion.p>
-        </motion.div>
-
-        <HeroMockup />
+          {/* Mockup */}
+          <div className="relative">
+            <HeroMockup />
+          </div>
+        </div>
       </section>
 
       {/* ── Stats band ── */}

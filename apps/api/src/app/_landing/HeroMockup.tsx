@@ -82,9 +82,9 @@ export function HeroMockup() {
       initial={{ opacity: 0, y: 40 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.8, delay: 0.3, ease: [0.22, 1, 0.36, 1] }}
-      className="relative mx-auto mt-16 w-full max-w-4xl"
+      className="relative w-full"
     >
-      <div aria-hidden className="absolute -inset-x-10 -top-6 bottom-0 -z-10 rounded-[2rem] bg-primary/20 blur-3xl" />
+      <div aria-hidden className="absolute -inset-x-8 -top-6 bottom-0 -z-10 rounded-[2rem] bg-primary/20 blur-3xl" />
 
       <motion.div
         animate={{ y: [0, -10, 0] }}
@@ -184,12 +184,12 @@ export function HeroMockup() {
         </div>
       </motion.div>
 
-      {/* floating AI card — cuelga FUERA del panel a la derecha-abajo */}
+      {/* floating AI card — asoma fuera de la esquina inferior-derecha del panel */}
       <motion.div
         initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: 1, scale: 1 }}
         transition={{ duration: 0.6, delay: 1.1 }}
-        className="pointer-events-none absolute -bottom-8 left-full ml-4 hidden w-56 flex-col gap-3 rounded-2xl border border-primary/40 bg-card p-4 text-left shadow-2xl shadow-black/60 xl:flex"
+        className="pointer-events-none absolute -bottom-6 -right-4 hidden w-52 flex-col gap-3 rounded-2xl border border-primary/40 bg-card p-4 text-left shadow-2xl shadow-black/60 sm:flex"
       >
         <div className="flex items-center gap-2 text-xs font-semibold text-primary">
           <Sparkles className="size-4" /> Propuesta IA
