@@ -14,9 +14,9 @@ const envSchema = z.object({
   GOOGLE_CLIENT_SECRET: z.string().optional().default(''),
   GOOGLE_OAUTH_REDIRECT_URI: z.string().optional().default(''),
   // Google Places API (New) — para Descubrir negocios desde /discover.
-  // OPCIONAL: si está vacía, places.ts cae sobre GEMINI_API_KEY (la misma key
-  // de Google Cloud, con Places API habilitada en el mismo proyecto).
-  // Defínelo solo si quieres separar billing/quota por API.
+  // Esta es una API KEY de Google Cloud (NO el client_id de OAuth, NO el de
+  // Gemini AI Studio). Se genera en console.cloud.google.com → Credentials →
+  // Create credentials → API Key, con "Places API (New)" habilitada.
   GOOGLE_PLACES_API_KEY: z.string().optional().default(''),
   // Clave para cifrar refresh tokens (AES-256-GCM). 32 bytes en hex (64 chars). Generar: openssl rand -hex 32
   ENCRYPTION_KEY: z
@@ -49,6 +49,4 @@ export const googleConfigured = Boolean(
   env.GOOGLE_CLIENT_ID && env.GOOGLE_CLIENT_SECRET && env.GOOGLE_OAUTH_REDIRECT_URI && env.ENCRYPTION_KEY,
 );
 
-// places.ts cae sobre GEMINI_API_KEY si la específica no está — basta con que
-// CUALQUIERA de las dos exista.
-export const placesConfigured = Boolean(env.GOOGLE_PLACES_API_KEY || env.GEMINI_API_KEY);
+export const placesConfigured = Boolean(env.GOOGLE_PLACES_API_KEY);

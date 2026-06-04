@@ -69,20 +69,14 @@ export type PlaceResult = {
 };
 
 function ensureKey(): string {
-  // Reusamos la misma API key de Google Cloud que ya usamos para Gemini —
-  // basta con que en la consola de Google tengas habilitado "Places API (New)"
-  // en el mismo proyecto. Si alguien necesita una key separada (ej. para
-  // tracking de billing per-API), puede definir GOOGLE_PLACES_API_KEY y
-  // sobreescribe.
-  const key = env.GOOGLE_PLACES_API_KEY || env.GEMINI_API_KEY;
-  if (!key) {
+  if (!env.GOOGLE_PLACES_API_KEY) {
     throw new TRPCError({
       code: 'PRECONDITION_FAILED',
       message:
-        'Falta GOOGLE_PLACES_API_KEY o GEMINI_API_KEY en .env. Habilita Places API (New) en tu proyecto de Google Cloud y agrega la key.',
+        'Falta GOOGLE_PLACES_API_KEY en .env. Genera una API key en Google Cloud Console con "Places API (New)" habilitada y agrégala.',
     });
   }
-  return key;
+  return env.GOOGLE_PLACES_API_KEY;
 }
 
 type SearchTextResponse = {
