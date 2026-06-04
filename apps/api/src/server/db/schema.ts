@@ -3,6 +3,7 @@ import {
   boolean,
   index,
   integer,
+  jsonb,
   numeric,
   pgSchema,
   text,
@@ -253,6 +254,21 @@ export const notes = agencySchema.table(
   ],
 );
 
+// Cache global (no per-org) de búsquedas a Google Places API. La key normaliza
+// query + ciudad para que distintos usuarios buscando lo mismo reusen el mismo
+// resultado (los lugares son objetivos del mundo, no específicos de un org).
+// TTL: 24h — el router compara contra createdAt antes de devolver el cache.
+export const discoveredPlaces = agencySchema.table(
+  'discovered_places',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    searchKey: text('search_key').notNull(),
+    results: jsonb('results').notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+  },
+  (t) => [uniqueIndex('discovered_places_key_idx').on(t.searchKey)],
+);
+
 export const usersRelations = relations(users, ({ many }) => ({
   leads: many(leads),
   projects: many(projects),
@@ -299,3 +315,5 @@ export type InboundKey = typeof inboundKeys.$inferSelect;
 export type NewInboundKey = typeof inboundKeys.$inferInsert;
 export type GoogleAccount = typeof googleAccounts.$inferSelect;
 export type NewGoogleAccount = typeof googleAccounts.$inferInsert;
+export type DiscoveredPlace = typeof discoveredPlaces.$inferSelect;
+export type NewDiscoveredPlace = typeof discoveredPlaces.$inferInsert;

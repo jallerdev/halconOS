@@ -3,6 +3,7 @@
 import {
   Boxes,
   CalendarClock,
+  Compass,
   FileSpreadsheet,
   KanbanSquare,
   KeyRound,
@@ -24,6 +25,7 @@ import { useSidebar } from './sidebar-context';
 
 const NAV: { href: string; label: string; icon: LucideIcon; exact?: boolean }[] = [
   { href: '/leads', label: 'Leads', icon: Zap },
+  { href: '/discover', label: 'Descubrir', icon: Compass },
   { href: '/today', label: 'Hoy', icon: CalendarClock },
   { href: '/pipeline', label: 'Pipeline', icon: KanbanSquare },
   { href: '/projects', label: 'Proyectos', icon: Boxes },

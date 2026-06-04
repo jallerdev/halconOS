@@ -1,4 +1,5 @@
 import { router } from '../trpc';
+import { discoverRouter } from './discover';
 import { googleRouter } from './google';
 import { inboundKeysRouter } from './inbound-keys';
 import { leadsRouter } from './leads';
@@ -15,6 +16,7 @@ export const appRouter = router({
   inboundKeys: inboundKeysRouter,
   google: googleRouter,
   meetings: meetingsRouter,
+  discover: discoverRouter,
 });
 
 export type AppRouter = typeof appRouter;
