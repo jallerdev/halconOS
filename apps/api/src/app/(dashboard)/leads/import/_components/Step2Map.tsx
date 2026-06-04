@@ -82,7 +82,7 @@ export function Step2Map({
             <div key={value} className="flex items-center justify-between gap-3">
               <div className="text-sm">
                 <p>{label}</p>
-                {required && <p className="text-[10px] uppercase tracking-wide text-amber-400">Requerido</p>}
+                {required && <p className="text-[10px] uppercase tracking-wide text-primary">Requerido</p>}
               </div>
               <Combobox
                 value={mapping[value] == null ? '_none' : String(mapping[value])}

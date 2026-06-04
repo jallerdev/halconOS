@@ -427,7 +427,7 @@ export function LeadsTable() {
                     <TableCell>
                       {l.googleRating ? (
                         <span className="inline-flex items-center gap-1 font-mono text-sm">
-                          <Star className="size-3 fill-amber-400 text-amber-400" />
+                          <Star className="size-3 fill-primary text-primary" />
                           {l.googleRating}
                         </span>
                       ) : (

@@ -37,19 +37,52 @@ export const BRAND = {
   gradient: 'linear-gradient(135deg, hsl(252 100% 68%), hsl(168 76% 46%))',
 } as const;
 
-// AccentColor permanece como alias para KpiStrip / charts. En "Atrevida"
-// casi todo es violet — usar 'teal' sólo para señales explícitamente
-// positivas (proyectos ganados, dinero, conversión exitosa).
-export type AccentColor = 'violet' | 'teal';
+// Acento por página. En «Atrevida» casi todo es violet; usamos teal solo donde
+// queremos resaltar "datos vivos" (ej. conversión exitosa). Las MISMAS claves
+// que existían cuando el sistema era multicolor — todas resuelven a violet
+// o teal para no romper imports.
+export const PAGE_ACCENT = {
+  leads: 'violet',
+  today: 'teal',
+  pipeline: 'violet',
+  projects: 'teal',
+  settings: 'violet',
+  discover: 'violet',
+  notifications: 'violet',
+} as const;
+
+// AccentColor PERMISIVA: conserva los nombres antiguos (sky/amber/emerald/blue)
+// para que cualquier call-site existente siga compilando, pero TODOS se
+// remapean a violet o teal. Así se re-tona toda la app sin tocar cada página.
+export type AccentColor = 'violet' | 'teal' | 'sky' | 'amber' | 'emerald' | 'blue';
 
 export const ACCENT_TEXT: Record<AccentColor, string> = {
   violet: 'text-[hsl(var(--violet))]',
   teal: 'text-[hsl(var(--teal))]',
+  // Legacy — todos colapsan a la marca.
+  sky: 'text-[hsl(var(--violet))]',
+  amber: 'text-[hsl(var(--violet))]',
+  blue: 'text-[hsl(var(--violet))]',
+  emerald: 'text-[hsl(var(--teal))]',
 };
 
 export const ACCENT_BG_SOFT: Record<AccentColor, string> = {
   violet: 'bg-[hsl(var(--violet))]/14',
   teal: 'bg-[hsl(var(--teal))]/14',
+  sky: 'bg-[hsl(var(--violet))]/14',
+  amber: 'bg-[hsl(var(--violet))]/14',
+  blue: 'bg-[hsl(var(--violet))]/14',
+  emerald: 'bg-[hsl(var(--teal))]/14',
+};
+
+// Color de trazo (hsl real) para sparklines/charts. No usar nombres de Tremor.
+export const ACCENT_STROKE: Record<AccentColor, string> = {
+  violet: 'hsl(252 100% 68%)',
+  teal: 'hsl(168 76% 46%)',
+  sky: 'hsl(252 100% 68%)',
+  amber: 'hsl(252 100% 68%)',
+  blue: 'hsl(252 100% 68%)',
+  emerald: 'hsl(168 76% 46%)',
 };
 
 // ─────────────────────── Status hue (lead) ───────────────────────

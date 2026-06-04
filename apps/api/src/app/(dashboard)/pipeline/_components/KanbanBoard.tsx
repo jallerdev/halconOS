@@ -334,7 +334,7 @@ function LeadCard({
         <ScoreBadge score={card.score} />
         {card.googleRating && (
           <span className="inline-flex items-center gap-1 font-mono text-xs text-muted-foreground">
-            <Star className="size-3 fill-amber-400 text-amber-400" />
+            <Star className="size-3 fill-primary text-primary" />
             {card.googleRating}
             <span className="opacity-70">({card.reviewCount?.toLocaleString('es-CO')})</span>
           </span>

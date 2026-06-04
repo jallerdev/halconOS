@@ -120,7 +120,7 @@ function KeyRow({
               onClick={copy}
               title="Copiar"
             >
-              {copied ? <Check className="text-emerald-400" /> : <Copy />}
+              {copied ? <Check className="text-teal-400" /> : <Copy />}
             </Button>
           )}
         </>
@@ -254,8 +254,8 @@ export default function SettingsPage() {
               </div>
 
               {newSecret && (
-                <div className="rounded-lg border border-amber-500/40 bg-amber-500/10 p-4">
-                  <p className="text-sm font-medium text-amber-200">
+                <div className="rounded-lg border border-primary/40 bg-primary/10 p-4">
+                  <p className="text-sm font-medium text-primary">
                     Guárdala ahora — no se vuelve a mostrar.
                   </p>
                   <div className="mt-2 flex items-center gap-2">
@@ -263,7 +263,7 @@ export default function SettingsPage() {
                       {newSecret}
                     </code>
                     <Button variant="outline" size="icon" onClick={copySecret} title="Copiar">
-                      {copied ? <Check className="text-emerald-400" /> : <Copy />}
+                      {copied ? <Check className="text-teal-400" /> : <Copy />}
                     </Button>
                   </div>
                 </div>

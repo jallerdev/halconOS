@@ -11,7 +11,7 @@ import {
   FileText,
   GitBranch,
   Hammer,
-  Inbox,
+  KanbanSquare,
   MapPin,
   MessageCircle,
   Rocket,
@@ -34,106 +34,92 @@ const fadeUp = {
   show: { opacity: 1, y: 0 },
 };
 
-type Accent = 'sky' | 'violet' | 'emerald' | 'amber';
+/* ── Sistema de dos tonos: SOLO violet (primary) + teal ── */
+type Tone = 'violet' | 'teal';
 
-const ICON_STYLE: Record<Accent, string> = {
-  sky: 'bg-sky-500/15 text-sky-500 dark:text-sky-300 group-hover:bg-sky-500 group-hover:text-white',
-  violet: 'bg-primary/15 text-primary group-hover:bg-primary group-hover:text-primary-foreground',
-  emerald:
-    'bg-emerald-500/15 text-emerald-600 dark:text-emerald-300 group-hover:bg-emerald-500 group-hover:text-white',
-  amber:
-    'bg-amber-500/15 text-amber-600 dark:text-amber-300 group-hover:bg-amber-500 group-hover:text-white',
+const ICON_STYLE: Record<Tone, string> = {
+  violet: 'bg-primary/15 text-primary group-hover:scale-110',
+  teal: 'bg-teal-500/15 text-teal-600 dark:text-teal-300 group-hover:scale-110',
 };
-const CARD_GLOW: Record<Accent, string> = {
-  sky: 'hover:border-sky-500/40 hover:shadow-[0_8px_40px_-12px] hover:shadow-sky-500/40',
-  violet: 'hover:border-primary/40 hover:shadow-[0_8px_40px_-12px] hover:shadow-primary/50',
-  emerald: 'hover:border-emerald-500/40 hover:shadow-[0_8px_40px_-12px] hover:shadow-emerald-500/40',
-  amber: 'hover:border-amber-500/40 hover:shadow-[0_8px_40px_-12px] hover:shadow-amber-500/40',
-};
-const STAT_GRAD: Record<Accent, string> = {
-  sky: 'from-sky-400 to-sky-600',
-  violet: 'from-violet-400 to-primary',
-  emerald: 'from-emerald-400 to-emerald-600',
-  amber: 'from-amber-400 to-amber-600',
-};
-const BAR: Record<Accent, string> = {
-  sky: 'bg-sky-400',
-  violet: 'bg-primary',
-  emerald: 'bg-emerald-400',
-  amber: 'bg-amber-400',
-};
-const ARROW: Record<Accent, string> = {
-  sky: 'text-sky-400',
-  violet: 'text-primary',
-  emerald: 'text-emerald-400',
-  amber: 'text-amber-400',
+const STEP_ICON: Record<Tone, string> = {
+  violet: 'bg-primary/15 text-primary',
+  teal: 'bg-teal-500/15 text-teal-600 dark:text-teal-300',
 };
 
-const FEATURES: { icon: LucideIcon; title: string; body: string; accent: Accent }[] = [
+const FEATURES: { icon: LucideIcon; title: string; body: string; tone: Tone; n: string }[] = [
   {
     icon: MapPin,
-    accent: 'sky',
-    title: 'Descubre leads con Google',
-    body: 'Encuentra negocios reales por ciudad y categoría usando Google Places. Filtra los que no tienen web, los mejor calificados, los más reseñados — y mándalos directo a tu pipeline.',
+    tone: 'violet',
+    n: '01',
+    title: 'Caza leads con Google',
+    body: 'Encuentra negocios reales por ciudad y categoría con Google Places. Filtra los que no tienen web, los mejor calificados — y mándalos directo a tu pipeline.',
   },
   {
     icon: Sparkles,
-    accent: 'violet',
+    tone: 'teal',
+    n: '02',
     title: 'Propuestas con IA',
-    body: 'Genera estrategia de venta, propuesta comercial y el primer mensaje perfecto en segundos. La IA hace el borrador; tú cierras el trato.',
+    body: 'Estrategia de venta, propuesta comercial y el primer mensaje perfecto en segundos. La IA hace el borrador; tú cierras el trato.',
   },
   {
     icon: MessageCircle,
-    accent: 'emerald',
+    tone: 'violet',
+    n: '03',
     title: 'Conversación multicanal',
-    body: 'WhatsApp + Email sincronizados con cada lead. Cada conversación queda guardada en su contexto — sin saltar entre apps, sin perder hilos.',
+    body: 'WhatsApp y Email sincronizados con cada lead. Toda la conversación queda en su contexto — sin saltar entre apps, sin perder hilos.',
   },
   {
-    icon: Inbox,
-    accent: 'amber',
+    icon: KanbanSquare,
+    tone: 'teal',
+    n: '04',
     title: 'Pipeline + Inbox personal',
     body: 'Kanban configurable por servicio, scoring automático, asignación por miembro y vista "Mis leads" para que cada vendedor trabaje sin ruido.',
   },
   {
     icon: FileText,
-    accent: 'sky',
+    tone: 'violet',
+    n: '05',
     title: 'Propuestas firmables',
-    body: 'Crea propuestas con line items, envíalas con un link público y deja que el cliente las firme online. PDF generado, contrato cerrado.',
+    body: 'Crea propuestas con line items, envíalas con un link público y deja que el cliente firme online. PDF generado, contrato cerrado.',
   },
   {
-    icon: GitBranch,
-    accent: 'violet',
+    icon: Boxes,
+    tone: 'teal',
+    n: '06',
     title: 'De lead a proyecto en 1 tap',
-    body: 'Cuando ganas el deal, el lead se convierte en proyecto con todo el contexto. Tareas, deadlines, facturación — sin retipear nada.',
+    body: 'Cuando ganas el deal, el lead se vuelve proyecto con todo el contexto. Tareas, deadlines, facturación — sin retipear nada.',
   },
 ];
 
-const STATS: { value: string; label: string; accent: Accent }[] = [
-  { value: '5min', label: 'de prospección a primer mensaje', accent: 'sky' },
-  { value: 'IA', label: 'propuestas en segundos', accent: 'violet' },
-  { value: '100%', label: 'multi-tenant y multi-canal', accent: 'emerald' },
-  { value: '⌘K', label: 'command palette nativo', accent: 'amber' },
+const STATS: { value: string; label: string }[] = [
+  { value: '5 min', label: 'de prospecto a primer mensaje' },
+  { value: '+38%', label: 'tasa de cierre con propuestas IA' },
+  { value: '3→1', label: 'WhatsApp · Email · Pipeline unificados' },
+  { value: '⌘K', label: 'todo a un atajo de distancia' },
 ];
 
-type Step = { icon: LucideIcon; label: string; sub: string; accent: Accent };
+type Step = { icon: LucideIcon; label: string; sub: string; tone: Tone };
 
 const SALES_FLOW: Step[] = [
-  { icon: Zap, label: 'Capta el lead', sub: 'Negocio sin web', accent: 'sky' },
-  { icon: Sparkles, label: 'Genera propuesta', sub: 'Con IA', accent: 'violet' },
-  { icon: Star, label: 'Gana la venta', sub: 'Estado WON', accent: 'amber' },
-  { icon: Boxes, label: 'Crea el proyecto', sub: '1 tap, con contexto', accent: 'emerald' },
+  { icon: Zap, label: 'Caza el lead', sub: 'Negocio sin web', tone: 'violet' },
+  { icon: Sparkles, label: 'Propón con IA', sub: 'Borrador en segundos', tone: 'teal' },
+  { icon: Star, label: 'Gana la venta', sub: 'Estado Ganado', tone: 'violet' },
+  { icon: Boxes, label: 'Crea el proyecto', sub: '1 tap, con contexto', tone: 'teal' },
 ];
 
 const PROJECT_FLOW: Step[] = [
-  { icon: ClipboardList, label: 'Planeación', sub: 'Alcance y tareas', accent: 'sky' },
-  { icon: Hammer, label: 'En progreso', sub: 'Manos a la obra', accent: 'violet' },
-  { icon: Eye, label: 'Revisión', sub: 'QA y ajustes', accent: 'amber' },
-  { icon: Rocket, label: 'Entregado', sub: 'Cliente feliz', accent: 'emerald' },
+  { icon: ClipboardList, label: 'Planeación', sub: 'Alcance y tareas', tone: 'violet' },
+  { icon: Hammer, label: 'En progreso', sub: 'Manos a la obra', tone: 'teal' },
+  { icon: Eye, label: 'Revisión', sub: 'QA y ajustes', tone: 'violet' },
+  { icon: Rocket, label: 'Entregado', sub: 'Cliente feliz', tone: 'teal' },
 ];
 
-function Eyebrow({ children, color }: { children: React.ReactNode; color: string }) {
+/* Gradiente de marca reutilizable: violet → teal */
+const GRAD = 'bg-gradient-to-r from-primary to-teal-400 bg-clip-text text-transparent';
+
+function Eyebrow({ children, color = 'text-primary' }: { children: React.ReactNode; color?: string }) {
   return (
-    <span className={`text-xs font-semibold uppercase tracking-[0.2em] ${color}`}>{children}</span>
+    <span className={`text-xs font-bold uppercase tracking-[0.22em] ${color}`}>{children}</span>
   );
 }
 
@@ -147,21 +133,19 @@ function FlowRow({ steps }: { steps: Step[] }) {
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             transition={{ duration: 0.4, delay: i * 0.1 }}
-            className="flex flex-1 items-center gap-3 rounded-2xl border border-border bg-background p-4 md:flex-col md:text-center"
+            className="flex flex-1 items-center gap-3 rounded-2xl border border-border bg-background/60 p-4 md:flex-col md:text-center"
           >
-            <div
-              className={`flex size-11 shrink-0 items-center justify-center rounded-xl ${ICON_STYLE[step.accent]}`}
-            >
+            <div className={`flex size-11 shrink-0 items-center justify-center rounded-xl ${STEP_ICON[step.tone]}`}>
               <step.icon className="size-5" />
             </div>
             <div>
-              <div className="text-sm font-medium">{step.label}</div>
+              <div className="text-sm font-semibold">{step.label}</div>
               <div className="text-xs text-muted-foreground">{step.sub}</div>
             </div>
           </motion.div>
           {i < arr.length - 1 && (
-            <div className="flex items-center justify-center md:px-1">
-              <ArrowRight className={`size-5 shrink-0 rotate-90 md:rotate-0 ${ARROW[step.accent]}`} />
+            <div className="flex items-center justify-center text-border md:px-1">
+              <ArrowRight className="size-5 shrink-0 rotate-90 md:rotate-0" />
             </div>
           )}
         </Fragment>
@@ -172,34 +156,34 @@ function FlowRow({ steps }: { steps: Step[] }) {
 
 export function Landing() {
   return (
-    <div className="relative min-h-screen overflow-hidden bg-background text-foreground antialiased">
-      {/* ambient color blobs */}
+    <div className="relative min-h-screen overflow-x-hidden bg-background text-foreground antialiased">
+      {/* ── Fondo atmosférico: SOLO violet + teal ── */}
       <div
         aria-hidden
-        className="pointer-events-none absolute inset-0 -z-10"
+        className="pointer-events-none fixed inset-0 -z-10"
         style={{
           backgroundImage:
-            'radial-gradient(50% 40% at 50% -5%, hsl(252 100% 68% / 0.28) 0%, transparent 70%), radial-gradient(40% 35% at 90% 5%, hsl(199 89% 55% / 0.20) 0%, transparent 70%), radial-gradient(38% 32% at 5% 18%, hsl(330 90% 62% / 0.16) 0%, transparent 70%), radial-gradient(40% 35% at 80% 60%, hsl(160 84% 45% / 0.12) 0%, transparent 70%)',
+            'radial-gradient(48% 38% at 38% -4%, hsl(252 100% 68% / 0.26) 0%, transparent 70%), radial-gradient(44% 40% at 92% 90%, hsl(168 76% 42% / 0.16) 0%, transparent 70%)',
         }}
       />
       <div
         aria-hidden
-        className="pointer-events-none absolute inset-0 -z-10 opacity-[0.5]"
+        className="pointer-events-none fixed inset-0 -z-10"
         style={{
           backgroundImage:
-            'linear-gradient(to right, hsl(var(--foreground) / 0.05) 1px, transparent 1px), linear-gradient(to bottom, hsl(var(--foreground) / 0.05) 1px, transparent 1px)',
+            'linear-gradient(to right, hsl(var(--foreground) / 0.045) 1px, transparent 1px), linear-gradient(to bottom, hsl(var(--foreground) / 0.045) 1px, transparent 1px)',
           backgroundSize: '64px 64px',
-          maskImage: 'radial-gradient(75% 55% at 50% 0%, black, transparent)',
+          maskImage: 'radial-gradient(80% 55% at 50% 0%, black, transparent)',
         }}
       />
 
-      {/* nav */}
-      <header className="sticky top-0 z-30 border-b border-border/60 bg-background/70 backdrop-blur-xl">
+      {/* ── Nav ── */}
+      <header className="sticky top-0 z-30 border-b border-border/60 bg-background/65 backdrop-blur-xl">
         <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-6">
           <Wordmark />
           <nav className="hidden items-center gap-7 text-sm text-muted-foreground md:flex">
             <a href="#problema" className="transition-colors hover:text-foreground">Problema</a>
-            <a href="#features" className="transition-colors hover:text-foreground">Features</a>
+            <a href="#features" className="transition-colors hover:text-foreground">Capacidades</a>
             <a href="#flujo" className="transition-colors hover:text-foreground">Cómo funciona</a>
           </nav>
           <div className="flex items-center gap-2.5">
@@ -211,7 +195,7 @@ export function Landing() {
         </div>
       </header>
 
-      {/* hero */}
+      {/* ── Hero ── */}
       <section className="mx-auto max-w-6xl px-6 pb-10 pt-20 text-center md:pt-28">
         <motion.div initial="hidden" animate="show" transition={{ staggerChildren: 0.1 }}>
           <motion.div
@@ -223,25 +207,15 @@ export function Landing() {
               <span className="absolute inline-flex size-full animate-ping rounded-full bg-primary/60" />
               <span className="relative inline-flex size-2 rounded-full bg-primary" />
             </span>
-            El CRM con IA para freelancers y agencias de LatAm
+            CRM con IA · hecho para agencias de LatAm
           </motion.div>
 
           <motion.h1
             variants={fadeUp}
             transition={{ duration: 0.5 }}
-            className="mx-auto mt-7 max-w-4xl text-balance text-5xl font-bold leading-[1.05] tracking-tight md:text-7xl"
+            className="mx-auto mt-7 max-w-4xl text-balance text-5xl font-extrabold leading-[0.98] tracking-tight md:text-7xl"
           >
-            Descubre, contacta y{' '}
-            <span className="relative inline-block">
-              <span className="relative z-10 bg-gradient-to-r from-primary via-fuchsia-500 to-sky-500 bg-clip-text text-transparent">
-                cierra
-              </span>
-              <span
-                aria-hidden
-                className="absolute inset-x-0 bottom-1 -z-0 h-3 -rotate-1 rounded-full bg-gradient-to-r from-primary/30 to-sky-400/30 blur-[2px]"
-              />
-            </span>{' '}
-            con un solo CRM
+            Caza clientes como un <span className={GRAD}>halcón</span>.
           </motion.h1>
 
           <motion.p
@@ -249,9 +223,8 @@ export function Landing() {
             transition={{ duration: 0.5 }}
             className="mx-auto mt-6 max-w-2xl text-pretty text-lg text-muted-foreground"
           >
-            HalcónOS encuentra negocios reales con Google Maps, redacta tus propuestas con IA y
-            unifica WhatsApp + Email + Pipeline en un solo lugar. Sin Excel, sin chats sueltos,
-            sin saltar entre apps.
+            HalcónOS descubre negocios reales con Google Maps, escribe tus propuestas con IA y unifica
+            WhatsApp, email y pipeline en un solo lugar. Sin Excel. Sin chats sueltos. Sin excusas.
           </motion.p>
 
           <motion.div
@@ -263,23 +236,19 @@ export function Landing() {
               Empezar gratis <ArrowRight className="size-4" />
             </MagneticButton>
             <MagneticButton href="#features" variant="outline">
-              Ver capacidades
+              Ver cómo funciona
             </MagneticButton>
           </motion.div>
 
-          <motion.p
-            variants={fadeUp}
-            transition={{ duration: 0.5 }}
-            className="mt-4 text-xs text-muted-foreground"
-          >
-            14 días free trial · Sin tarjeta · Cancela cuando quieras
+          <motion.p variants={fadeUp} transition={{ duration: 0.5 }} className="mt-4 text-xs text-muted-foreground">
+            14 días gratis · Sin tarjeta · Cancela cuando quieras
           </motion.p>
         </motion.div>
 
         <HeroMockup />
       </section>
 
-      {/* stats band */}
+      {/* ── Stats band ── */}
       <section className="mx-auto max-w-5xl px-6 py-10">
         <motion.div
           initial="hidden"
@@ -289,25 +258,16 @@ export function Landing() {
           className="grid grid-cols-2 gap-px overflow-hidden rounded-3xl border border-border bg-border shadow-sm md:grid-cols-4 dark:shadow-none"
         >
           {STATS.map((s) => (
-            <motion.div
-              key={s.label}
-              variants={fadeUp}
-              transition={{ duration: 0.4 }}
-              className="relative bg-card px-5 py-7 text-center"
-            >
-              <span className={`absolute inset-x-0 top-0 mx-auto h-1 w-12 rounded-b-full ${BAR[s.accent]}`} />
-              <div
-                className={`bg-gradient-to-b bg-clip-text text-3xl font-bold tracking-tight text-transparent ${STAT_GRAD[s.accent]}`}
-              >
-                {s.value}
-              </div>
-              <div className="mt-1.5 text-xs text-muted-foreground">{s.label}</div>
+            <motion.div key={s.label} variants={fadeUp} transition={{ duration: 0.4 }} className="relative bg-card px-5 py-8 text-center">
+              <span className="absolute inset-x-0 top-0 mx-auto h-[3px] w-12 rounded-b-full bg-gradient-to-r from-primary to-teal-400" />
+              <div className={`text-4xl font-extrabold tracking-tight tabular-nums ${GRAD}`}>{s.value}</div>
+              <div className="mt-2.5 text-xs text-muted-foreground">{s.label}</div>
             </motion.div>
           ))}
         </motion.div>
       </section>
 
-      {/* problema / solución */}
+      {/* ── Problema / Solución ── */}
       <section id="problema" className="mx-auto max-w-6xl px-6 py-24">
         <motion.div
           initial="hidden"
@@ -317,38 +277,28 @@ export function Landing() {
           className="mx-auto max-w-2xl text-center"
         >
           <motion.div variants={fadeUp} transition={{ duration: 0.5 }}>
-            <Eyebrow color="text-rose-500">El costo del desorden</Eyebrow>
+            <Eyebrow color="text-muted-foreground">El costo del desorden</Eyebrow>
           </motion.div>
-          <motion.h2
-            variants={fadeUp}
-            transition={{ duration: 0.5 }}
-            className="mt-4 text-3xl font-bold tracking-tight md:text-5xl"
-          >
-            El desorden te cuesta{' '}
-            <span className="bg-gradient-to-r from-rose-500 to-orange-400 bg-clip-text text-transparent">
-              ventas
-            </span>
+          <motion.h2 variants={fadeUp} transition={{ duration: 0.5 }} className="mt-4 text-3xl font-bold tracking-tight md:text-5xl">
+            El desorden te cuesta <span className={GRAD}>ventas</span>
           </motion.h2>
-          <motion.p
-            variants={fadeUp}
-            transition={{ duration: 0.5 }}
-            className="mt-4 text-muted-foreground"
-          >
-            Cada lead que se pierde entre hojas de cálculo, chats y notas sueltas es dinero que dejas
-            sobre la mesa. HalcónOS lo unifica todo.
+          <motion.p variants={fadeUp} transition={{ duration: 0.5 }} className="mt-4 text-muted-foreground">
+            Cada lead que se pierde entre hojas de cálculo, chats y notas sueltas es plata que dejas sobre la mesa.
+            HalcónOS lo unifica todo.
           </motion.p>
         </motion.div>
 
         <div className="mt-14 grid gap-5 md:grid-cols-2">
+          {/* SIN sistema — gris desaturado, sin vida */}
           <motion.div
             initial={{ opacity: 0, x: -24 }}
             whileInView={{ opacity: 1, x: 0 }}
             viewport={{ once: true }}
             transition={{ duration: 0.5 }}
-            className="rounded-3xl border border-rose-500/25 bg-gradient-to-b from-rose-500/[0.08] to-card p-8 shadow-sm dark:shadow-none"
+            className="rounded-3xl border border-border bg-muted/40 p-8 saturate-[0.4]"
           >
-            <h3 className="flex items-center gap-2.5 text-lg font-semibold text-rose-500 dark:text-rose-300">
-              <span className="flex size-8 items-center justify-center rounded-lg bg-rose-500/15">
+            <h3 className="flex items-center gap-2.5 text-lg font-semibold text-muted-foreground">
+              <span className="flex size-9 items-center justify-center rounded-lg bg-muted text-muted-foreground">
                 <X className="size-4" />
               </span>
               Sin un sistema
@@ -361,25 +311,23 @@ export function Landing() {
                 'El contexto de la venta se pierde al arrancar el proyecto.',
               ].map((t) => (
                 <li key={t} className="flex items-start gap-2.5">
-                  <X className="mt-0.5 size-4 shrink-0 text-rose-400" /> {t}
+                  <X className="mt-0.5 size-4 shrink-0 text-muted-foreground/70" /> {t}
                 </li>
               ))}
             </ul>
           </motion.div>
 
+          {/* CON HalcónOS — violet vivo + glow teal */}
           <motion.div
             initial={{ opacity: 0, x: 24 }}
             whileInView={{ opacity: 1, x: 0 }}
             viewport={{ once: true }}
             transition={{ duration: 0.5, delay: 0.1 }}
-            className="relative overflow-hidden rounded-3xl border border-primary/35 bg-gradient-to-b from-primary/[0.1] to-card p-8 shadow-sm dark:shadow-none"
+            className="relative overflow-hidden rounded-3xl border border-primary/40 bg-gradient-to-b from-primary/[0.12] to-card p-8"
           >
-            <div
-              aria-hidden
-              className="pointer-events-none absolute -right-16 -top-16 size-44 rounded-full bg-primary/20 blur-3xl"
-            />
-            <h3 className="flex items-center gap-2.5 text-lg font-semibold text-primary">
-              <span className="flex size-8 items-center justify-center rounded-lg bg-primary/15">
+            <div aria-hidden className="pointer-events-none absolute -right-12 -top-12 size-44 rounded-full bg-teal-400/20 blur-3xl" />
+            <h3 className="flex items-center gap-2.5 text-lg font-semibold text-foreground">
+              <span className="flex size-9 items-center justify-center rounded-lg bg-primary/[0.18] text-primary">
                 <Check className="size-4" />
               </span>
               Con HalcónOS
@@ -392,7 +340,7 @@ export function Landing() {
                 'El lead ganado se vuelve proyecto sin perder nada.',
               ].map((t) => (
                 <li key={t} className="flex items-start gap-2.5">
-                  <Check className="mt-0.5 size-4 shrink-0 text-emerald-500" /> {t}
+                  <Check className="mt-0.5 size-4 shrink-0 text-teal-500" /> {t}
                 </li>
               ))}
             </ul>
@@ -400,18 +348,15 @@ export function Landing() {
         </div>
       </section>
 
-      {/* features */}
+      {/* ── Features ── */}
       <section id="features" className="mx-auto max-w-6xl px-6 py-24">
         <div className="mx-auto max-w-2xl text-center">
-          <Eyebrow color="text-sky-500">Capacidades</Eyebrow>
+          <Eyebrow>Capacidades</Eyebrow>
           <h2 className="mt-4 text-3xl font-bold tracking-tight md:text-5xl">
-            Tres pilares, un flujo{' '}
-            <span className="bg-gradient-to-r from-sky-500 via-primary to-emerald-500 bg-clip-text text-transparent">
-              imparable
-            </span>
+            Tres pilares, un flujo <span className={GRAD}>imparable</span>
           </h2>
           <p className="mt-4 text-muted-foreground">
-            Diseñado para agencias que captan negocios locales y los llevan de prospecto a cliente.
+            Diseñado para agencias que cazan negocios locales y los llevan de prospecto a cliente.
           </p>
         </div>
 
@@ -422,17 +367,16 @@ export function Landing() {
           transition={{ staggerChildren: 0.1 }}
           className="mt-14 grid gap-5 md:grid-cols-3"
         >
-          {FEATURES.map(({ icon: Icon, title, body, accent }) => (
+          {FEATURES.map(({ icon: Icon, title, body, tone, n }) => (
             <motion.div
               key={title}
               variants={fadeUp}
               transition={{ duration: 0.5 }}
               whileHover={{ y: -6 }}
-              className={`group rounded-3xl border border-border bg-card p-7 shadow-sm transition-all duration-300 dark:shadow-none ${CARD_GLOW[accent]}`}
+              className="group relative overflow-hidden rounded-3xl border border-border bg-card/60 p-7 backdrop-blur-sm transition-all duration-300 hover:border-primary/45 hover:shadow-[0_20px_50px_-24px] hover:shadow-primary/60"
             >
-              <div
-                className={`flex size-12 items-center justify-center rounded-2xl transition-all duration-300 group-hover:scale-110 ${ICON_STYLE[accent]}`}
-              >
+              <span className="absolute right-6 top-6 text-sm font-bold tabular-nums text-border">{n}</span>
+              <div className={`flex size-12 items-center justify-center rounded-2xl transition-transform duration-300 ${ICON_STYLE[tone]}`}>
                 <Icon className="size-6" />
               </div>
               <h3 className="mt-5 text-xl font-semibold tracking-tight">{title}</h3>
@@ -442,42 +386,36 @@ export function Landing() {
         </motion.div>
       </section>
 
-      {/* flujo */}
+      {/* ── Flujo ── */}
       <section id="flujo" className="mx-auto max-w-6xl px-6 py-20">
-        <div className="relative overflow-hidden rounded-[2rem] border border-border bg-card p-8 shadow-sm md:p-14 dark:bg-gradient-to-b dark:from-card/70 dark:to-card/10 dark:shadow-none">
-          <div
-            aria-hidden
-            className="pointer-events-none absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-sky-400 via-primary to-emerald-400"
-          />
+        <div className="relative overflow-hidden rounded-[2rem] border border-border bg-card/50 p-8 backdrop-blur-sm md:p-14">
+          <div aria-hidden className="pointer-events-none absolute inset-x-0 top-0 h-[3px] bg-gradient-to-r from-primary to-teal-400" />
           <div className="mx-auto max-w-2xl text-center">
-            <div className="mx-auto inline-flex items-center gap-2 rounded-full border border-emerald-500/30 bg-emerald-500/[0.08] px-3 py-1 text-xs font-medium text-emerald-600 dark:text-emerald-300">
+            <div className="mx-auto inline-flex items-center gap-2 rounded-full border border-teal-500/30 bg-teal-500/[0.08] px-3 py-1 text-xs font-medium text-teal-600 dark:text-teal-300">
               <Target className="size-3.5" /> Trazabilidad de extremo a extremo
             </div>
             <h2 className="mt-5 text-2xl font-bold tracking-tight md:text-4xl">
-              Del lead al proyecto entregado, sin perder nada
+              Del lead al proyecto entregado, <span className={GRAD}>sin perder nada</span>
             </h2>
           </div>
 
-          {/* Fase 1: pipeline de venta */}
           <div className="mt-12 text-center">
-            <Eyebrow color="text-primary">Fase 1 · Pipeline de venta</Eyebrow>
+            <Eyebrow>Fase 1 · Pipeline de venta</Eyebrow>
           </div>
           <div className="mt-5">
             <FlowRow steps={SALES_FLOW} />
           </div>
 
-          {/* Puente: conversión */}
           <div className="my-6 flex items-center justify-center gap-3">
-            <span className="h-px w-12 bg-gradient-to-r from-transparent to-emerald-400/60" />
-            <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-500/30 bg-emerald-500/[0.08] px-3 py-1 text-xs font-medium text-emerald-600 dark:text-emerald-300">
+            <span className="h-px w-12 bg-gradient-to-r from-transparent to-teal-400/60" />
+            <span className="inline-flex items-center gap-1.5 rounded-full border border-teal-500/30 bg-teal-500/[0.08] px-3 py-1 text-xs font-medium text-teal-600 dark:text-teal-300">
               <GitBranch className="size-3.5" /> Conversión en 1 tap, sin perder contexto
             </span>
-            <span className="h-px w-12 bg-gradient-to-l from-transparent to-emerald-400/60" />
+            <span className="h-px w-12 bg-gradient-to-l from-transparent to-teal-400/60" />
           </div>
 
-          {/* Fase 2: ciclo del proyecto */}
           <div className="text-center">
-            <Eyebrow color="text-emerald-500">Fase 2 · Ciclo del proyecto</Eyebrow>
+            <Eyebrow color="text-teal-600 dark:text-teal-300">Fase 2 · Ciclo del proyecto</Eyebrow>
           </div>
           <div className="mt-5">
             <FlowRow steps={PROJECT_FLOW} />
@@ -485,32 +423,28 @@ export function Landing() {
         </div>
       </section>
 
-      {/* cierre / demo */}
+      {/* ── CTA ── */}
       <section className="mx-auto max-w-6xl px-6 pb-28 pt-10">
         <motion.div
           initial={{ opacity: 0, scale: 0.97 }}
           whileInView={{ opacity: 1, scale: 1 }}
           viewport={{ once: true }}
           transition={{ duration: 0.6 }}
-          className="relative overflow-hidden rounded-[2.5rem] border border-primary/30 bg-card px-6 py-20 text-center shadow-lg shadow-primary/10 dark:shadow-none"
+          className="relative overflow-hidden rounded-[2.5rem] border border-primary/30 bg-card/60 px-6 py-20 text-center backdrop-blur-sm"
         >
           <div
             aria-hidden
             className="pointer-events-none absolute inset-0 -z-10"
             style={{
               backgroundImage:
-                'radial-gradient(55% 90% at 25% 110%, hsl(199 89% 55% / 0.25) 0%, transparent 65%), radial-gradient(55% 90% at 75% 110%, hsl(252 100% 68% / 0.32) 0%, transparent 65%), radial-gradient(40% 70% at 50% 120%, hsl(330 90% 62% / 0.2) 0%, transparent 65%)',
+                'radial-gradient(55% 90% at 30% 120%, hsl(168 76% 42% / 0.28) 0%, transparent 60%), radial-gradient(55% 90% at 75% 120%, hsl(252 100% 68% / 0.4) 0%, transparent 60%)',
             }}
           />
-          <div className="mx-auto mb-6 flex items-center justify-center gap-1.5 text-xs font-medium text-emerald-600 dark:text-emerald-300">
+          <div className="mx-auto mb-6 flex items-center justify-center gap-1.5 text-xs font-semibold text-teal-600 dark:text-teal-300">
             <TrendingUp className="size-4" /> Convierte más, persigue menos
           </div>
-          <h2 className="mx-auto max-w-2xl text-4xl font-bold tracking-tight md:text-5xl">
-            Deja de perseguir leads.
-            <br />
-            <span className="bg-gradient-to-r from-sky-500 via-primary to-fuchsia-500 bg-clip-text text-transparent">
-              Empieza a cerrarlos.
-            </span>
+          <h2 className="mx-auto max-w-2xl text-4xl font-extrabold tracking-tight md:text-5xl">
+            Deja de perseguir leads. Empieza a <span className={GRAD}>cerrarlos</span>.
           </h2>
           <p className="mx-auto mt-5 max-w-md text-muted-foreground">
             Tu pipeline, tus propuestas y tus proyectos en un solo lugar. Entra y toma el control hoy.
@@ -523,7 +457,7 @@ export function Landing() {
         </motion.div>
       </section>
 
-      {/* footer */}
+      {/* ── Footer ── */}
       <footer className="border-t border-border">
         <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-3 px-6 py-10 text-sm text-muted-foreground sm:flex-row">
           <Wordmark logoClassName="size-5" textClassName="text-sm" />

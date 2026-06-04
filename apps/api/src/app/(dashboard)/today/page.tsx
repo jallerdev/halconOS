@@ -83,14 +83,14 @@ export default function TodayPage() {
           <Bucket
             title="Hoy"
             icon={CalendarDays}
-            tone="text-amber-400"
+            tone="text-primary"
             items={data.today}
             empty="Nada para hoy."
           />
           <Bucket
             title="Próximos"
             icon={CalendarClock}
-            tone="text-sky-400"
+            tone="text-teal-600 dark:text-teal-300"
             items={data.upcoming}
             empty="Sin próximos."
           />
@@ -173,7 +173,7 @@ function Row({ lead }: { lead: Item }) {
       <LeadStatusBadge status={lead.status} />
       {lead.googleRating && (
         <span className="hidden items-center gap-1 font-mono text-xs text-muted-foreground sm:inline-flex">
-          <Star className="size-3 fill-amber-400 text-amber-400" />
+          <Star className="size-3 fill-primary text-primary" />
           {lead.googleRating}
         </span>
       )}

@@ -183,7 +183,7 @@ const SEC_COLOR: Record<SectionColor, string> = {
   violet: 'text-[hsl(var(--violet))]',
   teal: 'text-[hsl(var(--teal))]',
   rose: 'text-rose-400',
-  amber: 'text-amber-400',
+  amber: 'text-[hsl(var(--violet))]',
 };
 
 type SectionColor = 'violet' | 'teal' | 'rose' | 'amber';
@@ -266,7 +266,7 @@ function FollowUpItem({
   const markBg =
     tone === 'rose'
       ? 'bg-rose-500/16 text-rose-400'
-      : 'bg-amber-500/16 text-amber-400';
+      : 'bg-[hsl(var(--violet))]/16 text-[hsl(var(--violet))]';
   return (
     <Link href={href} onClick={onClose} className="act-item group">
       <span className={cn('grid size-[34px] shrink-0 place-items-center rounded-[10px]', markBg)}>

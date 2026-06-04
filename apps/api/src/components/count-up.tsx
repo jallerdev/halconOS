@@ -7,11 +7,13 @@ export function CountUp({
   value,
   duration = 0.9,
   suffix = '',
+  prefix = '',
   decimals = 0,
 }: {
   value: number;
   duration?: number;
   suffix?: string;
+  prefix?: string;
   decimals?: number;
 }) {
   // CRÍTICO de robustez: inicializamos en el valor final, NO en 0. Si la
@@ -45,6 +47,7 @@ export function CountUp({
 
   return (
     <span>
+      {prefix}
       {formatted}
       {suffix}
     </span>

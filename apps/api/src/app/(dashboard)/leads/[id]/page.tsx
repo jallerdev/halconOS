@@ -164,7 +164,7 @@ export default function LeadDetailPage() {
               )}
               {lead.googleRating && (
                 <span className="inline-flex items-center gap-1">
-                  <Star className="size-3.5 fill-amber-400 text-amber-400" />
+                  <Star className="size-3.5 fill-primary text-primary" />
                   {lead.googleRating}
                   <span className="text-muted-foreground/70">
                     ({lead.reviewCount?.toLocaleString('es-CO')} reseñas)

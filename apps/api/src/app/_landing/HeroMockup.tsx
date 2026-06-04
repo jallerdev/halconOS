@@ -1,43 +1,95 @@
 'use client';
 
 import { motion } from 'framer-motion';
-import { Sparkles, Star, TrendingUp } from 'lucide-react';
+import {
+  Boxes,
+  CalendarClock,
+  FileSpreadsheet,
+  KanbanSquare,
+  Sparkles,
+  TrendingUp,
+  Zap,
+  type LucideIcon,
+} from 'lucide-react';
 
 import { HalconLogo } from '~/components/halcon-logo';
 
-const ROWS = [
-  { name: 'Caimán del Río', city: 'Medellín', score: 92, status: 'WON', tone: 'emerald' },
-  { name: 'Panadería La Espiga', city: 'Bogotá', score: 78, status: 'PROPUESTA', tone: 'indigo' },
-  { name: 'Taller MotorMax', city: 'Cali', score: 64, status: 'CONTACTADO', tone: 'sky' },
-  { name: 'Veterinaria Patitas', city: 'Barranquilla', score: 55, status: 'NUEVO', tone: 'zinc' },
+/* ── Sparkline inline (sin dependencias) ── */
+function Sparkline({ data, stroke, h = 30 }: { data: number[]; stroke: string; h?: number }) {
+  const w = 100;
+  const min = Math.min(...data);
+  const max = Math.max(...data);
+  const rng = max - min || 1;
+  const pts = data.map((d, i) => {
+    const x = (i / (data.length - 1)) * w;
+    const y = h - ((d - min) / rng) * (h - 4) - 2;
+    return `${x.toFixed(1)},${y.toFixed(1)}`;
+  });
+  const id = `sl-${stroke.replace(/[^a-z0-9]/gi, '')}`;
+  return (
+    <svg viewBox={`0 0 ${w} ${h}`} preserveAspectRatio="none" className="h-full w-full">
+      <defs>
+        <linearGradient id={id} x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor={stroke} stopOpacity="0.28" />
+          <stop offset="100%" stopColor={stroke} stopOpacity="0" />
+        </linearGradient>
+      </defs>
+      <polygon points={`0,${h} ${pts.join(' ')} ${w},${h}`} fill={`url(#${id})`} />
+      <polyline
+        points={pts.join(' ')}
+        fill="none"
+        stroke={stroke}
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        vectorEffect="non-scaling-stroke"
+      />
+    </svg>
+  );
+}
+
+const VIOLET = 'hsl(252 100% 68%)';
+const TEAL = 'hsl(168 76% 46%)';
+
+const NAV: { icon: LucideIcon; label: string; on?: boolean }[] = [
+  { icon: Zap, label: 'Leads', on: true },
+  { icon: CalendarClock, label: 'Hoy' },
+  { icon: KanbanSquare, label: 'Pipeline' },
+  { icon: Boxes, label: 'Proyectos' },
+  { icon: FileSpreadsheet, label: 'Importar' },
 ];
 
-const toneMap: Record<string, string> = {
-  emerald: 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30',
-  indigo: 'bg-indigo-500/15 text-indigo-300 border-indigo-500/30',
-  sky: 'bg-sky-500/15 text-sky-300 border-sky-500/30',
-  zinc: 'bg-zinc-500/15 text-zinc-300 border-zinc-500/30',
-};
+const KPIS = [
+  { label: 'Total de leads', value: '1.467', spark: [40, 42, 41, 44, 46, 45, 48, 50, 52, 54, 56, 58], color: VIOLET },
+  { label: 'Contactados', value: '214', spark: [12, 14, 13, 16, 18, 17, 20, 22, 21, 24, 23, 26], color: TEAL },
+  { label: 'Conversión', value: '6,4%', spark: [7, 7, 6, 7, 6, 6, 7, 6, 6, 5, 6, 6], color: VIOLET },
+];
+
+const ROWS = [
+  { name: 'El Llanerito Centro', city: 'Medellín', score: 99, status: 'Nuevo', c: '#38bdf8' },
+  { name: 'Caimán del Río', city: 'Barranquilla', score: 92, status: 'Ganado', c: '#34d399' },
+  { name: 'Panadería La Espiga', city: 'Bogotá', score: 78, status: 'Propuesta', c: '#a78bfa' },
+  { name: 'Taller MotorMax', city: 'Cali', score: 64, status: 'Contactado', c: '#818cf8' },
+];
+
+function scoreTone(s: number) {
+  return s >= 75 ? '#34d399' : s >= 50 ? '#fbbf24' : '#94a3b8';
+}
 
 export function HeroMockup() {
   return (
     <motion.div
-      initial={{ opacity: 0, y: 40, rotateX: 12 }}
-      animate={{ opacity: 1, y: 0, rotateX: 0 }}
+      initial={{ opacity: 0, y: 40 }}
+      animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.8, delay: 0.3, ease: [0.22, 1, 0.36, 1] }}
-      style={{ perspective: 1200 }}
       className="relative mx-auto mt-16 w-full max-w-4xl"
     >
-      {/* glow under panel */}
-      <div
-        aria-hidden
-        className="absolute -inset-x-10 -top-6 bottom-0 -z-10 rounded-[2rem] bg-primary/20 blur-3xl"
-      />
+      <div aria-hidden className="absolute -inset-x-10 -top-6 bottom-0 -z-10 rounded-[2rem] bg-primary/20 blur-3xl" />
 
       <motion.div
         animate={{ y: [0, -10, 0] }}
-        transition={{ duration: 6, repeat: Infinity, ease: 'easeInOut' }}
-        className="overflow-hidden rounded-2xl border border-border/70 bg-card/80 shadow-2xl shadow-black/50 backdrop-blur-xl"
+        transition={{ duration: 7, repeat: Infinity, ease: 'easeInOut' }}
+        className="overflow-hidden rounded-2xl border border-border/70 bg-card/85 shadow-2xl shadow-black/50 backdrop-blur-xl"
       >
         {/* window chrome */}
         <div className="flex items-center gap-2 border-b border-border/60 bg-background/50 px-4 py-3">
@@ -49,66 +101,112 @@ export function HeroMockup() {
           </div>
         </div>
 
-        <div className="grid gap-4 p-5 sm:grid-cols-[1fr_240px]">
-          {/* table */}
-          <div className="space-y-2">
-            <div className="flex items-center justify-between px-1 pb-1 text-[11px] uppercase tracking-wider text-muted-foreground">
-              <span>Negocio</span>
-              <span>Score</span>
-            </div>
-            {ROWS.map((r, i) => (
-              <motion.div
-                key={r.name}
-                initial={{ opacity: 0, x: -16 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ duration: 0.5, delay: 0.6 + i * 0.12 }}
-                className="flex items-center gap-3 rounded-xl border border-border/50 bg-background/40 px-3 py-2.5"
+        <div className="grid grid-cols-1 sm:grid-cols-[180px_1fr]">
+          {/* sidebar */}
+          <aside className="hidden flex-col gap-1 border-r border-border/60 p-3 sm:flex">
+            {NAV.map((n) => (
+              <div
+                key={n.label}
+                className={`flex items-center gap-2.5 rounded-lg px-3 py-2 text-[13px] ${
+                  n.on ? 'bg-accent text-foreground' : 'text-muted-foreground'
+                }`}
               >
-                <div className="flex size-8 items-center justify-center rounded-lg bg-primary/15 text-xs font-semibold text-primary">
-                  {r.name.slice(0, 2)}
-                </div>
-                <div className="min-w-0 flex-1">
-                  <div className="truncate text-sm font-medium">{r.name}</div>
-                  <div className="text-[11px] text-muted-foreground">{r.city}</div>
-                </div>
-                <span
-                  className={`hidden rounded-full border px-2 py-0.5 text-[10px] font-medium sm:inline ${toneMap[r.tone]}`}
-                >
-                  {r.status}
-                </span>
-                <div className="flex items-center gap-1 text-sm font-semibold tabular-nums">
-                  <Star className="size-3.5 text-primary" />
-                  {r.score}
-                </div>
-              </motion.div>
+                <n.icon className="size-4" /> {n.label}
+              </div>
             ))}
-          </div>
+          </aside>
 
-          {/* AI side card */}
-          <motion.div
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ duration: 0.6, delay: 1.1 }}
-            className="flex flex-col gap-3 rounded-xl border border-primary/30 bg-primary/[0.06] p-4"
-          >
-            <div className="flex items-center gap-2 text-xs font-medium text-primary">
-              <Sparkles className="size-4" /> Propuesta IA
-            </div>
-            <div className="space-y-1.5">
-              {[100, 85, 92, 70, 88].map((w, i) => (
-                <motion.div
-                  key={i}
-                  initial={{ width: 0, opacity: 0 }}
-                  animate={{ width: `${w}%`, opacity: 1 }}
-                  transition={{ duration: 0.5, delay: 1.3 + i * 0.1 }}
-                  className="h-2 rounded-full bg-foreground/10"
-                />
+          {/* main */}
+          <main className="min-w-0 p-5">
+            <div className="text-[11px] font-bold uppercase tracking-[0.18em] text-primary">Pipeline de ventas</div>
+            <h3 className="mt-1 text-2xl font-bold tracking-tight">Leads</h3>
+
+            {/* KPIs */}
+            <div className="my-4 grid grid-cols-3 gap-3">
+              {KPIS.map((k) => (
+                <div key={k.label} className="rounded-xl border border-border bg-background/40 p-3">
+                  <div className="text-[11px] text-muted-foreground">{k.label}</div>
+                  <div className="mt-0.5 text-xl font-bold tracking-tight tabular-nums">{k.value}</div>
+                  <div className="mt-2 h-[26px]">
+                    <Sparkline data={k.spark} stroke={k.color} />
+                  </div>
+                </div>
               ))}
             </div>
-            <div className="mt-auto flex items-center gap-1.5 rounded-lg bg-emerald-500/10 px-2.5 py-1.5 text-[11px] font-medium text-emerald-300">
-              <TrendingUp className="size-3.5" /> +38% tasa de cierre
+
+            {/* table */}
+            <div className="overflow-hidden rounded-xl border border-border">
+              <div className="grid grid-cols-[58px_1fr_84px] items-center gap-2.5 bg-card px-3.5 py-2 text-[10px] uppercase tracking-wider text-muted-foreground">
+                <span>Score</span>
+                <span>Negocio</span>
+                <span>Estado</span>
+              </div>
+              {ROWS.map((r, i) => {
+                const tone = scoreTone(r.score);
+                return (
+                  <motion.div
+                    key={r.name}
+                    initial={{ opacity: 0, x: -16 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ duration: 0.5, delay: 0.6 + i * 0.12 }}
+                    className="grid grid-cols-[58px_1fr_84px] items-center gap-2.5 border-t border-border/60 px-3.5 py-2.5 text-[13px]"
+                  >
+                    {/* score */}
+                    <span className="flex items-center gap-1.5" style={{ color: tone }}>
+                      <span className="h-1.5 w-7 overflow-hidden rounded-full bg-muted">
+                        <span className="block h-full rounded-full" style={{ width: `${Math.max(8, r.score)}%`, background: tone }} />
+                      </span>
+                      <span className="text-xs font-bold tabular-nums">{r.score}</span>
+                    </span>
+                    {/* business */}
+                    <div className="flex min-w-0 items-center gap-2.5">
+                      <span className="flex size-7 shrink-0 items-center justify-center rounded-lg bg-primary/15 text-[10px] font-bold text-primary">
+                        {r.name.slice(0, 2)}
+                      </span>
+                      <div className="min-w-0">
+                        <div className="truncate font-medium">{r.name}</div>
+                        <div className="text-[11px] text-muted-foreground">{r.city}</div>
+                      </div>
+                    </div>
+                    {/* status */}
+                    <span
+                      className="inline-flex items-center gap-1.5 rounded-full border px-2 py-0.5 text-[10px] font-semibold"
+                      style={{ background: `${r.c}1c`, color: r.c, borderColor: `${r.c}33` }}
+                    >
+                      <span className="size-1.5 rounded-full" style={{ background: r.c }} />
+                      {r.status}
+                    </span>
+                  </motion.div>
+                );
+              })}
             </div>
-          </motion.div>
+          </main>
+        </div>
+      </motion.div>
+
+      {/* floating AI card */}
+      <motion.div
+        initial={{ opacity: 0, scale: 0.95 }}
+        animate={{ opacity: 1, scale: 1 }}
+        transition={{ duration: 0.6, delay: 1.1 }}
+        className="absolute -right-4 bottom-10 hidden w-56 flex-col gap-3 rounded-2xl border border-primary/40 bg-card p-4 shadow-2xl shadow-black/60 md:flex"
+      >
+        <div className="flex items-center gap-2 text-xs font-semibold text-primary">
+          <Sparkles className="size-4" /> Propuesta IA
+        </div>
+        <div className="space-y-1.5">
+          {[100, 84, 92, 70, 88].map((w, i) => (
+            <motion.div
+              key={i}
+              initial={{ width: 0 }}
+              animate={{ width: `${w}%` }}
+              transition={{ duration: 0.5, delay: 1.3 + i * 0.1 }}
+              className="h-2 rounded-full bg-foreground/10"
+            />
+          ))}
+        </div>
+        <div className="inline-flex items-center gap-1.5 self-start rounded-lg bg-teal-500/15 px-2.5 py-1.5 text-[11px] font-semibold text-teal-600 dark:text-teal-300">
+          <TrendingUp className="size-3.5" /> +38% tasa de cierre
         </div>
       </motion.div>
     </motion.div>

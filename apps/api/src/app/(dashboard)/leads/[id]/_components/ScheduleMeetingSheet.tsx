@@ -143,7 +143,7 @@ export function ScheduleMeetingSheet({
               <Loader2 className="animate-spin" />
             </div>
           ) : !configured ? (
-            <div className="rounded-lg border border-amber-500/40 bg-amber-500/10 p-4 text-sm">
+            <div className="rounded-lg border border-primary/40 bg-primary/10 p-4 text-sm">
               Integración con Google no configurada en el servidor.
             </div>
           ) : !connected ? (
@@ -157,9 +157,9 @@ export function ScheduleMeetingSheet({
             </div>
           ) : createdMeetUrl ? (
             <div className="space-y-4">
-              <div className="rounded-lg border border-emerald-500/40 bg-emerald-500/10 p-4">
-                <p className="text-sm font-medium text-emerald-200">¡Reunión creada!</p>
-                <p className="mt-1 text-xs text-emerald-200/70">
+              <div className="rounded-lg border border-teal-500/40 bg-teal-500/10 p-4">
+                <p className="text-sm font-medium text-teal-200">¡Reunión creada!</p>
+                <p className="mt-1 text-xs text-teal-200/70">
                   Los invitados recibieron un email con el evento.
                 </p>
                 <div className="mt-3 flex items-center gap-2">
@@ -167,7 +167,7 @@ export function ScheduleMeetingSheet({
                     {createdMeetUrl}
                   </code>
                   <Button variant="outline" size="icon" onClick={copy} title="Copiar">
-                    {copied ? <Check className="text-emerald-400" /> : <Copy />}
+                    {copied ? <Check className="text-teal-400" /> : <Copy />}
                   </Button>
                   <Button variant="outline" size="icon" asChild title="Abrir">
                     <a href={createdMeetUrl} target="_blank" rel="noreferrer">

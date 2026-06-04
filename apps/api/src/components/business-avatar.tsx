@@ -1,10 +1,15 @@
-import { AVATAR_PALETTE } from '~/lib/design-tokens';
 import { cn } from '~/lib/utils';
 
 type Size = 'sm' | 'md' | 'lg';
 
-// Hash deterministico (sumatoria * 31) — mismo que el handoff. Mismo nombre
-// → mismo color siempre, sin importar de dónde se renderice.
+// BusinessAvatar «Atrevida» — DOS TONOS (violet / teal), elegidos de forma
+// estable por el nombre. Sin paleta de 8 colores: el producto vive en
+// violet+teal. Mismo nombre → mismo tono siempre.
+const TONES = [
+  { bg: 'bg-primary/15', fg: 'text-primary' },
+  { bg: 'bg-teal-500/15', fg: 'text-teal-600 dark:text-teal-300' },
+];
+
 function hash(s: string): number {
   let h = 0;
   for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) | 0;
@@ -28,9 +33,6 @@ const SIZE: Record<Size, string> = {
   lg: 'size-[56px] rounded-[13px] text-base',
 };
 
-// BusinessAvatar — iniciales con color deterministico por hash(name).
-// Match del handoff: 8 colores rotatorios desde AVATAR_PALETTE,
-// rounded-[9px] (md), font-bold 650.
 export function BusinessAvatar({
   name,
   size = 'md',
@@ -40,14 +42,14 @@ export function BusinessAvatar({
   size?: Size;
   className?: string;
 }) {
-  const tone = AVATAR_PALETTE[hash(name) % AVATAR_PALETTE.length]!;
+  const tone = TONES[hash(name) % TONES.length]!;
   return (
     <span
       className={cn(
         'inline-grid shrink-0 place-items-center font-bold tracking-[0.01em]',
         SIZE[size],
         tone.bg,
-        tone.text,
+        tone.fg,
         className,
       )}
     >
