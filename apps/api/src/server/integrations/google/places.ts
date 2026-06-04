@@ -118,7 +118,8 @@ export async function searchText(input: {
       textQuery,
       maxResultCount: Math.min(20, input.maxResults ?? 20),
       languageCode: 'es',
-      regionCode: 'CO',
+      // Sin regionCode → búsqueda mundial. El usuario puede incluir país en el
+      // texto ("cafetería en París, Francia") o ciudad y la API resuelve.
     }),
   });
 

@@ -23,6 +23,9 @@ export function ResultsGrid() {
   const searchParams = useSearchParams();
   const query = searchParams.get('q') ?? '';
   const city = searchParams.get('city') ?? undefined;
+  const webFilter = (searchParams.get('web') as 'yes' | 'no' | null) ?? null;
+  const minRating = Number(searchParams.get('minRating')) || 0;
+  const operationalOnly = searchParams.get('operational') === '1';
   const hasQuery = query.trim().length >= 2;
 
   const utils = trpc.useUtils();
@@ -34,7 +37,20 @@ export function ResultsGrid() {
     },
   );
 
-  const placeIds = useMemo(() => places.data?.results.map((p) => p.id) ?? [], [places.data]);
+  // Filtros client-side aplicados sobre los resultados de Places. La API no
+  // soporta filtrar por has-website / rating-min / operational en el request.
+  const filteredResults = useMemo(() => {
+    const raw = places.data?.results ?? [];
+    return raw.filter((p) => {
+      if (webFilter === 'yes' && !p.websiteUri) return false;
+      if (webFilter === 'no' && p.websiteUri) return false;
+      if (minRating > 0 && (p.rating ?? 0) < minRating) return false;
+      if (operationalOnly && p.businessStatus && p.businessStatus !== 'OPERATIONAL') return false;
+      return true;
+    });
+  }, [places.data, webFilter, minRating, operationalOnly]);
+
+  const placeIds = useMemo(() => filteredResults.map((p) => p.id), [filteredResults]);
   const existing = trpc.discover.existingPlaceIds.useQuery(
     { placeIds },
     { enabled: placeIds.length > 0 },
@@ -117,16 +133,23 @@ export function ResultsGrid() {
     );
   }
 
-  const results = places.data?.results ?? [];
+  const totalBeforeFilters = places.data?.results.length ?? 0;
+  const results = filteredResults;
+  const filteredOut = totalBeforeFilters - results.length;
+
   if (results.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-border py-20 text-center">
         <div className="grid size-12 place-items-center rounded-[13px] bg-muted text-muted-foreground">
           <Compass className="size-6" />
         </div>
-        <h3 className="mt-4 text-sm font-semibold">Sin resultados</h3>
+        <h3 className="mt-4 text-sm font-semibold">
+          {totalBeforeFilters > 0 ? 'Sin resultados con esos filtros' : 'Sin resultados'}
+        </h3>
         <p className="mt-1 max-w-sm text-xs text-muted-foreground">
-          Ningún negocio coincide. Prueba con un término más amplio o quita la ciudad.
+          {totalBeforeFilters > 0
+            ? `Los ${totalBeforeFilters} negocios encontrados no pasan los filtros. Relaja "Sin web", "Rating mínimo" o "Solo operativos".`
+            : 'Ningún negocio coincide. Prueba con un término más amplio o quita la ciudad.'}
         </p>
       </div>
     );
@@ -140,6 +163,7 @@ export function ResultsGrid() {
       <div className="flex items-center justify-between text-xs text-muted-foreground">
         <span>
           {results.length} resultado{results.length === 1 ? '' : 's'}
+          {filteredOut > 0 && ` (${filteredOut} ocultos por filtros)`}
           {places.data?.cached && places.data.cachedAt
             ? ` · cache de ${timeAgo(places.data.cachedAt)}`
             : ''}
