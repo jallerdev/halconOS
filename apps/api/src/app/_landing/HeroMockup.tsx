@@ -78,13 +78,25 @@ function scoreTone(s: number) {
 
 export function HeroMockup() {
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 40 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.8, delay: 0.3, ease: [0.22, 1, 0.36, 1] }}
-      className="relative w-full"
-    >
-      <div aria-hidden className="absolute -inset-x-8 -top-6 bottom-0 -z-10 rounded-[2rem] bg-primary/20 blur-3xl" />
+    <div className="relative w-full">
+      {/* Halo persistente — vive FUERA del motion.div para no apagarse cuando
+          termina el fade-in del mockup. Dos capas: violet rodeando todo el
+          panel + acento teal abajo. */}
+      <div
+        aria-hidden
+        className="pointer-events-none absolute -inset-10 rounded-[3rem] bg-primary/25 blur-[80px]"
+      />
+      <div
+        aria-hidden
+        className="pointer-events-none absolute -inset-x-12 -bottom-10 h-40 rounded-[3rem] bg-teal-500/18 blur-[70px]"
+      />
+
+      <motion.div
+        initial={{ opacity: 0, y: 40 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.8, delay: 0.3, ease: [0.22, 1, 0.36, 1] }}
+        className="relative"
+      >
 
       <motion.div
         animate={{ y: [0, -10, 0] }}
@@ -209,6 +221,7 @@ export function HeroMockup() {
           <TrendingUp className="size-3.5" /> +38% tasa de cierre
         </div>
       </motion.div>
-    </motion.div>
+      </motion.div>
+    </div>
   );
 }
