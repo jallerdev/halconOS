@@ -8,14 +8,61 @@ import type { ReactNode } from 'react';
 
 import { ClerkThemedProvider } from '~/components/clerk-themed-provider';
 import { ThemeProvider } from '~/components/theme-provider';
+import { SITE, SITE_URL } from '~/lib/site';
 import { TrpcProvider } from '~/lib/trpc';
 
 const inter = Inter({ subsets: ['latin'], variable: '--font-inter' });
 const mono = JetBrains_Mono({ subsets: ['latin'], variable: '--font-mono' });
 
 export const metadata: Metadata = {
-  title: 'Halcón · CRM de ventas',
-  description: 'Caza los mejores negocios. Ciérralos con IA. · by JALLER.DEV',
+  metadataBase: new URL(SITE_URL),
+  title: {
+    default: SITE.title,
+    template: `%s · ${SITE.name}`,
+  },
+  description: SITE.description,
+  applicationName: SITE.name,
+  authors: [{ name: SITE.publisher.name, url: SITE.publisher.url }],
+  creator: SITE.publisher.name,
+  publisher: SITE.publisher.name,
+  keywords: [
+    'CRM',
+    'CRM con IA',
+    'CRM para agencias',
+    'CRM WhatsApp',
+    'ventas',
+    'leads',
+    'propuestas con IA',
+    'pipeline de ventas',
+    'HalcónOS',
+  ],
+  alternates: {
+    canonical: '/',
+  },
+  openGraph: {
+    type: 'website',
+    url: SITE_URL,
+    siteName: SITE.name,
+    title: SITE.title,
+    description: SITE.description,
+    locale: SITE.locale,
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: SITE.title,
+    description: SITE.description,
+  },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      'max-image-preview': 'large',
+      'max-snippet': -1,
+      'max-video-preview': -1,
+    },
+  },
 };
 
 const clerkEnabled = Boolean(process.env.CLERK_SECRET_KEY);

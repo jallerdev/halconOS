@@ -3,13 +3,20 @@ import { NextResponse, type NextRequest } from 'next/server';
 
 const clerkConfigured = Boolean(process.env.CLERK_SECRET_KEY);
 
-// Públicas: login, signup, y la API (tRPC valida su propia sesión en el context).
+// Públicas: login, signup, la API (tRPC valida su propia sesión en el context)
+// y los archivos de metadata/crawlers (robots, sitemap, llms).
 const isPublic = createRouteMatcher([
   '/',
   '/sign-in(.*)',
   '/sign-up(.*)',
   '/api/(.*)',
   '/__clerk/(.*)',
+  '/robots.txt',
+  '/sitemap.xml',
+  '/llms.txt',
+  '/llms-full.txt',
+  '/opengraph-image(.*)',
+  '/icon.svg',
 ]);
 
 const handler = clerkConfigured
@@ -28,8 +35,8 @@ export default handler;
 
 export const config = {
   matcher: [
-    // Todo menos estáticos de Next.
-    '/((?!_next|[^?]*\\.(?:html?|css|js(?!on)|jpe?g|webp|png|gif|svg|ttf|woff2?|ico|csv|webmanifest)).*)',
+    // Todo menos estáticos de Next y archivos de metadata (txt/xml).
+    '/((?!_next|[^?]*\\.(?:html?|css|js(?!on)|jpe?g|webp|png|gif|svg|ttf|woff2?|ico|csv|txt|xml|webmanifest)).*)',
     '/(api|trpc)(.*)',
     '/__clerk/(.*)',
   ],

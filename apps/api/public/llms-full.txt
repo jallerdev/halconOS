@@ -1,0 +1,36 @@
+# HalcónOS — CRM de ventas con IA
+
+> Caza los mejores negocios. Ciérralos con IA. HalcónOS es el CRM de ventas para agencias y equipos comerciales en LatAm.
+
+## Qué es HalcónOS
+HalcónOS resuelve el problema de perder ventas por desorden: leads dispersos entre WhatsApp, correo, hojas de cálculo y notas. Reúne tres pilares en un flujo único — descubrimiento de leads, automatización con IA y trazabilidad de extremo a extremo — para que pases del lead al proyecto entregado sin perder nada.
+
+## El problema que resuelve
+Sin un sistema, los leads se enfrían, las propuestas se demoran y nadie sabe en qué estado está cada negocio. Con HalcónOS, cada lead entra al pipeline, recibe seguimiento multicanal y avanza hasta convertirse en proyecto.
+
+## Características principales
+1. Caza leads con Google
+   Encuentra negocios reales por ciudad y categoría usando Google Places. Filtra los que no tienen sitio web, los mejor calificados o los que están operativos, y envíalos directo a tu pipeline.
+2. Propuestas con IA
+   Genera propuestas y mensajes comerciales con IA a partir del contexto de cada lead, listos para enviar.
+3. Conversación multicanal
+   Unifica WhatsApp y email en un inbox personal, sin saltar entre apps.
+4. Pipeline + Inbox personal
+   Pipeline Kanban configurable con auto-scoring de leads para priorizar a quién perseguir.
+5. Propuestas firmables
+   Comparte propuestas mediante un link público que el cliente puede firmar.
+6. De lead a proyecto en 1 tap
+   Convierte un lead ganado en un proyecto en ejecución con un solo toque.
+
+## Cómo funciona
+Del lead al proyecto entregado, sin perder nada: descubres el lead → conversas y haces seguimiento multicanal → envías una propuesta con IA → el cliente firma → el lead se convierte en proyecto.
+
+## Para quién es
+Agencias, freelancers y equipos comerciales que necesitan conseguir clientes y cerrar más rápido sin perder trazabilidad.
+
+## Empezar
+- Empezar gratis: https://halcon.jvagencia.com/sign-up
+- Iniciar sesión: https://halcon.jvagencia.com/sign-in
+
+## Empresa
+Publicado por JALLER.DEV — https://jvagencia.com

@@ -1,0 +1,19 @@
+# HalcónOS
+
+> CRM de ventas con IA para agencias en LatAm: descubre leads reales con Google Places, redacta propuestas con IA y unifica WhatsApp, email y pipeline en un solo lugar.
+
+HalcónOS ayuda a agencias y equipos comerciales a pasar del lead al proyecto entregado sin perder oportunidades, combinando descubrimiento de clientes, automatización con IA y trazabilidad de extremo a extremo.
+
+## Producto
+- [Inicio](https://halcon.jvagencia.com/): visión general, características y propuesta de valor.
+
+## Características
+- Caza de leads con Google: encuentra negocios reales por ciudad y categoría con Google Places; filtra por sin web, mejor calificados u operativos.
+- Propuestas con IA: redacta propuestas y mensajes con IA a partir del contexto del lead.
+- Conversación multicanal: unifica WhatsApp y email en un inbox personal.
+- Pipeline + Inbox: pipeline Kanban configurable con auto-scoring de leads.
+- Propuestas firmables: comparte propuestas con link público y firma.
+- De lead a proyecto en 1 tap: convierte un lead ganado en un proyecto en ejecución.
+
+## Empresa
+- Publicado por JALLER.DEV — https://jvagencia.com
