@@ -1,4 +1,5 @@
 import { SITE, SITE_URL } from '~/lib/site';
+import { FAQ } from './_landing/faq';
 import { Landing } from './_landing/Landing';
 
 const schemas = [
@@ -44,6 +45,19 @@ const schemas = [
       priceCurrency: 'USD',
       description: 'Empezar gratis',
     },
+  },
+  {
+    '@context': 'https://schema.org',
+    '@type': 'FAQPage',
+    '@id': `${SITE_URL}/#faq`,
+    mainEntity: FAQ.map((item) => ({
+      '@type': 'Question',
+      name: item.q,
+      acceptedAnswer: {
+        '@type': 'Answer',
+        text: item.a,
+      },
+    })),
   },
 ];
 

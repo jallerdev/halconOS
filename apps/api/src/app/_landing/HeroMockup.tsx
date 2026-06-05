@@ -130,8 +130,10 @@ export function HeroMockup() {
 
           {/* main */}
           <main className="min-w-0 p-5">
-            <div className="text-[11px] font-bold uppercase tracking-[0.18em] text-primary">Pipeline de ventas</div>
-            <h3 className="mt-1 text-2xl font-bold tracking-tight">Leads</h3>
+            {/* UI decorativa dentro del mockup: NO usar headings reales para no
+                romper el orden del outline (h1 → h3) que penaliza accesibilidad. */}
+            <div aria-hidden className="text-[11px] font-bold uppercase tracking-[0.18em] text-primary">Pipeline de ventas</div>
+            <div aria-hidden className="mt-1 text-2xl font-bold tracking-tight">Leads</div>
 
             {/* KPIs */}
             <div className="my-4 grid grid-cols-3 gap-3">

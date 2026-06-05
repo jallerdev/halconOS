@@ -26,6 +26,7 @@ import {
 
 import { ThemeToggle } from '~/components/theme-toggle';
 import { Wordmark } from '~/components/wordmark';
+import { FAQ } from './faq';
 import { HeroMockup } from './HeroMockup';
 import { MagneticButton } from './MagneticButton';
 
@@ -193,6 +194,7 @@ export function Landing() {
             <a href="#problema" className="transition-colors hover:text-foreground">Problema</a>
             <a href="#features" className="transition-colors hover:text-foreground">Capacidades</a>
             <a href="#flujo" className="transition-colors hover:text-foreground">Cómo funciona</a>
+            <a href="#faq" className="transition-colors hover:text-foreground">FAQ</a>
           </nav>
           <div className="flex items-center gap-2.5">
             <ThemeToggle />
@@ -230,7 +232,7 @@ export function Landing() {
               transition={{ duration: 0.5 }}
               className="mt-7 text-balance text-5xl font-extrabold leading-[0.98] tracking-tight md:text-6xl xl:text-7xl"
             >
-              Caza clientes como un <span className={GRAD}>halcón</span>.
+              Caza leads y cierra ventas con <span className={GRAD}>IA</span>
             </motion.h1>
 
             <motion.p
@@ -238,7 +240,7 @@ export function Landing() {
               transition={{ duration: 0.5 }}
               className="mx-auto mt-6 max-w-xl text-pretty text-lg text-muted-foreground lg:mx-0"
             >
-              HalcónOS descubre negocios reales con Google Maps, escribe tus propuestas con IA y unifica
+              El CRM para agencias: descubre negocios con Google, escribe tus propuestas con IA y unifica
               WhatsApp, email y pipeline en un solo lugar. Sin Excel. Sin chats sueltos. Sin excusas.
             </motion.p>
 
@@ -444,6 +446,47 @@ export function Landing() {
             <FlowRow steps={PROJECT_FLOW} />
           </div>
         </div>
+      </section>
+
+      {/* ── FAQ — alineado al JSON-LD FAQPage en page.tsx para rich snippet ── */}
+      <section id="faq" className="mx-auto max-w-5xl px-6 py-24">
+        <div className="mx-auto max-w-2xl text-center">
+          <Eyebrow>Preguntas frecuentes</Eyebrow>
+          <h2 className="mt-4 text-3xl font-bold tracking-tight md:text-5xl">
+            Resolvemos tus dudas
+          </h2>
+          <p className="mt-4 text-muted-foreground">
+            Si te queda alguna duda, escríbenos — respondemos personalmente.
+          </p>
+        </div>
+
+        <motion.div
+          initial="hidden"
+          whileInView="show"
+          viewport={{ once: true, margin: '-60px' }}
+          transition={{ staggerChildren: 0.06 }}
+          className="mt-12 grid gap-4 md:grid-cols-2"
+        >
+          {FAQ.map((item) => (
+            <motion.details
+              key={item.q}
+              variants={fadeUp}
+              transition={{ duration: 0.4 }}
+              className="group rounded-2xl border border-border bg-card/60 p-5 backdrop-blur-sm transition-colors hover:border-primary/30"
+            >
+              <summary className="flex cursor-pointer items-start justify-between gap-4 text-sm font-semibold tracking-tight text-foreground marker:hidden [&::-webkit-details-marker]:hidden">
+                <h3 className="text-base">{item.q}</h3>
+                <span
+                  aria-hidden
+                  className="mt-1 inline-flex size-5 shrink-0 items-center justify-center rounded-full border border-border text-muted-foreground transition-transform duration-200 group-open:rotate-45"
+                >
+                  +
+                </span>
+              </summary>
+              <p className="mt-3 text-sm leading-relaxed text-muted-foreground">{item.a}</p>
+            </motion.details>
+          ))}
+        </motion.div>
       </section>
 
       {/* ── CTA ── */}
