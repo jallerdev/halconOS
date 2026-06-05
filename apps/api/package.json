@@ -2,6 +2,13 @@
   "name": "@halcon-os/api",
   "version": "0.0.0",
   "private": true,
+  "browserslist": [
+    "Chrome >= 93",
+    "Firefox >= 92",
+    "Edge >= 93",
+    "Safari >= 15.4",
+    "iOS >= 15.4"
+  ],
   "scripts": {
     "dev": "next dev --turbopack -p 3000",
     "build": "next build",

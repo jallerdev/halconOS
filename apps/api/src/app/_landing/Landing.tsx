@@ -34,6 +34,14 @@ const fadeUp = {
   show: { opacity: 1, y: 0 },
 };
 
+// Variante para el contenido above-the-fold (hero): solo desplazamiento, sin
+// fade de opacidad. Así el LCP (el <h1>) se pinta visible desde el primer frame
+// del SSR en vez de esperar a que framer-motion hidrate y haga el fade-in.
+const heroUp = {
+  hidden: { y: 14 },
+  show: { y: 0 },
+};
+
 /* ── Sistema de dos tonos: SOLO violet (primary) + teal ── */
 type Tone = 'violet' | 'teal';
 
@@ -206,7 +214,7 @@ export function Landing() {
             className="text-center lg:text-left"
           >
             <motion.div
-              variants={fadeUp}
+              variants={heroUp}
               transition={{ duration: 0.5 }}
               className="inline-flex items-center gap-2 rounded-full border border-primary/30 bg-primary/[0.08] px-3.5 py-1.5 text-xs font-medium text-primary"
             >
@@ -218,7 +226,7 @@ export function Landing() {
             </motion.div>
 
             <motion.h1
-              variants={fadeUp}
+              variants={heroUp}
               transition={{ duration: 0.5 }}
               className="mt-7 text-balance text-5xl font-extrabold leading-[0.98] tracking-tight md:text-6xl xl:text-7xl"
             >
@@ -226,7 +234,7 @@ export function Landing() {
             </motion.h1>
 
             <motion.p
-              variants={fadeUp}
+              variants={heroUp}
               transition={{ duration: 0.5 }}
               className="mx-auto mt-6 max-w-xl text-pretty text-lg text-muted-foreground lg:mx-0"
             >
@@ -235,7 +243,7 @@ export function Landing() {
             </motion.p>
 
             <motion.div
-              variants={fadeUp}
+              variants={heroUp}
               transition={{ duration: 0.5 }}
               className="mt-9 flex flex-wrap items-center justify-center gap-4 lg:justify-start"
             >
@@ -248,7 +256,7 @@ export function Landing() {
             </motion.div>
 
             <motion.p
-              variants={fadeUp}
+              variants={heroUp}
               transition={{ duration: 0.5 }}
               className="mt-4 text-xs text-muted-foreground"
             >

@@ -92,9 +92,9 @@ export function HeroMockup() {
       />
 
       <motion.div
-        initial={{ opacity: 0, y: 40 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.8, delay: 0.3, ease: [0.22, 1, 0.36, 1] }}
+        initial={{ y: 24 }}
+        animate={{ y: 0 }}
+        transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
         className="relative"
       >
 
@@ -158,9 +158,9 @@ export function HeroMockup() {
                 return (
                   <motion.div
                     key={r.name}
-                    initial={{ opacity: 0, x: -16 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ duration: 0.5, delay: 0.6 + i * 0.12 }}
+                    initial={{ x: -10 }}
+                    animate={{ x: 0 }}
+                    transition={{ duration: 0.4, delay: i * 0.06 }}
                     className="grid grid-cols-[58px_1fr_84px] items-center gap-2.5 border-t border-border/60 px-3.5 py-2.5 text-[13px]"
                   >
                     {/* score */}
@@ -200,7 +200,7 @@ export function HeroMockup() {
       <motion.div
         initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: 1, scale: 1 }}
-        transition={{ duration: 0.6, delay: 1.1 }}
+        transition={{ duration: 0.5, delay: 0.5 }}
         className="pointer-events-none absolute -bottom-6 -right-4 hidden w-52 flex-col gap-3 rounded-2xl border border-primary/40 bg-card p-4 text-left shadow-2xl shadow-black/60 sm:flex"
       >
         <div className="flex items-center gap-2 text-xs font-semibold text-primary">
@@ -212,7 +212,7 @@ export function HeroMockup() {
               key={i}
               initial={{ width: 0 }}
               animate={{ width: `${w}%` }}
-              transition={{ duration: 0.5, delay: 1.3 + i * 0.1 }}
+              transition={{ duration: 0.5, delay: 0.7 + i * 0.06 }}
               className="h-2 rounded-full bg-foreground/10"
             />
           ))}

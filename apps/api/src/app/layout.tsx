@@ -6,7 +6,6 @@ import { NextIntlClientProvider } from 'next-intl';
 import { getLocale, getMessages } from 'next-intl/server';
 import type { ReactNode } from 'react';
 
-import { ClerkThemedProvider } from '~/components/clerk-themed-provider';
 import { ThemeProvider } from '~/components/theme-provider';
 import { SITE, SITE_URL } from '~/lib/site';
 import { TrpcProvider } from '~/lib/trpc';
@@ -65,8 +64,6 @@ export const metadata: Metadata = {
   },
 };
 
-const clerkEnabled = Boolean(process.env.CLERK_SECRET_KEY);
-
 export default async function RootLayout({ children }: { children: ReactNode }) {
   const locale = await getLocale();
   const messages = await getMessages();
@@ -76,9 +73,7 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
       <body className="bg-background font-sans text-foreground antialiased">
         <NextIntlClientProvider messages={messages} locale={locale}>
           <ThemeProvider>
-            <ClerkThemedProvider enabled={clerkEnabled}>
-              <TrpcProvider>{children}</TrpcProvider>
-            </ClerkThemedProvider>
+            <TrpcProvider>{children}</TrpcProvider>
           </ThemeProvider>
         </NextIntlClientProvider>
       </body>

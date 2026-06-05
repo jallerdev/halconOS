@@ -1,6 +1,7 @@
 import { auth } from '@clerk/nextjs/server';
 import type { ReactNode } from 'react';
 
+import { ClerkArea } from '~/components/clerk-area';
 import { AppBg } from './_components/AppBg';
 import { CommandPalette } from './_components/CommandPalette';
 import { NewLeadSheet } from './_components/NewLeadSheet';
@@ -17,22 +18,28 @@ export default async function DashboardLayout({ children }: { children: ReactNod
   if (clerkEnabled) {
     const { userId, orgId } = await auth();
     if (userId && !orgId) {
-      return <OrgGate />;
+      return (
+        <ClerkArea>
+          <OrgGate />
+        </ClerkArea>
+      );
     }
   }
 
   return (
-    <SidebarProvider>
-      <AppBg />
-      <div className="relative z-[1] flex min-h-screen">
-        <Sidebar />
-        <div className="flex min-w-0 flex-1 flex-col">
-          <TopBar />
-          <main className="flex-1 overflow-x-hidden">{children}</main>
+    <ClerkArea>
+      <SidebarProvider>
+        <AppBg />
+        <div className="relative z-[1] flex min-h-screen">
+          <Sidebar />
+          <div className="flex min-w-0 flex-1 flex-col">
+            <TopBar />
+            <main className="flex-1 overflow-x-hidden">{children}</main>
+          </div>
         </div>
-      </div>
-      <CommandPalette />
-      <NewLeadSheet />
-    </SidebarProvider>
+        <CommandPalette />
+        <NewLeadSheet />
+      </SidebarProvider>
+    </ClerkArea>
   );
 }
