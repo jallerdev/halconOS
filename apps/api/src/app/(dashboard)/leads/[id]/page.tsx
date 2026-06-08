@@ -14,6 +14,7 @@ import {
   Mail,
   MapPin,
   Paperclip,
+  Pencil,
   Phone,
   Sparkles,
   Star,
@@ -26,6 +27,7 @@ import { useParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { toast } from '~/hooks/use-toast';
 import { usePermissions } from '~/hooks/use-permissions';
+import { openEditLeadSheet } from '../../_components/EditLeadSheet';
 
 import { BusinessAvatar } from '~/components/business-avatar';
 import { CopyButton } from '~/components/copy-button';
@@ -228,6 +230,25 @@ export default function LeadDetailPage() {
                 <KanbanSquare className="size-4" /> Añadir al pipeline
               </Button>
             ))}
+          <Button
+            variant="outline"
+            onClick={() =>
+              openEditLeadSheet({
+                id: lead.id,
+                businessName: lead.businessName,
+                contactName: lead.contactName,
+                phone: lead.phone,
+                email: lead.email,
+                source: lead.source,
+                status: lead.status,
+                estimatedValue: lead.estimatedValue,
+                nextFollowUpAt: lead.nextFollowUpAt,
+                tags: lead.tags,
+              })
+            }
+          >
+            <Pencil className="size-4" /> Editar
+          </Button>
           <Button
             onClick={() => generateProposal.mutate({ id, kind: 'proposal' })}
             disabled={generateProposal.isPending}

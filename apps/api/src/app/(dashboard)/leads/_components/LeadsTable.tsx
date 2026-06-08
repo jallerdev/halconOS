@@ -20,6 +20,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 
 import { toast } from '~/hooks/use-toast';
 import { usePermissions } from '~/hooks/use-permissions';
+import { openEditLeadSheet } from '../../_components/EditLeadSheet';
 
 import { LEAD_STATUS as LEAD_STATUS_LIST, type LeadStatus } from '@halcon-os/shared/enums';
 import { BusinessAvatar } from '~/components/business-avatar';
@@ -524,6 +525,7 @@ export function LeadsTable() {
                           status={l.status}
                           inPipeline={l.pipelinePromotedAt != null}
                           canDelete={can('leads.delete')}
+                          onEdit={() => openEditLeadSheet(l)}
                           onAddToPipeline={() => promote.mutate({ id: l.id })}
                           onRemoveFromPipeline={() => removeFromPipeline.mutate({ id: l.id })}
                           onDelete={() => setPendingDelete({ id: l.id, name: l.businessName })}
@@ -629,6 +631,7 @@ function RowActions({
   status,
   inPipeline,
   canDelete,
+  onEdit,
   onAddToPipeline,
   onRemoveFromPipeline,
   onDelete,
@@ -637,6 +640,7 @@ function RowActions({
   status: LeadStatus;
   inPipeline: boolean;
   canDelete: boolean;
+  onEdit: () => void;
   onAddToPipeline: () => void;
   onRemoveFromPipeline: () => void;
   onDelete: () => void;
@@ -654,10 +658,8 @@ function RowActions({
             <Eye /> Ver detalles
           </Link>
         </DropdownMenuItem>
-        <DropdownMenuItem asChild>
-          <Link href={`/leads/${id}`}>
-            <Pencil /> Editar
-          </Link>
+        <DropdownMenuItem onClick={onEdit}>
+          <Pencil /> Editar
         </DropdownMenuItem>
         {status === 'NEW' && (
           <>

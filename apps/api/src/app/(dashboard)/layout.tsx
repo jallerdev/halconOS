@@ -4,6 +4,7 @@ import type { ReactNode } from 'react';
 import { ClerkArea } from '~/components/clerk-area';
 import { AppBg } from './_components/AppBg';
 import { CommandPalette } from './_components/CommandPalette';
+import { EditLeadSheet } from './_components/EditLeadSheet';
 import { NewLeadSheet } from './_components/NewLeadSheet';
 import { OrgGate } from './_components/OrgGate';
 import { ProductTour } from './_components/ProductTour';
@@ -40,6 +41,7 @@ export default async function DashboardLayout({ children }: { children: ReactNod
         </div>
         <CommandPalette />
         <NewLeadSheet />
+        <EditLeadSheet />
         <ProductTour />
       </SidebarProvider>
     </ClerkArea>
