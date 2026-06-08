@@ -2,6 +2,8 @@ import { TRPCError } from '@trpc/server';
 import { and, eq, inArray } from 'drizzle-orm';
 import { z } from 'zod';
 
+import { can } from '@halcon-os/shared/rbac';
+
 import { discoveredPlaces, leads } from '../db/schema';
 import {
   buildSearchKey,
@@ -83,6 +85,10 @@ export const discoverRouter = router({
     // Fetch details en paralelo. Si alguno falla, lo descartamos del batch.
     const details = await Promise.allSettled(toFetch.map((id) => getDetails(id)));
 
+    // Auto-asignación: si quien descubre es seller, los leads quedan asignados
+    // a él (para que los vea bajo el scope por rol). Admin → sin asignar.
+    const assignedToId = can(ctx.role, 'leads.view.all') ? null : ctx.userId;
+
     const rows: typeof leads.$inferInsert[] = [];
     for (const r of details) {
       if (r.status !== 'fulfilled') continue;
@@ -91,6 +97,7 @@ export const discoverRouter = router({
       rows.push({
         orgId: ctx.orgId,
         ownerId: ctx.userId,
+        assignedToId,
         businessName: p.displayName,
         phone: p.nationalPhoneNumber ?? null,
         phoneIntl: p.internationalPhoneNumber ?? null,

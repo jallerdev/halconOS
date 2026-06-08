@@ -23,14 +23,14 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '~/comp
 import { OrgControl } from './OrgControl';
 import { useSidebar } from './sidebar-context';
 
-const NAV: { href: string; label: string; icon: LucideIcon; exact?: boolean }[] = [
-  { href: '/leads', label: 'Leads', icon: Zap },
-  { href: '/discover', label: 'Descubrir', icon: Compass },
-  { href: '/today', label: 'Hoy', icon: CalendarClock },
-  { href: '/pipeline', label: 'Pipeline', icon: KanbanSquare },
-  { href: '/projects', label: 'Proyectos', icon: Boxes },
-  { href: '/leads/import', label: 'Importar', icon: FileSpreadsheet, exact: true },
-  { href: '/settings', label: 'Ajustes', icon: KeyRound },
+const NAV: { href: string; label: string; icon: LucideIcon; exact?: boolean; tour: string }[] = [
+  { href: '/leads', label: 'Leads', icon: Zap, tour: 'nav-leads' },
+  { href: '/discover', label: 'Descubrir', icon: Compass, tour: 'nav-discover' },
+  { href: '/today', label: 'Hoy', icon: CalendarClock, tour: 'nav-today' },
+  { href: '/pipeline', label: 'Pipeline', icon: KanbanSquare, tour: 'nav-pipeline' },
+  { href: '/projects', label: 'Proyectos', icon: Boxes, tour: 'nav-projects' },
+  { href: '/leads/import', label: 'Importar', icon: FileSpreadsheet, exact: true, tour: 'nav-import' },
+  { href: '/settings', label: 'Ajustes', icon: KeyRound, tour: 'nav-settings' },
 ];
 
 // Sidebar — navegación + workspace al fondo. Estilo Gemini: el LOGO de
@@ -132,7 +132,7 @@ export function Sidebar() {
 
         {/* Nav */}
         <nav className={cn('mt-5 flex flex-col gap-0.5', collapsed && 'items-center')}>
-          {NAV.map(({ href, label, icon: Icon, exact }) => {
+          {NAV.map(({ href, label, icon: Icon, exact, tour }) => {
             const isImport = pathname.startsWith('/leads/import');
             const active = exact
               ? pathname === href
@@ -148,6 +148,7 @@ export function Sidebar() {
                   <TooltipTrigger asChild>
                     <Link
                       href={href}
+                      data-tour={tour}
                       className={cn(
                         'relative inline-flex size-10 items-center justify-center rounded-lg transition-colors',
                         active
@@ -172,6 +173,7 @@ export function Sidebar() {
               <Link
                 key={href}
                 href={href}
+                data-tour={tour}
                 className={cn(
                   'relative flex items-center gap-[11px] rounded-lg px-3 py-[9px] text-[13.5px] font-medium transition-colors',
                   active

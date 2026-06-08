@@ -17,6 +17,7 @@ import {
   Phone,
   Sparkles,
   Star,
+  UserPlus,
   Users,
   Zap,
 } from 'lucide-react';
@@ -24,6 +25,7 @@ import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { toast } from '~/hooks/use-toast';
+import { usePermissions } from '~/hooks/use-permissions';
 
 import { BusinessAvatar } from '~/components/business-avatar';
 import { CopyButton } from '~/components/copy-button';
@@ -32,6 +34,13 @@ import { StatusSelect } from '~/components/status-select';
 import { WhatsAppButton } from '~/components/whatsapp-button';
 import { Button } from '~/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '~/components/ui/card';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '~/components/ui/dropdown-menu';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '~/components/ui/tabs';
 import { trpc } from '~/lib/trpc';
 import { AiPanel } from './_components/AiPanel';
@@ -55,6 +64,7 @@ const SOURCE_LABELS: Record<string, string> = {
 export default function LeadDetailPage() {
   const { id } = useParams<{ id: string }>();
   const utils = trpc.useUtils();
+  const { can } = usePermissions();
   const { data: lead, isLoading } = trpc.leads.byId.useQuery({ id });
   const [tab, setTab] = useState<'notes' | 'timeline' | 'files'>('notes');
 
@@ -247,6 +257,18 @@ export default function LeadDetailPage() {
       {/* Grid 2 columnas */}
       <div className="mt-8 grid grid-cols-1 gap-6 lg:grid-cols-[340px_1fr]">
         <aside className="space-y-4">
+          {/* Asignación — solo admin */}
+          {can('leads.assign') && (
+            <Card>
+              <CardHeader>
+                <CardTitle>Asignado a</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <AssignControl leadId={lead.id} assignedToId={lead.assignedToId} />
+              </CardContent>
+            </Card>
+          )}
+
           {/* Contacto */}
           <Card>
             <CardHeader>
@@ -402,6 +424,55 @@ export default function LeadDetailPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+// ─────────────────────── Asignación (admin) ───────────────────────
+
+function AssignControl({
+  leadId,
+  assignedToId,
+}: {
+  leadId: string;
+  assignedToId: string | null;
+}) {
+  const utils = trpc.useUtils();
+  const members = trpc.members.list.useQuery();
+  const assign = trpc.leads.assign.useMutation({
+    onSuccess: () => {
+      utils.leads.byId.invalidate({ id: leadId });
+      utils.leads.search.invalidate();
+      toast.success('Asignación actualizada');
+    },
+    onError: (e) => toast.error(e.message),
+  });
+
+  const current = members.data?.find((m) => m.id === assignedToId);
+  const currentLabel = current ? (current.name ?? current.email) : 'Sin asignar';
+
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button variant="outline" size="sm" className="w-full justify-start" disabled={assign.isPending}>
+          <UserPlus className="size-4" />
+          {currentLabel}
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="start">
+        {(members.data ?? []).map((m) => (
+          <DropdownMenuItem
+            key={m.id}
+            onClick={() => assign.mutate({ id: leadId, assignedToId: m.id })}
+          >
+            {m.name ?? m.email}
+          </DropdownMenuItem>
+        ))}
+        {(members.data?.length ?? 0) > 0 && <DropdownMenuSeparator />}
+        <DropdownMenuItem onClick={() => assign.mutate({ id: leadId, assignedToId: null })}>
+          Sin asignar
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
   );
 }
 

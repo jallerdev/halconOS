@@ -8,16 +8,20 @@
   "exports": {
     ".": "./src/index.ts",
     "./schemas": "./src/schemas.ts",
-    "./enums": "./src/enums.ts"
+    "./enums": "./src/enums.ts",
+    "./rbac": "./src/rbac.ts"
   },
   "scripts": {
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest"
   },
   "dependencies": {
     "zod": "^3.24.1"
   },
   "devDependencies": {
     "@halcon-os/tsconfig": "workspace:*",
-    "typescript": "^5.7.2"
+    "typescript": "^5.7.2",
+    "vitest": "^4.1.8"
   }
 }

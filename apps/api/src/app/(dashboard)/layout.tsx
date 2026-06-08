@@ -6,6 +6,7 @@ import { AppBg } from './_components/AppBg';
 import { CommandPalette } from './_components/CommandPalette';
 import { NewLeadSheet } from './_components/NewLeadSheet';
 import { OrgGate } from './_components/OrgGate';
+import { ProductTour } from './_components/ProductTour';
 import { SidebarProvider } from './_components/sidebar-context';
 import { Sidebar } from './_components/Sidebar';
 import { TopBar } from './_components/TopBar';
@@ -39,6 +40,7 @@ export default async function DashboardLayout({ children }: { children: ReactNod
         </div>
         <CommandPalette />
         <NewLeadSheet />
+        <ProductTour />
       </SidebarProvider>
     </ClerkArea>
   );

@@ -7,6 +7,7 @@ import { useState } from 'react';
 import type { AiKind } from '@halcon-os/shared/schemas';
 import { Button } from '~/components/ui/button';
 import { WhatsAppIcon } from '~/components/icons/whatsapp-icon';
+import { usePermissions } from '~/hooks/use-permissions';
 import { trpc } from '~/lib/trpc';
 
 type LeadLike = {
@@ -28,6 +29,10 @@ const TOOLS: { kind: AiKind; label: string; icon: LucideIcon }[] = [
 
 export function AiPanel({ lead }: { lead: LeadLike }) {
   const utils = trpc.useUtils();
+  const { can } = usePermissions();
+  // El seller no tiene leads.ai.landing; solo se muestran las herramientas
+  // permitidas por su rol. El server re-valida por kind igualmente.
+  const tools = TOOLS.filter((t) => can(`leads.ai.${t.kind}`));
   const [active, setActive] = useState<AiKind>('strategy');
   const generate = trpc.leads.generateAi.useMutation({
     onSuccess: () => utils.leads.byId.invalidate({ id: lead.id }),
@@ -38,7 +43,7 @@ export function AiPanel({ lead }: { lead: LeadLike }) {
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap gap-2">
-        {TOOLS.map((t) => (
+        {tools.map((t) => (
           <button
             key={t.kind}
             type="button"

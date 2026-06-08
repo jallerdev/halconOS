@@ -5,6 +5,13 @@ import { eq } from 'drizzle-orm';
 import superjson from 'superjson';
 import { ZodError } from 'zod';
 
+import {
+  can,
+  resolvePermissions,
+  roleFromOrgRole,
+  type Permission,
+} from '@halcon-os/shared/rbac';
+
 import { env } from '../env';
 import { db } from './db';
 import { users } from './db/schema';
@@ -109,7 +116,11 @@ async function adoptOrphans(orgId: string, userId: string) {
 export async function createContext(_opts: FetchCreateContextFnOptions) {
   const userId = await resolveUserId();
   const { orgId, orgRole } = await resolveOrg(userId);
-  return { db, userId, orgId, orgRole };
+  // Rol de la app (admin | seller) y permisos materializados, derivados del
+  // orgRole de Clerk. resolvePermissions acepta overrides por-usuario a futuro.
+  const role = roleFromOrgRole(orgRole);
+  const permissions = resolvePermissions(role);
+  return { db, userId, orgId, orgRole, role, permissions };
 }
 export type Context = Awaited<ReturnType<typeof createContext>>;
 
@@ -157,3 +168,19 @@ export const adminProcedure = orgProcedure.use(({ ctx, next }) => {
   }
   return next({ ctx });
 });
+
+// Procedure gateado por un permiso RBAC concreto. Construye sobre orgProcedure
+// (hereda userId + orgId garantizados) y rechaza con FORBIDDEN si el rol del
+// usuario no tiene el permiso. Para chequeos que dependen del input en runtime
+// (p. ej. generateAi por kind), usar `can(ctx.role, perm)` dentro del handler.
+export function permissionProcedure(permission: Permission) {
+  return orgProcedure.use(({ ctx, next }) => {
+    if (!can(ctx.role, permission)) {
+      throw new TRPCError({
+        code: 'FORBIDDEN',
+        message: 'No tienes permiso para realizar esta acción.',
+      });
+    }
+    return next({ ctx });
+  });
+}

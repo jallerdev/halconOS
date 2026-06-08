@@ -1,9 +1,10 @@
 'use client';
 
 import { SignInButton, SignedIn, SignedOut, UserButton } from '@clerk/nextjs';
+import { HelpCircle } from 'lucide-react';
 
 import { ThemeToggle } from '~/components/theme-toggle';
-import { TooltipProvider } from '~/components/ui/tooltip';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '~/components/ui/tooltip';
 import { NotificationBell } from './NotificationBell';
 
 const clerkEnabled = Boolean(process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY);
@@ -18,6 +19,19 @@ export function TopBar() {
     <TooltipProvider delayDuration={200}>
       <header className="sticky top-0 z-30 flex h-14 shrink-0 items-center justify-end gap-3 border-b border-border bg-background/95 px-[18px] backdrop-blur-xl supports-[backdrop-filter]:bg-background/80">
         <div className="flex items-center gap-1">
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <button
+                type="button"
+                aria-label="Ver tour de la aplicación"
+                onClick={() => document.dispatchEvent(new CustomEvent('halcon:start-tour'))}
+                className="hx-press inline-flex size-9 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+              >
+                <HelpCircle className="size-[18px]" />
+              </button>
+            </TooltipTrigger>
+            <TooltipContent>Tour guiado</TooltipContent>
+          </Tooltip>
           <NotificationBell />
           <ThemeToggle />
           <span aria-hidden className="mx-1.5 h-[22px] w-px bg-border" />

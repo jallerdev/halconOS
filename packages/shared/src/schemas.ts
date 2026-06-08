@@ -195,6 +195,16 @@ export const bulkIdsSchema = z.object({
   ids: z.array(uuid).min(1).max(500),
 });
 
+// Asignar un lead a un miembro (o desasignar con null).
+export const leadAssignSchema = z.object({
+  id: uuid,
+  assignedToId: uuid.nullable(),
+});
+export const bulkAssignSchema = z.object({
+  ids: z.array(uuid).min(1).max(500),
+  assignedToId: uuid.nullable(),
+});
+
 export const idSchema = z.object({ id: uuid });
 export const parentRefSchema = z.object({
   parentType: z.enum(NOTE_PARENT_TYPE),

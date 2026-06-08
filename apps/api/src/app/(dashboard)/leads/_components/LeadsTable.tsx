@@ -12,12 +12,14 @@ import {
   Search,
   Star,
   Trash2,
+  UserPlus,
 } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
 import { toast } from '~/hooks/use-toast';
+import { usePermissions } from '~/hooks/use-permissions';
 
 import { LEAD_STATUS as LEAD_STATUS_LIST, type LeadStatus } from '@halcon-os/shared/enums';
 import { BusinessAvatar } from '~/components/business-avatar';
@@ -64,6 +66,7 @@ function parseSort(v: string | null): Sort {
 
 export function LeadsTable() {
   const utils = trpc.useUtils();
+  const { can } = usePermissions();
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -122,6 +125,11 @@ export function LeadsTable() {
   const filters = { q: q || undefined, city, category, sort, limit: PAGE_SIZE, cursor };
   const search = trpc.leads.search.useQuery(filters);
 
+  // Miembros para el selector "Asignar a" — solo se consulta si el usuario
+  // puede asignar (admin); evita un FORBIDDEN en consola para sellers.
+  const canAssign = can('leads.assign');
+  const members = trpc.members.list.useQuery(undefined, { enabled: canAssign });
+
   const updateStatus = trpc.leads.updateStatus.useMutation({
     onSuccess: () => {
       utils.leads.search.invalidate();
@@ -169,6 +177,14 @@ export function LeadsTable() {
       setSelected(new Set());
       toast.success(`${r.deleted} leads eliminados`);
     },
+  });
+  const bulkAssign = trpc.leads.bulkAssign.useMutation({
+    onSuccess: (r) => {
+      invalidateAll();
+      setSelected(new Set());
+      toast.success(`${r.assigned} ${r.assigned === 1 ? 'lead asignado' : 'leads asignados'}`);
+    },
+    onError: (e) => toast.error(e.message),
   });
   const bulkPromote = trpc.leads.bulkPromoteToPipeline.useMutation({
     onSuccess: (r) => {
@@ -273,7 +289,7 @@ export function LeadsTable() {
   }
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4" data-tour="leads-table">
       {/* Toolbar */}
       <div className="flex flex-wrap items-center gap-2">
         <div className="relative flex-1 min-w-[220px]">
@@ -299,10 +315,12 @@ export function LeadsTable() {
           placeholder="Sector"
           searchPlaceholder="Buscar sector…"
         />
-        <Button variant="outline" size="sm" onClick={exportCsv} disabled={exporting}>
-          <Download className="size-4" />
-          {exporting ? 'Exportando…' : 'Exportar CSV'}
-        </Button>
+        {can('leads.export') && (
+          <Button variant="outline" size="sm" onClick={exportCsv} disabled={exporting}>
+            <Download className="size-4" />
+            {exporting ? 'Exportando…' : 'Exportar CSV'}
+          </Button>
+        )}
       </div>
 
       {/* Barra de acciones en lote */}
@@ -327,6 +345,32 @@ export function LeadsTable() {
               ))}
             </DropdownMenuContent>
           </DropdownMenu>
+          {canAssign && (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="secondary" size="sm" disabled={bulkAssign.isPending}>
+                  <UserPlus className="size-4" />
+                  Asignar a
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="start">
+                {(members.data ?? []).map((m) => (
+                  <DropdownMenuItem
+                    key={m.id}
+                    onClick={() => bulkAssign.mutate({ ids: [...selected], assignedToId: m.id })}
+                  >
+                    {m.name ?? m.email}
+                  </DropdownMenuItem>
+                ))}
+                {(members.data?.length ?? 0) > 0 && <DropdownMenuSeparator />}
+                <DropdownMenuItem
+                  onClick={() => bulkAssign.mutate({ ids: [...selected], assignedToId: null })}
+                >
+                  Sin asignar
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          )}
           {promotableIds.length > 0 && (
             <Button
               variant="secondary"
@@ -349,22 +393,24 @@ export function LeadsTable() {
               Sacar del pipeline ({demotableIds.length})
             </Button>
           )}
-          <ConfirmDialog
-            title={`¿Eliminar ${selected.size} ${selected.size === 1 ? 'lead' : 'leads'}?`}
-            description="Esta acción no se puede deshacer. Los leads seleccionados se borrarán permanentemente."
-            confirmLabel="Eliminar"
-            destructive
-            onConfirm={() => bulkDelete.mutate({ ids: [...selected] })}
-            trigger={
-              <Button
-                variant="ghost"
-                size="sm"
-                className="text-destructive hover:bg-destructive/10"
-              >
-                <Trash2 className="size-4" /> Eliminar
-              </Button>
-            }
-          />
+          {can('leads.delete') && (
+            <ConfirmDialog
+              title={`¿Eliminar ${selected.size} ${selected.size === 1 ? 'lead' : 'leads'}?`}
+              description="Esta acción no se puede deshacer. Los leads seleccionados se borrarán permanentemente."
+              confirmLabel="Eliminar"
+              destructive
+              onConfirm={() => bulkDelete.mutate({ ids: [...selected] })}
+              trigger={
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="text-destructive hover:bg-destructive/10"
+                >
+                  <Trash2 className="size-4" /> Eliminar
+                </Button>
+              }
+            />
+          )}
           <Button variant="ghost" size="sm" onClick={() => setSelected(new Set())}>
             Limpiar
           </Button>
@@ -477,6 +523,7 @@ export function LeadsTable() {
                           id={l.id}
                           status={l.status}
                           inPipeline={l.pipelinePromotedAt != null}
+                          canDelete={can('leads.delete')}
                           onAddToPipeline={() => promote.mutate({ id: l.id })}
                           onRemoveFromPipeline={() => removeFromPipeline.mutate({ id: l.id })}
                           onDelete={() => setPendingDelete({ id: l.id, name: l.businessName })}
@@ -581,6 +628,7 @@ function RowActions({
   id,
   status,
   inPipeline,
+  canDelete,
   onAddToPipeline,
   onRemoveFromPipeline,
   onDelete,
@@ -588,6 +636,7 @@ function RowActions({
   id: string;
   status: LeadStatus;
   inPipeline: boolean;
+  canDelete: boolean;
   onAddToPipeline: () => void;
   onRemoveFromPipeline: () => void;
   onDelete: () => void;
@@ -624,10 +673,14 @@ function RowActions({
             )}
           </>
         )}
-        <DropdownMenuSeparator />
-        <DropdownMenuItem destructive onClick={onDelete}>
-          <Trash2 /> Eliminar
-        </DropdownMenuItem>
+        {canDelete && (
+          <>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem destructive onClick={onDelete}>
+              <Trash2 /> Eliminar
+            </DropdownMenuItem>
+          </>
+        )}
       </DropdownMenuContent>
     </DropdownMenu>
   );

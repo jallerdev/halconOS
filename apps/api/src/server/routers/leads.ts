@@ -5,21 +5,24 @@ import { z } from 'zod';
 import { LEAD_STATUS } from '@halcon-os/shared/enums';
 import {
   aiGenerateSchema,
+  bulkAssignSchema,
   bulkIdsSchema,
   bulkImportRowSchema,
   bulkImportSchema,
   bulkStatusSchema,
   idSchema,
+  leadAssignSchema,
   leadCreateSchema,
   leadSearchSchema,
   leadStatusUpdateSchema,
   leadUpdateSchema,
 } from '@halcon-os/shared/schemas';
+import { can, type AppRole, type Permission } from '@halcon-os/shared/rbac';
 import { buildPrompt } from '../integrations/ai/lead-prompts';
 import { generateText, isAiConfigured } from '../integrations/ai/provider';
 import { rateLimit } from '../rate-limit';
 import { leads, notes } from '../db/schema';
-import { orgProcedure, router } from '../trpc';
+import { orgProcedure, permissionProcedure, router } from '../trpc';
 
 function parseSection(text: string, header: string): string | null {
   const re = new RegExp(`###\\s*${header}\\s*([\\s\\S]*?)(?=###|$)`, 'i');
@@ -48,12 +51,43 @@ function toDateOrNull(v: unknown): Date | null | undefined {
   return undefined;
 }
 
+type LeadCtx = { orgId: string; userId: string; role: AppRole };
+
+/**
+ * Scope de leads por rol (multi-tenant + RBAC):
+ *  - admin (leads.view.all) → todos los leads de la org.
+ *  - seller → solo los leads asignados a él (assignedToId = userId).
+ * Se aplica tanto en lecturas como en mutaciones por id/bulk para que un
+ * seller no pueda leer ni mutar leads ajenos aunque conozca el id.
+ */
+function leadScopeWhere(ctx: LeadCtx) {
+  const base = eq(leads.orgId, ctx.orgId);
+  if (can(ctx.role, 'leads.view.all')) return base;
+  return and(base, eq(leads.assignedToId, ctx.userId));
+}
+
+/**
+ * A quién auto-asignar un lead recién creado/importado:
+ *  - admin → null (queda sin asignar; el admin ve todo igual).
+ *  - seller → a sí mismo, para que lo vea bajo leadScopeWhere.
+ */
+function autoAssign(ctx: LeadCtx): string | null {
+  return can(ctx.role, 'leads.view.all') ? null : ctx.userId;
+}
+
+const AI_PERM_BY_KIND = {
+  strategy: 'leads.ai.strategy',
+  proposal: 'leads.ai.proposal',
+  message: 'leads.ai.message',
+  landing: 'leads.ai.landing',
+} as const satisfies Record<string, Permission>;
+
 export const leadsRouter = router({
   list: orgProcedure.query(async ({ ctx }) => {
     return ctx.db
       .select()
       .from(leads)
-      .where(eq(leads.orgId, ctx.orgId))
+      .where(leadScopeWhere(ctx))
       .orderBy(desc(leads.updatedAt));
   }),
 
@@ -61,7 +95,7 @@ export const leadsRouter = router({
     const [row] = await ctx.db
       .select({ ...getTableColumns(leads), score: scoreExpr })
       .from(leads)
-      .where(and(eq(leads.id, input.id), eq(leads.orgId, ctx.orgId)))
+      .where(and(eq(leads.id, input.id), leadScopeWhere(ctx)))
       .limit(1);
     return row ?? null;
   }),
@@ -69,6 +103,8 @@ export const leadsRouter = router({
   // Búsqueda paginada con filtros — para la web con miles de leads.
   search: orgProcedure.input(leadSearchSchema).query(async ({ ctx, input }) => {
     const conds = [eq(leads.orgId, ctx.orgId)];
+    // Seller: acota a sus leads asignados. Admin: ve toda la org.
+    if (!can(ctx.role, 'leads.view.all')) conds.push(eq(leads.assignedToId, ctx.userId));
     if (input.status) conds.push(eq(leads.status, input.status));
     if (input.city) conds.push(eq(leads.city, input.city));
     if (input.category) conds.push(eq(leads.category, input.category));
@@ -132,7 +168,7 @@ export const leadsRouter = router({
       const [updated] = await ctx.db
         .update(leads)
         .set({ nextFollowUpAt: input.date ? new Date(input.date) : null, updatedAt: new Date() })
-        .where(and(eq(leads.id, input.id), eq(leads.orgId, ctx.orgId)))
+        .where(and(eq(leads.id, input.id), leadScopeWhere(ctx)))
         .returning();
       if (!updated) throw new TRPCError({ code: 'NOT_FOUND' });
       return updated;
@@ -143,7 +179,7 @@ export const leadsRouter = router({
     const rows = await ctx.db
       .select({ ...getTableColumns(leads), score: scoreExpr })
       .from(leads)
-      .where(and(eq(leads.orgId, ctx.orgId), sql`${leads.nextFollowUpAt} is not null`))
+      .where(and(leadScopeWhere(ctx), sql`${leads.nextFollowUpAt} is not null`))
       .orderBy(asc(leads.nextFollowUpAt))
       .limit(200);
 
@@ -172,7 +208,7 @@ export const leadsRouter = router({
     .input(z.object({ perColumn: z.number().int().min(5).max(50).default(20) }).optional())
     .query(async ({ ctx, input }) => {
       const perColumn = input?.perColumn ?? 20;
-      const owner = eq(leads.orgId, ctx.orgId);
+      const owner = leadScopeWhere(ctx);
 
       // Para la columna NEW del kanban solo cuentan los leads "promovidos"
       // (pipelinePromotedAt no nulo). El resto vive en /leads como inbox.
@@ -221,7 +257,7 @@ export const leadsRouter = router({
   // cumulativo, y ganados cumulativo. También deltas semana vs semana para los
   // BadgeDelta de tendencia.
   stats: orgProcedure.query(async ({ ctx }) => {
-    const owner = eq(leads.orgId, ctx.orgId);
+    const owner = leadScopeWhere(ctx);
 
     const [totals] = await ctx.db
       .select({
@@ -359,14 +395,14 @@ export const leadsRouter = router({
     const cities = await ctx.db
       .select({ value: leads.city, count: sql<number>`count(*)::int` })
       .from(leads)
-      .where(eq(leads.orgId, ctx.orgId))
+      .where(leadScopeWhere(ctx))
       .groupBy(leads.city)
       .orderBy(desc(sql`count(*)`));
 
     const categories = await ctx.db
       .select({ value: leads.category, count: sql<number>`count(*)::int` })
       .from(leads)
-      .where(eq(leads.orgId, ctx.orgId))
+      .where(leadScopeWhere(ctx))
       .groupBy(leads.category)
       .orderBy(desc(sql`count(*)`));
 
@@ -382,6 +418,7 @@ export const leadsRouter = router({
       .values({
         orgId: ctx.orgId,
         ownerId: ctx.userId,
+        assignedToId: autoAssign(ctx),
         businessName: input.businessName,
         contactName: input.contactName ?? null,
         phone: input.phone ?? null,
@@ -449,6 +486,9 @@ export const leadsRouter = router({
     const batchEmails = new Set<string>();
     const batchPhones = new Set<string>();
 
+    // Auto-asignación: si quien importa es seller, sus filas quedan asignadas a él.
+    const assignedToId = autoAssign(ctx);
+
     for (const { row } of parsed) {
       const email = row.email ?? null;
       const phone = row.phone ?? null;
@@ -464,6 +504,7 @@ export const leadsRouter = router({
       toInsert.push({
         orgId: ctx.orgId,
         ownerId: ctx.userId,
+        assignedToId,
         businessName: row.businessName,
         contactName: row.contactName ?? null,
         phone,
@@ -505,7 +546,7 @@ export const leadsRouter = router({
     const [updated] = await ctx.db
       .update(leads)
       .set(patch)
-      .where(and(eq(leads.id, id), eq(leads.orgId, ctx.orgId)))
+      .where(and(eq(leads.id, id), leadScopeWhere(ctx)))
       .returning();
     if (!updated) throw new TRPCError({ code: 'NOT_FOUND' });
     return updated;
@@ -516,7 +557,7 @@ export const leadsRouter = router({
     const [lead] = await ctx.db
       .select({ status: leads.status })
       .from(leads)
-      .where(and(eq(leads.id, input.id), eq(leads.orgId, ctx.orgId)))
+      .where(and(eq(leads.id, input.id), leadScopeWhere(ctx)))
       .limit(1);
     if (!lead) throw new TRPCError({ code: 'NOT_FOUND' });
 
@@ -527,7 +568,7 @@ export const leadsRouter = router({
         lastContactedAt: new Date(),
         updatedAt: new Date(),
       })
-      .where(and(eq(leads.id, input.id), eq(leads.orgId, ctx.orgId)))
+      .where(and(eq(leads.id, input.id), leadScopeWhere(ctx)))
       .returning();
     return updated;
   }),
@@ -538,7 +579,7 @@ export const leadsRouter = router({
       const [updated] = await ctx.db
         .update(leads)
         .set({ status: input.status, updatedAt: new Date() })
-        .where(and(eq(leads.id, input.id), eq(leads.orgId, ctx.orgId)))
+        .where(and(eq(leads.id, input.id), leadScopeWhere(ctx)))
         .returning();
       if (!updated) throw new TRPCError({ code: 'NOT_FOUND' });
       return updated;
@@ -554,7 +595,7 @@ export const leadsRouter = router({
       const [updated] = await ctx.db
         .update(leads)
         .set({ pipelinePromotedAt: new Date(), updatedAt: new Date() })
-        .where(and(eq(leads.id, input.id), eq(leads.orgId, ctx.orgId)))
+        .where(and(eq(leads.id, input.id), leadScopeWhere(ctx)))
         .returning();
       if (!updated) throw new TRPCError({ code: 'NOT_FOUND' });
       return updated;
@@ -567,7 +608,7 @@ export const leadsRouter = router({
       const [updated] = await ctx.db
         .update(leads)
         .set({ pipelinePromotedAt: null, updatedAt: new Date() })
-        .where(and(eq(leads.id, input.id), eq(leads.orgId, ctx.orgId)))
+        .where(and(eq(leads.id, input.id), leadScopeWhere(ctx)))
         .returning();
       if (!updated) throw new TRPCError({ code: 'NOT_FOUND' });
       return updated;
@@ -575,6 +616,16 @@ export const leadsRouter = router({
 
   // Genera contenido de venta con IA (Gemini) y lo guarda en el lead.
   generateAi: orgProcedure.input(aiGenerateSchema).mutation(async ({ ctx, input }) => {
+    // Gating por kind: el permiso depende del input runtime, así que va dentro
+    // del handler (no se puede expresar con permissionProcedure). El seller solo
+    // puede strategy/proposal/message; landing es admin-only.
+    if (!can(ctx.role, AI_PERM_BY_KIND[input.kind])) {
+      throw new TRPCError({
+        code: 'FORBIDDEN',
+        message: 'No tienes permiso para generar este tipo de contenido.',
+      });
+    }
+
     // Máx 15 generaciones por minuto por usuario (protege cuota/costo de Gemini).
     rateLimit(`ai:${ctx.userId}`, 15, 60_000);
 
@@ -588,7 +639,7 @@ export const leadsRouter = router({
     const [lead] = await ctx.db
       .select()
       .from(leads)
-      .where(and(eq(leads.id, input.id), eq(leads.orgId, ctx.orgId)))
+      .where(and(eq(leads.id, input.id), leadScopeWhere(ctx)))
       .limit(1);
     if (!lead) throw new TRPCError({ code: 'NOT_FOUND' });
 
@@ -627,17 +678,42 @@ export const leadsRouter = router({
     const [updated] = await ctx.db
       .update(leads)
       .set(patch)
-      .where(and(eq(leads.id, input.id), eq(leads.orgId, ctx.orgId)))
+      .where(and(eq(leads.id, input.id), leadScopeWhere(ctx)))
       .returning();
     return updated;
   }),
 
-  // Acciones en lote — siempre acotadas por ownerId.
+  // Asigna / reasigna un lead a un miembro de la org (o desasigna con null).
+  // Solo quien tiene leads.assign (admin).
+  assign: permissionProcedure('leads.assign')
+    .input(leadAssignSchema)
+    .mutation(async ({ ctx, input }) => {
+      const [updated] = await ctx.db
+        .update(leads)
+        .set({ assignedToId: input.assignedToId, updatedAt: new Date() })
+        .where(and(eq(leads.id, input.id), eq(leads.orgId, ctx.orgId)))
+        .returning();
+      if (!updated) throw new TRPCError({ code: 'NOT_FOUND' });
+      return updated;
+    }),
+
+  bulkAssign: permissionProcedure('leads.assign')
+    .input(bulkAssignSchema)
+    .mutation(async ({ ctx, input }) => {
+      const res = await ctx.db
+        .update(leads)
+        .set({ assignedToId: input.assignedToId, updatedAt: new Date() })
+        .where(and(eq(leads.orgId, ctx.orgId), inArray(leads.id, input.ids)))
+        .returning({ id: leads.id });
+      return { assigned: res.length };
+    }),
+
+  // Acciones en lote — acotadas por el scope del rol.
   bulkUpdateStatus: orgProcedure.input(bulkStatusSchema).mutation(async ({ ctx, input }) => {
     const res = await ctx.db
       .update(leads)
       .set({ status: input.status, updatedAt: new Date() })
-      .where(and(eq(leads.orgId, ctx.orgId), inArray(leads.id, input.ids)))
+      .where(and(leadScopeWhere(ctx), inArray(leads.id, input.ids)))
       .returning({ id: leads.id });
     return { updated: res.length };
   }),
@@ -650,7 +726,7 @@ export const leadsRouter = router({
       const res = await ctx.db
         .update(leads)
         .set({ pipelinePromotedAt: new Date(), updatedAt: new Date() })
-        .where(and(eq(leads.orgId, ctx.orgId), inArray(leads.id, input.ids)))
+        .where(and(leadScopeWhere(ctx), inArray(leads.id, input.ids)))
         .returning({ id: leads.id });
       return { updated: res.length };
     }),
@@ -662,12 +738,12 @@ export const leadsRouter = router({
       const res = await ctx.db
         .update(leads)
         .set({ pipelinePromotedAt: null, updatedAt: new Date() })
-        .where(and(eq(leads.orgId, ctx.orgId), inArray(leads.id, input.ids)))
+        .where(and(leadScopeWhere(ctx), inArray(leads.id, input.ids)))
         .returning({ id: leads.id });
       return { updated: res.length };
     }),
 
-  bulkDelete: orgProcedure.input(bulkIdsSchema).mutation(async ({ ctx, input }) => {
+  bulkDelete: permissionProcedure('leads.delete').input(bulkIdsSchema).mutation(async ({ ctx, input }) => {
     await ctx.db
       .delete(notes)
       .where(
@@ -684,7 +760,7 @@ export const leadsRouter = router({
     return { deleted: res.length };
   }),
 
-  delete: orgProcedure.input(idSchema).mutation(async ({ ctx, input }) => {
+  delete: permissionProcedure('leads.delete').input(idSchema).mutation(async ({ ctx, input }) => {
     // Borra notas asociadas (parent_type='lead') antes de borrar el lead.
     await ctx.db
       .delete(notes)
