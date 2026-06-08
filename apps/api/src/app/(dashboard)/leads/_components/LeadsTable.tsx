@@ -80,6 +80,9 @@ export function LeadsTable() {
   const category = searchParams.get('category') ?? undefined;
   const sort = parseSort(searchParams.get('sort'));
   const cursor = Math.max(0, Number(searchParams.get('cursor') ?? 0) || 0);
+  // Filtro "Asignado a" — solo lo usa la UI cuando el usuario es admin
+  // (canAssign). El server ignora el param si el rol no tiene leads.view.all.
+  const assignedTo = searchParams.get('assignedTo') ?? undefined;
 
   // Patcheamos un set de keys en la URL en una sola operación (un solo
   // router.replace). Pasar `null` borra la key del query string.
@@ -105,6 +108,8 @@ export function LeadsTable() {
     patchParams({ category: v ?? null, cursor: null });
   const setSort = (v: Sort) => patchParams({ sort: v === 'score' ? null : v, cursor: null });
   const setCursor = (v: number) => patchParams({ cursor: v > 0 ? String(v) : null });
+  const setAssignedTo = (v: string | undefined) =>
+    patchParams({ assignedTo: v ?? null, cursor: null });
 
   // Persistimos el último query string de /leads en sessionStorage para que la
   // breadcrumb de /leads/[id] pueda construir un href que conserve los filtros
@@ -123,7 +128,15 @@ export function LeadsTable() {
   const [pendingDelete, setPendingDelete] = useState<{ id: string; name: string } | null>(null);
 
   const facets = trpc.leads.facets.useQuery();
-  const filters = { q: q || undefined, city, category, sort, limit: PAGE_SIZE, cursor };
+  const filters = {
+    q: q || undefined,
+    city,
+    category,
+    sort,
+    limit: PAGE_SIZE,
+    cursor,
+    assignedToId: assignedTo,
+  };
   const search = trpc.leads.search.useQuery(filters);
 
   // Miembros para el selector "Asignar a" — solo se consulta si el usuario
@@ -227,6 +240,17 @@ export function LeadsTable() {
     [facets.data],
   );
 
+  // Opciones del filtro "Asignado a" — solo admin. Cae al email si no hay name.
+  const memberOptions = useMemo(
+    () =>
+      (members.data ?? []).map((m) => ({
+        value: m.id,
+        label: m.name ?? m.email ?? 'Sin nombre',
+        hint: m.orgRole === 'org:admin' ? 'admin' : undefined,
+      })),
+    [members.data],
+  );
+
   const total = search.data?.total ?? 0;
   const items = search.data?.items ?? [];
   const pageStart = total === 0 ? 0 : cursor + 1;
@@ -316,6 +340,16 @@ export function LeadsTable() {
           placeholder="Sector"
           searchPlaceholder="Buscar sector…"
         />
+        {/* Admin-only: filtra los leads de un vendedor específico. */}
+        {canAssign && (
+          <Combobox
+            value={assignedTo}
+            onChange={(v) => resetAnd(() => setAssignedTo(v))}
+            options={memberOptions}
+            placeholder="Asignado a"
+            searchPlaceholder="Buscar miembro…"
+          />
+        )}
         {can('leads.export') && (
           <Button variant="outline" size="sm" onClick={exportCsv} disabled={exporting}>
             <Download className="size-4" />

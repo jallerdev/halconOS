@@ -17,13 +17,16 @@ import { useDraggable } from '@dnd-kit/core';
 import { restrictToWindowEdges } from '@dnd-kit/modifiers';
 import { ArrowRight, Inbox, Star, X } from 'lucide-react';
 import Link from 'next/link';
-import { useState } from 'react';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
+import { useCallback, useMemo, useState } from 'react';
 import { toast } from '~/hooks/use-toast';
+import { usePermissions } from '~/hooks/use-permissions';
 
 import { LEAD_STATUS, type LeadStatus } from '@halcon-os/shared/enums';
 import { BusinessAvatar } from '~/components/business-avatar';
 import { LEAD_STATUS_LABEL } from '~/components/lead-status-badge';
 import { ScoreBadge } from '~/components/score-badge';
+import { Combobox } from '~/components/ui/combobox';
 import { STATUS_HUE } from '~/lib/design-tokens';
 import { trpc } from '~/lib/trpc';
 
@@ -43,7 +46,48 @@ type Card = {
 
 export function KanbanBoard() {
   const utils = trpc.useUtils();
-  const { data, isLoading } = trpc.leads.pipeline.useQuery({ perColumn: 25 });
+  const { can } = usePermissions();
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+
+  // Filtro admin-only: ver el pipeline de un vendedor específico.
+  // Persiste en URL para que /pipeline?assignedTo=X sea bookmarkable y se
+  // pueda compartir con el resto del equipo.
+  const canFilter = can('leads.assign');
+  const assignedTo = searchParams.get('assignedTo') ?? undefined;
+
+  const members = trpc.members.list.useQuery(undefined, { enabled: canFilter });
+  const memberOptions = useMemo(
+    () =>
+      (members.data ?? []).map((m) => ({
+        value: m.id,
+        label: m.name ?? m.email ?? 'Sin nombre',
+        hint: m.orgRole === 'org:admin' ? 'admin' : undefined,
+      })),
+    [members.data],
+  );
+
+  // Input compartido para el query + setData/getData de las mutaciones
+  // optimistas — si no se mantienen idénticos, el cache no acierta y
+  // los updates optimistas se pierden visualmente.
+  const pipelineInput = useMemo(
+    () => ({ perColumn: 25, assignedToId: assignedTo }),
+    [assignedTo],
+  );
+
+  const setAssignedTo = useCallback(
+    (v: string | undefined) => {
+      const params = new URLSearchParams(searchParams.toString());
+      if (v) params.set('assignedTo', v);
+      else params.delete('assignedTo');
+      const query = params.toString();
+      router.replace(query ? `${pathname}?${query}` : pathname, { scroll: false });
+    },
+    [pathname, router, searchParams],
+  );
+
+  const { data, isLoading } = trpc.leads.pipeline.useQuery(pipelineInput);
   const [activeCard, setActiveCard] = useState<Card | null>(null);
   const [peekId, setPeekId] = useState<string | null>(null);
 
@@ -59,8 +103,8 @@ export function KanbanBoard() {
   const updateStatus = trpc.leads.updateStatus.useMutation({
     onMutate: async ({ id, status }) => {
       await utils.leads.pipeline.cancel();
-      const prev = utils.leads.pipeline.getData({ perColumn: 25 });
-      utils.leads.pipeline.setData({ perColumn: 25 }, (old) => {
+      const prev = utils.leads.pipeline.getData(pipelineInput);
+      utils.leads.pipeline.setData(pipelineInput, (old) => {
         if (!old) return old;
         type Item = (typeof old)['columns'][number]['items'][number];
         let moved: Item | undefined;
@@ -84,7 +128,7 @@ export function KanbanBoard() {
       return { prev };
     },
     onError: (_e, _v, ctx) => {
-      if (ctx?.prev) utils.leads.pipeline.setData({ perColumn: 25 }, ctx.prev);
+      if (ctx?.prev) utils.leads.pipeline.setData(pipelineInput, ctx.prev);
       toast.error('No se pudo mover el lead');
     },
     onSettled: () => {
@@ -139,6 +183,23 @@ export function KanbanBoard() {
       onDragCancel={() => setActiveCard(null)}
       onDragEnd={onDragEnd}
     >
+      {/* Toolbar admin-only: filtrar el pipeline por vendedor. */}
+      {canFilter && (
+        <div className="mb-4 flex flex-wrap items-center gap-2">
+          <Combobox
+            value={assignedTo}
+            onChange={setAssignedTo}
+            options={memberOptions}
+            placeholder="Asignado a"
+            searchPlaceholder="Buscar miembro…"
+          />
+          {assignedTo && (
+            <span className="text-xs text-muted-foreground">
+              Viendo solo los leads de este vendedor
+            </span>
+          )}
+        </div>
+      )}
       {inboxCount > 0 && <NewInboxHint count={inboxCount} />}
       <div className="flex gap-3 overflow-x-auto pb-4">
         {LEAD_STATUS.map((status) => {

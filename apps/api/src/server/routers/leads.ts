@@ -205,10 +205,25 @@ export const leadsRouter = router({
 
   // Pipeline Kanban: top N leads por estado + conteo total por columna.
   pipeline: orgProcedure
-    .input(z.object({ perColumn: z.number().int().min(5).max(50).default(20) }).optional())
+    .input(
+      z
+        .object({
+          perColumn: z.number().int().min(5).max(50).default(20),
+          // Filtro opcional de admin: ver el pipeline de UN vendedor específico.
+          // Se IGNORA si el rol no tiene `leads.view.all` (sellers ya están
+          // acotados por leadScopeWhere a sus propios leads).
+          assignedToId: z.string().uuid().optional(),
+        })
+        .optional(),
+    )
     .query(async ({ ctx, input }) => {
       const perColumn = input?.perColumn ?? 20;
-      const owner = leadScopeWhere(ctx);
+      const baseOwner = leadScopeWhere(ctx);
+      // Admins pueden refinar a un vendedor; sellers no (ya están limitados).
+      const owner =
+        input?.assignedToId && can(ctx.role, 'leads.view.all')
+          ? and(baseOwner, eq(leads.assignedToId, input.assignedToId))
+          : baseOwner;
 
       // Para la columna NEW del kanban solo cuentan los leads "promovidos"
       // (pipelinePromotedAt no nulo). El resto vive en /leads como inbox.
