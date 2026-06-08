@@ -1,6 +1,16 @@
 'use client';
 
-import { Globe, GlobeLock, MapPin, Search, Star, ShieldCheck } from 'lucide-react';
+import {
+  Globe,
+  GlobeLock,
+  MapPin,
+  Search,
+  Star,
+  ShieldCheck,
+  Map as MapIcon,
+  BookOpen,
+  Telescope,
+} from 'lucide-react';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useEffect, useMemo, useState } from 'react';
 
@@ -8,6 +18,17 @@ import { Button } from '~/components/ui/button';
 import { Input } from '~/components/ui/input';
 import { cn } from '~/lib/utils';
 import { trpc } from '~/lib/trpc';
+
+// Fuentes de descubrimiento de leads. `google` usa la API oficial de Places;
+// el resto delega al microservicio Python (apps/scraper/) que corre con
+// ScrapeGraph AI + Playwright.
+type Source = 'google' | 'paginas-amarillas-co' | 'bing-search';
+
+const SOURCE_OPTIONS: { value: Source; label: string; icon: typeof Search; hint: string }[] = [
+  { value: 'google', label: 'Google Places', icon: MapIcon, hint: 'Rápido, datos completos' },
+  { value: 'paginas-amarillas-co', label: 'Páginas Amarillas CO', icon: BookOpen, hint: 'Directorio LatAm' },
+  { value: 'bing-search', label: 'Bing Search', icon: Telescope, hint: 'Búsqueda + scrape' },
+];
 
 // Filtros del lado del cliente. Places API no soporta filtrar por
 // has-website / rating-min / operational en el request, así que los
@@ -39,12 +60,15 @@ export function SearchForm() {
 
   const urlQuery = searchParams.get('q') ?? '';
   const urlCity = searchParams.get('city') ?? '';
+  const urlSource = ((SOURCE_OPTIONS.find((s) => s.value === searchParams.get('source'))?.value) ??
+    'google') as Source;
   const urlWeb = (searchParams.get('web') as WebFilter | null) ?? 'any';
   const urlRating = (Number(searchParams.get('minRating')) || 0) as RatingFilter;
   const urlOperational = searchParams.get('operational') === '1';
 
   const [query, setQuery] = useState(urlQuery);
   const [city, setCity] = useState(urlCity);
+  const [source, setSource] = useState<Source>(urlSource);
   const [web, setWeb] = useState<WebFilter>(urlWeb);
   const [rating, setRating] = useState<RatingFilter>(urlRating);
   const [operational, setOperational] = useState(urlOperational);
@@ -53,10 +77,11 @@ export function SearchForm() {
   useEffect(() => {
     setQuery(urlQuery);
     setCity(urlCity);
+    setSource(urlSource);
     setWeb(urlWeb);
     setRating(urlRating);
     setOperational(urlOperational);
-  }, [urlQuery, urlCity, urlWeb, urlRating, urlOperational]);
+  }, [urlQuery, urlCity, urlSource, urlWeb, urlRating, urlOperational]);
 
   // Autocomplete de ciudades — sugerencia, no restricción. El usuario puede
   // escribir cualquier ciudad del mundo, no solo las que ya tiene en el CRM.
@@ -74,6 +99,7 @@ export function SearchForm() {
     const params = new URLSearchParams();
     params.set('q', trimmedQ);
     if (trimmedCity) params.set('city', trimmedCity);
+    if (source !== 'google') params.set('source', source);
     if (web !== 'any') params.set('web', web);
     if (rating > 0) params.set('minRating', String(rating));
     if (operational) params.set('operational', '1');
@@ -82,6 +108,31 @@ export function SearchForm() {
 
   return (
     <form onSubmit={submit} className="space-y-3">
+      {/* Fuente — botones segmentados. Solo el seleccionado tiene color de marca. */}
+      <div className="flex flex-wrap items-center gap-1.5 rounded-full border border-border bg-card-2/40 p-1">
+        {SOURCE_OPTIONS.map((opt) => {
+          const Ico = opt.icon;
+          const active = source === opt.value;
+          return (
+            <button
+              key={opt.value}
+              type="button"
+              onClick={() => setSource(opt.value)}
+              className={cn(
+                'hx-press inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-xs font-medium transition-colors',
+                active
+                  ? 'bg-[hsl(var(--violet))]/15 text-[hsl(var(--violet))]'
+                  : 'text-muted-foreground hover:bg-accent hover:text-foreground',
+              )}
+              title={opt.hint}
+            >
+              <Ico className="size-3.5" />
+              {opt.label}
+            </button>
+          );
+        })}
+      </div>
+
       <div className="flex flex-wrap items-end gap-2">
         <div className="relative min-w-[260px] flex-1">
           <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />

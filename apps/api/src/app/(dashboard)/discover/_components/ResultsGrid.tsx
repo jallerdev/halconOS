@@ -19,10 +19,18 @@ import { PlaceCard } from './PlaceCard';
 //   - error (incluye API key faltante) → mensaje + CTA a settings
 //   - sin resultados → empty con sugerencia
 //   - results → grid de PlaceCards + bulk bar
+const VALID_SOURCES = ['google', 'paginas-amarillas-co', 'bing-search'] as const;
+type Source = (typeof VALID_SOURCES)[number];
+
+function parseSource(v: string | null): Source {
+  return (VALID_SOURCES as readonly string[]).includes(v ?? '') ? (v as Source) : 'google';
+}
+
 export function ResultsGrid() {
   const searchParams = useSearchParams();
   const query = searchParams.get('q') ?? '';
   const city = searchParams.get('city') ?? undefined;
+  const source = parseSource(searchParams.get('source'));
   const webFilter = (searchParams.get('web') as 'yes' | 'no' | null) ?? null;
   const minRating = Number(searchParams.get('minRating')) || 0;
   const operationalOnly = searchParams.get('operational') === '1';
@@ -30,10 +38,10 @@ export function ResultsGrid() {
 
   const utils = trpc.useUtils();
   const places = trpc.discover.searchPlaces.useQuery(
-    { query, city },
+    { query, city, source },
     {
       enabled: hasQuery,
-      retry: false, // los errores de API key / billing no se solucionan con retry
+      retry: false, // los errores de config / billing no se solucionan con retry
     },
   );
 
@@ -44,7 +52,8 @@ export function ResultsGrid() {
     return raw.filter((p) => {
       if (webFilter === 'yes' && !p.websiteUri) return false;
       if (webFilter === 'no' && p.websiteUri) return false;
-      if (minRating > 0 && (p.rating ?? 0) < minRating) return false;
+      // Si el place no trae rating (scraped sources), no lo filtramos negativamente.
+      if (minRating > 0 && p.rating != null && p.rating < minRating) return false;
       if (operationalOnly && p.businessStatus && p.businessStatus !== 'OPERATIONAL') return false;
       return true;
     });
@@ -102,27 +111,36 @@ export function ResultsGrid() {
   }
 
   if (places.isLoading) {
+    const isScraping = source !== 'google';
     return (
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
-        {[0, 1, 2, 3, 4, 5].map((i) => (
-          <Skeleton key={i} className="h-44 rounded-xl" />
-        ))}
+      <div className="space-y-3">
+        {isScraping && (
+          <p className="text-xs text-muted-foreground">
+            Buscando en {source === 'paginas-amarillas-co' ? 'Páginas Amarillas' : 'Bing'}…
+            {' '}puede tomar 15–30 segundos la primera vez.
+          </p>
+        )}
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
+          {[0, 1, 2, 3, 4, 5].map((i) => (
+            <Skeleton key={i} className="h-44 rounded-xl" />
+          ))}
+        </div>
       </div>
     );
   }
 
   if (places.error) {
-    const isMissingKey = places.error.data?.code === 'PRECONDITION_FAILED';
+    const isMissingConfig = places.error.data?.code === 'PRECONDITION_FAILED';
     return (
       <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-border py-20 text-center">
         <div className="grid size-12 place-items-center rounded-[13px] bg-rose-500/15 text-rose-400">
           <AlertTriangle className="size-6" />
         </div>
         <h3 className="mt-4 text-sm font-semibold">
-          {isMissingKey ? 'Falta configurar Google Places' : 'No se pudo completar la búsqueda'}
+          {isMissingConfig ? 'Falta configurar esta fuente' : 'No se pudo completar la búsqueda'}
         </h3>
         <p className="mt-1 max-w-md text-xs text-muted-foreground">{places.error.message}</p>
-        {isMissingKey && (
+        {isMissingConfig && (
           <Button asChild variant="outline" size="sm" className="mt-4">
             <Link href="/settings">
               <Settings2 className="size-4" /> Ir a Ajustes
@@ -157,6 +175,9 @@ export function ResultsGrid() {
 
   const selectableIds = results.filter((p) => !existingSet.has(p.id)).map((p) => p.id);
   const selectedIds = [...selected].filter((id) => selectableIds.includes(id));
+  // Mandamos los places COMPLETOS en lugar de solo IDs. Para scraped sources no
+  // hay endpoint de details que podamos llamar en el server.
+  const selectedPlaces = results.filter((p) => selectedIds.includes(p.id));
 
   return (
     <div className="space-y-4">
@@ -173,7 +194,7 @@ export function ResultsGrid() {
       <BulkImportBar
         count={selectedIds.length}
         loading={importMut.isPending}
-        onImport={() => importMut.mutate({ placeIds: selectedIds })}
+        onImport={() => importMut.mutate({ places: selectedPlaces })}
         onClear={() => setSelected(new Set())}
       />
 

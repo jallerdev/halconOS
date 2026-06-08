@@ -18,6 +18,11 @@ const envSchema = z.object({
   // Gemini AI Studio). Se genera en console.cloud.google.com → Credentials →
   // Create credentials → API Key, con "Places API (New)" habilitada.
   GOOGLE_PLACES_API_KEY: z.string().optional().default(''),
+  // Microservicio Python de scraping (apps/scraper/). Vive en Render free tier.
+  // Si están vacías, las fuentes de scraping en /discover quedan deshabilitadas
+  // (solo se ve Google Places).
+  SCRAPER_SERVICE_URL: z.string().optional().default(''),
+  SCRAPER_SHARED_SECRET: z.string().optional().default(''),
   // Clave para cifrar refresh tokens (AES-256-GCM). 32 bytes en hex (64 chars). Generar: openssl rand -hex 32
   ENCRYPTION_KEY: z
     .string()
@@ -41,6 +46,8 @@ export const env = envSchema.parse({
   GOOGLE_CLIENT_SECRET: process.env.GOOGLE_CLIENT_SECRET,
   GOOGLE_OAUTH_REDIRECT_URI: process.env.GOOGLE_OAUTH_REDIRECT_URI,
   GOOGLE_PLACES_API_KEY: process.env.GOOGLE_PLACES_API_KEY,
+  SCRAPER_SERVICE_URL: process.env.SCRAPER_SERVICE_URL,
+  SCRAPER_SHARED_SECRET: process.env.SCRAPER_SHARED_SECRET,
   ENCRYPTION_KEY: process.env.ENCRYPTION_KEY,
   NODE_ENV: process.env.NODE_ENV,
 });
@@ -50,3 +57,4 @@ export const googleConfigured = Boolean(
 );
 
 export const placesConfigured = Boolean(env.GOOGLE_PLACES_API_KEY);
+export const scraperConfigured = Boolean(env.SCRAPER_SERVICE_URL && env.SCRAPER_SHARED_SECRET);

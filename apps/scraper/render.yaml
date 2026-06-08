@@ -1,0 +1,20 @@
+# Render Blueprint para el microservicio de scraping de HalcónOS.
+# Puedes usar este archivo desde el dashboard de Render: New → Blueprint → Apply.
+# El plan `free` tiene 512MB RAM, 0.1 CPU, sleep tras 15min sin tráfico, 750h/mes.
+
+services:
+  - type: web
+    name: halcon-scraper
+    runtime: docker
+    rootDir: apps/scraper
+    region: oregon
+    plan: free
+    healthCheckPath: /health
+    autoDeploy: true
+    envVars:
+      - key: GEMINI_API_KEY
+        sync: false # debes setear el valor en el dashboard de Render
+      - key: SCRAPER_SHARED_SECRET
+        generateValue: true # Render genera uno aleatorio la primera vez
+      - key: ALLOWED_ORIGINS
+        value: https://halcon.jvagencia.com
