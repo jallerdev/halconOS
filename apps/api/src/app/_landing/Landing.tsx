@@ -1,6 +1,7 @@
 'use client';
 
 import { motion } from 'framer-motion';
+import Link from 'next/link';
 import { Fragment } from 'react';
 import {
   ArrowRight,
@@ -195,6 +196,7 @@ export function Landing() {
             <a href="#features" className="transition-colors hover:text-foreground">Capacidades</a>
             <a href="#flujo" className="transition-colors hover:text-foreground">Cómo funciona</a>
             <a href="#faq" className="transition-colors hover:text-foreground">FAQ</a>
+            <Link href="/blog" className="transition-colors hover:text-foreground">Blog</Link>
           </nav>
           <div className="flex items-center gap-2.5">
             <ThemeToggle />
