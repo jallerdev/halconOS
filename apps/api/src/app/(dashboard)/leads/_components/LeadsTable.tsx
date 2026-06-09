@@ -130,13 +130,33 @@ export function LeadsTable() {
     setStatuses(statuses.includes(s) ? statuses.filter((x) => x !== s) : [...statuses, s]);
   };
 
-  // Persistimos el último query string de /leads en sessionStorage para que la
-  // breadcrumb de /leads/[id] pueda construir un href que conserve los filtros
-  // (la breadcrumb no puede leer el referrer y la URL ya no contiene los params
-  // en el detalle). Sólo guardamos cuando hay algo que guardar — null borra.
+  // Persistencia de filtros entre navegaciones: al entrar a /leads sin
+  // params en la URL, restauramos los últimos guardados en sessionStorage.
+  // Después de ese primer intento, el effect de save normaliza la storage.
+  // El ref evita que el save corra antes del restore (lo que clobberearia
+  // los filtros pendientes mientras router.replace() resuelve).
+  const filtersHydrated = useRef(false);
   useEffect(() => {
-    const str = searchParams.toString();
+    if (filtersHydrated.current) return;
     if (typeof window === 'undefined') return;
+    if (searchParams.toString()) {
+      filtersHydrated.current = true;
+      return;
+    }
+    const saved = sessionStorage.getItem('halcon:leads:lastFilters');
+    if (saved) {
+      router.replace(`${pathname}?${saved}`, { scroll: false });
+      return;
+    }
+    filtersHydrated.current = true;
+  }, [searchParams, router, pathname]);
+
+  // Guarda los params actuales en sessionStorage para que la próxima visita
+  // a /leads (y la breadcrumb de /leads/[id]) los recupere.
+  useEffect(() => {
+    if (!filtersHydrated.current) return;
+    if (typeof window === 'undefined') return;
+    const str = searchParams.toString();
     if (str) sessionStorage.setItem('halcon:leads:lastFilters', str);
     else sessionStorage.removeItem('halcon:leads:lastFilters');
   }, [searchParams]);
@@ -346,10 +366,7 @@ export function LeadsTable() {
     <div className="space-y-4" data-tour="leads-table">
       {/* Toolbar */}
       <div className="flex flex-wrap items-center gap-2">
-        <div className="relative flex-1 min-w-[220px]">
-          <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-          <DebouncedSearchInput urlValue={q} onCommit={setQ} />
-        </div>
+        <SearchInputForm urlValue={q} onCommit={setQ} />
         <Combobox
           value={city}
           onChange={(v) => resetAnd(() => setCity(v))}
@@ -784,7 +801,12 @@ function SkeletonRows() {
 // (que tiene 50 filas con avatars + status selects → cada render costaba
 // suficiente como para perder teclas al escribir rápido). El commit a la URL
 // va con 400ms de debounce.
-const DebouncedSearchInput = memo(function DebouncedSearchInput({
+// Input + botón "Buscar" dentro de un form. El typing NO dispara fetch —
+// solo el submit (Enter o click en el botón). Esto evita el cuello de
+// botella de re-renders por tecla y le da al usuario control total sobre
+// cuándo se ejecuta la búsqueda. Memoizado para que el typing tampoco
+// re-renderice la tabla.
+const SearchInputForm = memo(function SearchInputForm({
   urlValue,
   onCommit,
 }: {
@@ -792,32 +814,38 @@ const DebouncedSearchInput = memo(function DebouncedSearchInput({
   onCommit: (v: string) => void;
 }) {
   const [local, setLocal] = useState(urlValue);
-  // Distinguimos "la URL cambió porque YO la commiteé" de "la URL cambió
-  // desde afuera (history, restore, sessionStorage)". Sin esto, cuando el
-  // debounce dispara onCommit, la URL cambia, el useEffect de abajo corre
-  // setLocal(urlValue) y nos sobreescribe lo que el usuario sigue tipeando.
-  const lastCommittedRef = useRef(urlValue);
+  // Sync externo: si la URL cambia por history nav o restore, refleja el
+  // nuevo valor en el input.
   useEffect(() => {
-    if (urlValue === lastCommittedRef.current) return;
     setLocal(urlValue);
-    lastCommittedRef.current = urlValue;
   }, [urlValue]);
-  // Debounce: 2s sin tipear → commit a la URL. Cancelamos en cada tecla.
-  useEffect(() => {
-    if (local === urlValue) return;
-    const id = setTimeout(() => {
-      lastCommittedRef.current = local;
-      onCommit(local);
-    }, 2000);
-    return () => clearTimeout(id);
-  }, [local, urlValue, onCommit]);
+  const dirty = local !== urlValue;
   return (
-    <Input
-      value={local}
-      onChange={(e) => setLocal(e.target.value)}
-      placeholder="Buscar negocio, ciudad, teléfono…"
-      className="pl-9"
-    />
+    <form
+      onSubmit={(e) => {
+        e.preventDefault();
+        onCommit(local);
+      }}
+      className="flex flex-1 items-center gap-1.5 min-w-[220px]"
+    >
+      <div className="relative flex-1">
+        <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+        <Input
+          value={local}
+          onChange={(e) => setLocal(e.target.value)}
+          placeholder="Buscar negocio, ciudad, teléfono…"
+          className="pl-9"
+        />
+      </div>
+      <Button
+        type="submit"
+        size="sm"
+        variant={dirty ? 'default' : 'outline'}
+        className="h-9"
+      >
+        Buscar
+      </Button>
+    </form>
   );
 });
 
