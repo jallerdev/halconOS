@@ -18,9 +18,12 @@ import { env } from '../../../env';
 
 const PLACES_API_BASE = 'https://places.googleapis.com/v1';
 
-// Campos mínimos para renderizar un PlaceCard (id, nombre, dirección, rating,
-// reseñas, tipos, web, mapa, business status, price level). Cada campo extra
-// suma a la factura → mantener corto.
+// Campos para renderizar un PlaceCard en /discover. Incluye teléfono porque
+// es la info más crítica para prospectar (sin teléfono, el lead vale poco).
+// Costo: ya estamos en el SKU Enterprise por `rating`, `priceLevel`, etc.,
+// así que agregar `nationalPhoneNumber` / `internationalPhoneNumber` no
+// cambia el precio por búsqueda. Documentación de SKUs:
+// https://developers.google.com/maps/documentation/places/web-service/usage-and-billing
 const SEARCH_MASK = [
   'places.id',
   'places.displayName',
@@ -33,6 +36,8 @@ const SEARCH_MASK = [
   'places.types',
   'places.priceLevel',
   'places.googleMapsUri',
+  'places.nationalPhoneNumber',
+  'places.internationalPhoneNumber',
 ].join(',');
 
 // Campos para enriquecer al importar (phone + dirección desglosada).
