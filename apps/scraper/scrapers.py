@@ -270,7 +270,14 @@ def _fetch_html_for_source(source: str, query: str, city: Optional[str], target_
 # Mucho más rápido (~1-2s) y 100% gratis (rate limit: 1 req/seg al server público).
 # Cubre cualquier ciudad del mundo. Datos: nombre, lat/lng, tipo, a veces tel/web.
 
-_OVERPASS_URL = "https://overpass-api.de/api/interpreter"
+# Lista priorizada de mirrors de Overpass. El servidor oficial (overpass-api.de)
+# se sobrecarga seguido y devuelve 504; los mirrors son más estables.
+# El primero generalmente responde en <2s; si todos fallan, propagamos error.
+_OVERPASS_ENDPOINTS = [
+    "https://overpass.kumi.systems/api/interpreter",
+    "https://overpass-api.de/api/interpreter",
+    "https://overpass.openstreetmap.fr/api/interpreter",
+]
 
 # Mapeo intuitivo de queries en español a tags OSM. Si el usuario escribe algo
 # fuera de este set, hacemos búsqueda fuzzy con `~name~` (regex en el name tag).
@@ -318,8 +325,40 @@ def _geocode_city(city: str) -> Optional[tuple[float, float, float, float]]:
     return float(bb[0]), float(bb[2]), float(bb[1]), float(bb[3])
 
 
+def _query_overpass(overpass_query: str) -> list[dict]:
+    """
+    Llama a Overpass intentando mirrors en orden. El público (overpass-api.de)
+    se cae a 504 seguido, así que arrancamos por el de Kumi que es más estable.
+    Si TODOS fallan, propaga el último error con contexto util.
+    """
+    last_err: Exception | None = None
+    for endpoint in _OVERPASS_ENDPOINTS:
+        try:
+            r = httpx.post(
+                endpoint,
+                data={"data": overpass_query},
+                headers={"User-Agent": "HalconOS-Scraper/1.0"},
+                timeout=20.0,
+            )
+            r.raise_for_status()
+            return r.json().get("elements", [])
+        except (httpx.HTTPStatusError, httpx.RequestError, httpx.TimeoutException) as e:
+            last_err = e
+            logger.info("Overpass mirror %s falló (%s), probando siguiente", endpoint, e)
+            continue
+    raise RuntimeError(
+        f"Todos los mirrors de Overpass fallaron. Último error: {last_err}"
+    )
+
+
 def _scrape_openstreetmap(query: str, city: Optional[str], max_results: int) -> list[PlaceResult]:
-    """Llama a Overpass API directamente — no necesita Playwright ni LLM."""
+    """Llama a Overpass API directamente — no necesita Playwright ni LLM.
+
+    Optimizaciones para evitar timeouts:
+      • Solo `node` (no `way`) — node es 10x más rápido y cubre 90% de negocios.
+      • Timeout interno de Overpass corto (10s) para fallar rápido y probar mirror.
+      • Mirrors con fallback (ver _query_overpass).
+    """
     bbox = _geocode_city(city) if city else None
     bbox_clause = f"({bbox[0]},{bbox[1]},{bbox[2]},{bbox[3]})" if bbox else ""
 
@@ -332,23 +371,15 @@ def _scrape_openstreetmap(query: str, city: Optional[str], max_results: int) -> 
         safe_q = query.replace('"', '').replace("\\", "")
         filter_clause = f'["name"~"{safe_q}",i]'
 
+    # Solo `node` para ir liviano. Si encuentras pocos resultados en práctica,
+    # podemos agregar `way` después.
     overpass_query = f"""
-    [out:json][timeout:15];
-    (
-      node{filter_clause}{bbox_clause};
-      way{filter_clause}{bbox_clause};
-    );
-    out center {max_results};
+    [out:json][timeout:10];
+    node{filter_clause}{bbox_clause};
+    out {max_results};
     """
 
-    r = httpx.post(
-        _OVERPASS_URL,
-        data={"data": overpass_query},
-        headers={"User-Agent": "HalconOS-Scraper/1.0"},
-        timeout=30.0,
-    )
-    r.raise_for_status()
-    elements = r.json().get("elements", [])
+    elements = _query_overpass(overpass_query)
 
     out: list[PlaceResult] = []
     for el in elements[:max_results]:
