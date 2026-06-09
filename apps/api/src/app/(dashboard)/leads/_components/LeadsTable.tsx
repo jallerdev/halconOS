@@ -18,7 +18,7 @@ import {
 } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
-import { memo, useCallback, useEffect, useMemo, useState } from 'react';
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import { toast } from '~/hooks/use-toast';
 import { usePermissions } from '~/hooks/use-permissions';
@@ -792,15 +792,23 @@ const DebouncedSearchInput = memo(function DebouncedSearchInput({
   onCommit: (v: string) => void;
 }) {
   const [local, setLocal] = useState(urlValue);
-  // Sync hacia afuera: si la URL cambia por history nav, restore de historial,
-  // etc., el input refleja el nuevo valor.
+  // Distinguimos "la URL cambió porque YO la commiteé" de "la URL cambió
+  // desde afuera (history, restore, sessionStorage)". Sin esto, cuando el
+  // debounce dispara onCommit, la URL cambia, el useEffect de abajo corre
+  // setLocal(urlValue) y nos sobreescribe lo que el usuario sigue tipeando.
+  const lastCommittedRef = useRef(urlValue);
   useEffect(() => {
+    if (urlValue === lastCommittedRef.current) return;
     setLocal(urlValue);
+    lastCommittedRef.current = urlValue;
   }, [urlValue]);
-  // Debounce: 400ms sin tipear → commit a la URL. Cancelamos en cada tecla.
+  // Debounce: 2s sin tipear → commit a la URL. Cancelamos en cada tecla.
   useEffect(() => {
     if (local === urlValue) return;
-    const id = setTimeout(() => onCommit(local), 400);
+    const id = setTimeout(() => {
+      lastCommittedRef.current = local;
+      onCommit(local);
+    }, 2000);
     return () => clearTimeout(id);
   }, [local, urlValue, onCommit]);
   return (
