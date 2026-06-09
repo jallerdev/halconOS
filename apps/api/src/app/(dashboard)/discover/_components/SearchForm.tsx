@@ -24,7 +24,6 @@ import {
   TooltipTrigger,
 } from '~/components/ui/tooltip';
 import { cn } from '~/lib/utils';
-import { trpc } from '~/lib/trpc';
 import { COUNTRIES, getCountry } from './countries';
 import {
   SOURCES_CONFIG,
@@ -107,13 +106,6 @@ export function SearchForm() {
   }, [urlQuery, urlCity, urlCountry, urlSource, urlWeb, urlRating, urlOperational]);
 
   const config = SOURCES_CONFIG[source];
-
-  // Sugerencias de ciudades del CRM — solo hint, no restringe.
-  const facets = trpc.leads.facets.useQuery();
-  const citySuggestions = useMemo(
-    () => (facets.data?.cities ?? []).map((c) => c.value!).filter(Boolean),
-    [facets.data],
-  );
 
   // Al cambiar de fuente, limpiamos URL params para los campos/filtros que la
   // nueva fuente NO soporta. Antes solo limpiábamos memoria, lo que dejaba
@@ -258,14 +250,8 @@ export function SearchForm() {
                 value={city}
                 onChange={(e) => setCity(e.target.value)}
                 placeholder={config.fields.city.placeholder}
-                list="discover-city-suggestions"
                 className="pl-9"
               />
-              <datalist id="discover-city-suggestions">
-                {citySuggestions.map((c) => (
-                  <option key={c} value={c} />
-                ))}
-              </datalist>
             </div>
           )}
 
