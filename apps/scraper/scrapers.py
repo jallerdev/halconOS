@@ -41,11 +41,34 @@ logger = logging.getLogger(__name__)
 # ─────────────────────────────── Config ────────────────────────────────
 
 GEMINI_KEY = os.environ.get("GEMINI_API_KEY") or os.environ.get("GOOGLE_API_KEY")
-# Modelo por defecto: gemini-2.5-flash-lite tiene el free tier más generoso
-# (~15 RPM, 1000 RPD sin billing). gemini-2.0-flash en algunas keys da
-# `limit: 0` porque Google lo movió a tier de pago. Si tienes billing
-# activado y prefieres calidad, sobreescribe via GEMINI_MODEL=gemini-2.5-flash.
-GEMINI_MODEL = os.environ.get("GEMINI_MODEL", "gemini-2.5-flash-lite")
+
+# Cadena de fallback de modelos Gemini con free tier. El primero se intenta primero;
+# si devuelve 429 RESOURCE_EXHAUSTED, prueba el siguiente. Esto evita que el usuario
+# vea fallos cuando un modelo específico se quedó sin cuota.
+#
+# Cuotas (Jun 2026, sin billing):
+#   gemini-2.5-flash-lite  → 15 RPM / 1000 RPD — calidad buena, primer intento
+#   gemini-2.0-flash-lite  → 30 RPM / 1500 RPD — más generoso en RPM
+#   gemini-2.5-flash       → 10 RPM /  250 RPD — calidad excelente
+#   gemini-1.5-flash       → 15 RPM / 1500 RPD — legacy pero muy estable
+#   gemini-1.5-flash-8b    → 15 RPM / 1500 RPD — más rápido, menos capaz
+#
+# El usuario puede forzar UN modelo con GEMINI_MODEL=name; ahí desactivamos
+# el fallback y solo se usa ese.
+_DEFAULT_MODEL_CHAIN = [
+    "gemini-2.5-flash-lite",
+    "gemini-2.0-flash-lite",
+    "gemini-2.5-flash",
+    "gemini-1.5-flash",
+    "gemini-1.5-flash-8b",
+]
+
+GEMINI_MODEL_OVERRIDE = os.environ.get("GEMINI_MODEL", "").strip()
+GEMINI_MODEL_CHAIN: list[str] = (
+    [GEMINI_MODEL_OVERRIDE] if GEMINI_MODEL_OVERRIDE else _DEFAULT_MODEL_CHAIN
+)
+# Mantener variable scalar para compatibilidad con código y logs.
+GEMINI_MODEL = GEMINI_MODEL_CHAIN[0]
 
 # Cliente Gemini — un solo objeto compartido. Se inicializa lazy en
 # `_extract_with_gemini` por si la key no está al import-time.
@@ -506,38 +529,57 @@ class QuotaExceededError(RuntimeError):
     """Gemini devolvió 429 (free tier agotado o billing requerido)."""
 
 
-def _extract_with_gemini(cleaned_html: str) -> list[dict]:
-    """
-    Llama a Gemini con structured output. Pasamos el modelo Pydantic como
-    `response_schema` y el SDK genera internamente el formato correcto.
-    Diferencia errores de quota (429) de otros para que el cliente muestre
-    mensaje específico.
-    """
-    client = _get_genai_client()
+def _is_quota_error(exc: Exception) -> bool:
+    """google.genai.errors.ClientError 429 RESOURCE_EXHAUSTED — cuota agotada."""
+    s = str(exc)
+    return "RESOURCE_EXHAUSTED" in s or "429" in s or "quota" in s.lower()
 
+
+def _call_gemini_once(model_name: str, cleaned_html: str):
+    """Una sola llamada al modelo `model_name`. Lanza la excepción tal cual."""
+    client = _get_genai_client()
     config = genai_types.GenerateContentConfig(
         response_mime_type="application/json",
         response_schema=_ExtractionResult,
         temperature=0,
     )
+    return client.models.generate_content(
+        model=model_name,
+        contents=_EXTRACTION_PROMPT + cleaned_html,
+        config=config,
+    )
 
-    try:
-        response = client.models.generate_content(
-            model=GEMINI_MODEL,
-            contents=_EXTRACTION_PROMPT + cleaned_html,
-            config=config,
-        )
-    except Exception as e:
-        # google.genai.errors.ClientError: 429 RESOURCE_EXHAUSTED — el user
-        # acabó su cuota o no tiene billing en el modelo solicitado.
-        if "RESOURCE_EXHAUSTED" in str(e) or "429" in str(e):
-            raise QuotaExceededError(
-                f"Cuota de Gemini agotada para modelo '{GEMINI_MODEL}'. "
-                "Espera unos minutos, cambia GEMINI_MODEL a uno con free tier "
-                "(ej. gemini-2.5-flash-lite), o activa billing en tu proyecto "
-                "de Google Cloud."
-            ) from e
-        raise
+
+def _extract_with_gemini(cleaned_html: str) -> list[dict]:
+    """
+    Llama a Gemini con structured output, recorriendo la cadena de modelos
+    fallback hasta encontrar uno con cuota disponible. Si TODOS los modelos
+    de la cadena dan 429, eleva QuotaExceededError.
+    """
+    last_quota_error: Exception | None = None
+    response = None
+
+    for model_name in GEMINI_MODEL_CHAIN:
+        try:
+            response = _call_gemini_once(model_name, cleaned_html)
+            if model_name != GEMINI_MODEL_CHAIN[0]:
+                logger.info("Gemini fallback exitoso con modelo: %s", model_name)
+            break
+        except Exception as e:  # noqa: BLE001 — repropagamos según tipo abajo.
+            if _is_quota_error(e):
+                last_quota_error = e
+                logger.info("Modelo %s sin cuota, probando siguiente", model_name)
+                continue
+            # Cualquier otro error (autenticación, red, etc.): se eleva tal cual.
+            raise
+
+    if response is None:
+        # Todos los modelos de la cadena devolvieron 429.
+        raise QuotaExceededError(
+            "Todos los modelos Gemini de free tier están sin cuota. "
+            "Espera unos minutos, activa billing en tu proyecto de Google Cloud, "
+            "o usa fuentes que no requieran IA (Google Places, OpenStreetMap)."
+        ) from last_quota_error
 
     # `response.parsed` ya viene como instancia de _ExtractionResult — el SDK
     # parsea + valida por nosotros. Fallback a JSON crudo si por algo no se parsea.
