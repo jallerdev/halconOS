@@ -265,9 +265,18 @@ function friendlyError(
     };
   }
   if (code === 'TOO_MANY_REQUESTS') {
+    // El scraper Python devuelve 429 cuando Gemini agota cuota (free tier).
+    // Distinguimos esto de un rate limit general usando OSM como fallback
+    // (que no usa IA y no tiene este problema).
+    if (source === 'openstreetmap' || source === 'google') {
+      return {
+        title: 'Hicimos demasiadas búsquedas',
+        body: 'Espera un par de minutos y vuelve a intentar.',
+      };
+    }
     return {
-      title: 'Hicimos demasiadas búsquedas',
-      body: 'Espera un par de minutos y vuelve a intentar, o prueba otra fuente.',
+      title: 'Cuota de IA agotada por hoy',
+      body: 'Esta fuente usa IA para extraer datos y tu plan llegó al límite. Prueba con Google Places u OpenStreetMap (no usan IA) mientras se renueva la cuota.',
     };
   }
   if (code === 'TIMEOUT' || code === 'CLIENT_CLOSED_REQUEST') {

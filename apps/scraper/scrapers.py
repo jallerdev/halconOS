@@ -41,7 +41,11 @@ logger = logging.getLogger(__name__)
 # ─────────────────────────────── Config ────────────────────────────────
 
 GEMINI_KEY = os.environ.get("GEMINI_API_KEY") or os.environ.get("GOOGLE_API_KEY")
-GEMINI_MODEL = os.environ.get("GEMINI_MODEL", "gemini-2.0-flash")
+# Modelo por defecto: gemini-2.5-flash-lite tiene el free tier más generoso
+# (~15 RPM, 1000 RPD sin billing). gemini-2.0-flash en algunas keys da
+# `limit: 0` porque Google lo movió a tier de pago. Si tienes billing
+# activado y prefieres calidad, sobreescribe via GEMINI_MODEL=gemini-2.5-flash.
+GEMINI_MODEL = os.environ.get("GEMINI_MODEL", "gemini-2.5-flash-lite")
 
 # Cliente Gemini — un solo objeto compartido. Se inicializa lazy en
 # `_extract_with_gemini` por si la key no está al import-time.
@@ -67,7 +71,10 @@ DEFAULT_HEADERS = {
 }
 
 REQUEST_TIMEOUT = 25.0
-MAX_HTML_CHARS_FOR_LLM = 60_000  # ~15k tokens — cabe en cualquier context window
+# Budget conservador: ~7.5k tokens. Cabe holgado en cualquier free tier de
+# Gemini (incluso el más restrictivo). Para casos donde se necesite extraer
+# muchas filas, podemos hacer chunking semántico (TODO).
+MAX_HTML_CHARS_FOR_LLM = 30_000
 PLAYWRIGHT_WAIT = 3.0  # seg que esperamos por render JS
 
 
@@ -495,11 +502,16 @@ Contenido de la página:
 """
 
 
+class QuotaExceededError(RuntimeError):
+    """Gemini devolvió 429 (free tier agotado o billing requerido)."""
+
+
 def _extract_with_gemini(cleaned_html: str) -> list[dict]:
     """
     Llama a Gemini con structured output. Pasamos el modelo Pydantic como
-    `response_schema` y el SDK genera internamente el formato correcto. El
-    modelo retorna JSON válido contra el schema o falla — sin parseo manual.
+    `response_schema` y el SDK genera internamente el formato correcto.
+    Diferencia errores de quota (429) de otros para que el cliente muestre
+    mensaje específico.
     """
     client = _get_genai_client()
 
@@ -509,11 +521,23 @@ def _extract_with_gemini(cleaned_html: str) -> list[dict]:
         temperature=0,
     )
 
-    response = client.models.generate_content(
-        model=GEMINI_MODEL,
-        contents=_EXTRACTION_PROMPT + cleaned_html,
-        config=config,
-    )
+    try:
+        response = client.models.generate_content(
+            model=GEMINI_MODEL,
+            contents=_EXTRACTION_PROMPT + cleaned_html,
+            config=config,
+        )
+    except Exception as e:
+        # google.genai.errors.ClientError: 429 RESOURCE_EXHAUSTED — el user
+        # acabó su cuota o no tiene billing en el modelo solicitado.
+        if "RESOURCE_EXHAUSTED" in str(e) or "429" in str(e):
+            raise QuotaExceededError(
+                f"Cuota de Gemini agotada para modelo '{GEMINI_MODEL}'. "
+                "Espera unos minutos, cambia GEMINI_MODEL a uno con free tier "
+                "(ej. gemini-2.5-flash-lite), o activa billing en tu proyecto "
+                "de Google Cloud."
+            ) from e
+        raise
 
     # `response.parsed` ya viene como instancia de _ExtractionResult — el SDK
     # parsea + valida por nosotros. Fallback a JSON crudo si por algo no se parsea.

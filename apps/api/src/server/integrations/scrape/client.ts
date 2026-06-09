@@ -86,6 +86,14 @@ export async function scrapeViaPythonService(input: ScrapeInput): Promise<PlaceR
 
   if (!res.ok) {
     const text = await res.text().catch(() => '');
+    // 429 → cuota de Gemini agotada. Lo mapeamos a TOO_MANY_REQUESTS para que
+    // ResultsGrid muestre el mensaje específico de "cuota de IA agotada".
+    if (res.status === 429) {
+      throw new TRPCError({
+        code: 'TOO_MANY_REQUESTS',
+        message: text.slice(0, 300) || 'Cuota de IA agotada.',
+      });
+    }
     throw new TRPCError({
       code: 'BAD_GATEWAY',
       message: `Servicio de scraping falló (${res.status}): ${text.slice(0, 300)}`,

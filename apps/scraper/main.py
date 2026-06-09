@@ -24,7 +24,7 @@ from fastapi import FastAPI, Header, HTTPException, status
 from fastapi.middleware.cors import CORSMiddleware
 
 from models import ScrapeRequest, ScrapeResponse
-from scrapers import scrape
+from scrapers import scrape, QuotaExceededError
 
 load_dotenv()
 
@@ -110,6 +110,14 @@ async def scrape_endpoint(
         # Input inválido (source no soportado, url faltante, etc.)
         logger.warning("Scrape validation error: %s", e)
         raise HTTPException(status.HTTP_400_BAD_REQUEST, detail=str(e))
+    except QuotaExceededError as e:
+        # 429 — cuota de Gemini agotada. El cliente Node mapea esto a un
+        # mensaje específico ("agotaste tu cuota de IA, espera o activa billing").
+        logger.warning("Gemini quota exhausted: %s", e)
+        raise HTTPException(
+            status.HTTP_429_TOO_MANY_REQUESTS,
+            detail=str(e),
+        )
     except Exception as e:
         # Cualquier otra cosa: log + 502 para que Halcón muestre mensaje claro al user.
         logger.exception("Scrape failed: %s", e)
