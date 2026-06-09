@@ -140,12 +140,14 @@ export function ResultsGrid() {
 
   if (places.isLoading) {
     const isScraping = source !== 'google';
+    // Usamos el label del config en vez de hardcodear nombres — así cualquier
+    // fuente nueva muestra su nombre correcto sin tocar este archivo.
+    const sourceLabel = SOURCES_CONFIG[source]?.label ?? source;
     return (
       <div className="space-y-3">
         {isScraping && (
           <p className="text-xs text-muted-foreground">
-            Buscando en {source === 'paginas-amarillas-co' ? 'Páginas Amarillas' : 'Bing'}…
-            {' '}puede tomar 15–30 segundos la primera vez.
+            Buscando en {sourceLabel}… puede tomar 15–30 segundos la primera vez.
           </p>
         )}
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
