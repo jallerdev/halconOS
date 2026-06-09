@@ -27,6 +27,7 @@ const VALID_SOURCES = [
   'paginas-amarillas-ar',
   'bing-search',
   'duckduckgo-search',
+  'clutch',
   'workana',
   'fiverr',
   'behance',

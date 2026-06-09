@@ -1,6 +1,10 @@
 import { SITE, SITE_URL } from '~/lib/site';
-import { FAQ } from './_landing/faq';
+import { getLandingContent } from './_landing/content';
 import { Landing } from './_landing/Landing';
+
+// Solo extraemos lo que necesita el JSON-LD del lado server (strings puros).
+// Los iconos del content se quedan en el client.
+const faqContent = getLandingContent('es').faq;
 
 const schemas = [
   {
@@ -50,7 +54,7 @@ const schemas = [
     '@context': 'https://schema.org',
     '@type': 'FAQPage',
     '@id': `${SITE_URL}/#faq`,
-    mainEntity: FAQ.map((item) => ({
+    mainEntity: faqContent.items.map((item) => ({
       '@type': 'Question',
       name: item.q,
       acceptedAnswer: {
@@ -72,7 +76,7 @@ export default function Home() {
           dangerouslySetInnerHTML={{ __html: JSON.stringify(schema) }}
         />
       ))}
-      <Landing />
+      <Landing locale="es" />
     </>
   );
 }

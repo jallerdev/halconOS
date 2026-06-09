@@ -142,6 +142,23 @@ def _build_dribbble_url(query: str, city: Optional[str]) -> str:
     return f"https://dribbble.com/search/{q}?type=designer"
 
 
+def _build_clutch_url(query: str, city: Optional[str]) -> str:
+    """
+    Clutch.co — directorio global #1 de agencias B2B. Trae nombre, sitio,
+    tamaño de equipo, rating, reseñas, vertical, ubicación. Oro puro para
+    outbound de HalcónOS contra agencias.
+
+    URL pattern: `https://clutch.co/agencies/<slug>` para verticales, con
+    `?city=<X>` opcional. Si no hay match a vertical conocido, hacemos search.
+    """
+    q_slug = query.strip().lower().replace(" ", "-")
+    q_safe = urllib.parse.quote(q_slug)
+    if city:
+        c = urllib.parse.quote(city.strip())
+        return f"https://clutch.co/agencies/{q_safe}?city={c}"
+    return f"https://clutch.co/agencies/{q_safe}"
+
+
 # ─────────────────────── Fetch HTML ────────────────────────
 
 
@@ -190,6 +207,7 @@ _JS_REQUIRED_SOURCES = {
     "fiverr",
     "behance",
     "dribbble",
+    "clutch",
 }
 
 # Routing source → builder. Una fuente nueva = una línea aquí.
@@ -203,6 +221,7 @@ _URL_BUILDERS = {
     "fiverr": _build_fiverr_url,
     "behance": _build_behance_url,
     "dribbble": _build_dribbble_url,
+    "clutch": _build_clutch_url,
 }
 
 

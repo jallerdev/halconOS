@@ -24,6 +24,7 @@ export type ScrapeSource =
   | 'paginas-amarillas-ar'
   | 'bing-search'
   | 'duckduckgo-search'
+  | 'clutch'
   | 'workana'
   | 'fiverr'
   | 'behance'

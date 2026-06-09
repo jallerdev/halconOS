@@ -33,6 +33,7 @@ type Source =
   | 'paginas-amarillas-ar'
   | 'bing-search'
   | 'duckduckgo-search'
+  | 'clutch'
   | 'workana'
   | 'fiverr'
   | 'behance'
@@ -55,6 +56,7 @@ const SOURCE_OPTIONS: SourceOption[] = [
   { value: 'paginas-amarillas-ar', label: 'P. Amarillas AR', icon: BookOpen, hint: 'Directorio Argentina', group: 'businesses' },
   { value: 'bing-search', label: 'Bing Search', icon: Telescope, hint: 'Búsqueda + scrape top', group: 'businesses' },
   { value: 'duckduckgo-search', label: 'DuckDuckGo', icon: Telescope, hint: 'Búsqueda + scrape top', group: 'businesses' },
+  { value: 'clutch', label: 'Clutch.co', icon: BookOpen, hint: 'Directorio global de agencias B2B', group: 'businesses' },
   // Grupo 2 — freelancers (plataformas de talento independiente).
   { value: 'workana', label: 'Workana', icon: Briefcase, hint: 'Freelancers LatAm', group: 'freelance' },
   { value: 'fiverr', label: 'Fiverr', icon: Briefcase, hint: 'Freelancers global · servicios', group: 'freelance' },
