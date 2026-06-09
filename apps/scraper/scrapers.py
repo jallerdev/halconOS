@@ -1,99 +1,79 @@
 """
-Orquestación de scrapers — ScrapeGraph AI + Playwright + Gemini.
+Scrapers para HalcónOS — pipeline minimal sin librerías opinionadas:
 
-Cada `source` mapea a una estrategia distinta:
-  - paginas-amarillas-co: SmartScraperGraph contra una URL construida por template.
-  - bing-search: SearchGraph (busca en buscador y scrapea top 3 resultados).
-  - url: SmartScraperGraph contra la URL provista en el request.
+    fetch (httpx | playwright)  →  clean (selectolax)  →  extract (Gemini structured output)
+                                                                             ↓
+                                                                       PlaceResult[]
 
-Todos retornan PlaceResult[] con el mismo shape que Google Places para que el cliente
-Node los trate uniformemente y los meta en el cache global `discovered_places`.
+Cada paso es ~30 líneas. Edge cases (HTML grande, JS, sitios que bloquean,
+LLM que retorna JSON mal formado) se manejan explícitamente acá — no hay
+caja negra de terceros que se rompa con cada release.
 
-Edge cases manejados aquí:
-  - HTML > token budget → SmartScraperGraph corta automáticamente.
-  - Sitios con JS → Playwright/Chromium queda activo (headless=True).
-  - Fallos transitorios → 2 retries con jitter.
-  - Sitios que bloquean bots → User-Agent realista + Accept-Language.
-  - Salida tipada → Pydantic schema fuerza JSON en la respuesta del LLM.
+Fuentes soportadas (v1):
+  - paginas-amarillas-co: directorio LatAm con HTML estático.
+  - bing-search: búsqueda web genérica (httpx, sin JS).
+  - url: scrape de URL arbitraria provista por el cliente.
+
+Para agregar fuente nueva: añade un branch en `_fetch_html_for_source` y listo.
 """
 
 from __future__ import annotations
 
+import asyncio
 import hashlib
+import json
 import logging
 import os
+import re
 import urllib.parse
 from typing import Optional
 
-from scrapegraphai.graphs import SearchGraph, SmartScraperGraph
+import httpx
+from google import genai
+from google.genai import types as genai_types
+from selectolax.parser import HTMLParser
 
-from models import Location, PlaceResult
+from models import PlaceResult
 
 logger = logging.getLogger(__name__)
 
-# ───────────────────────────── Config LLM ──────────────────────────────
+# ─────────────────────────────── Config ────────────────────────────────
 
-# Usamos la misma GEMINI_API_KEY que HalcónOS — un solo proyecto en Google Cloud.
-# ScrapeGraph AI acepta `google_genai/<model>` como provider.
 GEMINI_KEY = os.environ.get("GEMINI_API_KEY") or os.environ.get("GOOGLE_API_KEY")
+GEMINI_MODEL = os.environ.get("GEMINI_MODEL", "gemini-2.0-flash")
 
-GRAPH_CONFIG: dict = {
-    "llm": {
-        "model": "google_genai/gemini-2.0-flash",
-        "api_key": GEMINI_KEY,
-        "temperature": 0,
-    },
-    "verbose": False,
-    "headless": True,
-    "max_results": 3,  # solo aplica a SearchGraph
-    "loader_kwargs": {
-        # User-Agent realista de Chrome estable — reduce blocking de sitios sensibles.
-        "headers": {
-            "User-Agent": (
-                "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 "
-                "(KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
-            ),
-            "Accept-Language": "es-CO,es;q=0.9,en;q=0.7",
-        }
-    },
+# Cliente Gemini — un solo objeto compartido. Se inicializa lazy en
+# `_extract_with_gemini` por si la key no está al import-time.
+_genai_client: Optional[genai.Client] = None
+
+
+def _get_genai_client() -> genai.Client:
+    global _genai_client
+    if _genai_client is None:
+        if not GEMINI_KEY:
+            raise RuntimeError("Falta GEMINI_API_KEY en el entorno del scraper.")
+        _genai_client = genai.Client(api_key=GEMINI_KEY)
+    return _genai_client
+
+# User-Agent realista de Chrome reduce el bloqueo en sitios sensibles.
+DEFAULT_HEADERS = {
+    "User-Agent": (
+        "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 "
+        "(KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+    ),
+    "Accept-Language": "es-CO,es;q=0.9,en;q=0.7",
+    "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
 }
 
-# ───────────────────────────── Prompts ──────────────────────────────
-
-# Forzamos la salida en JSON con el shape que el cliente Node espera. El LLM, al ver
-# el schema en el prompt, tiende a respetar nombres y tipos.
-PLACES_EXTRACTION_PROMPT = """
-Extract a list of businesses (places) from the page content. For EACH business, return
-a JSON object with EXACTLY these fields (use null if not visible):
-
-- name (string): business name
-- phone (string or null): phone number including country code if visible
-- address (string or null): full street address
-- website (string or null): URL of the business website
-- rating (number or null): rating between 0 and 5 if shown
-- review_count (integer or null): number of reviews/ratings if shown
-- category (string or null): business type/category
-
-CRITICAL RULES:
-1. Return ONLY businesses listed in the main content. IGNORE navigation, ads, sidebars,
-   related searches, "people also viewed", and footer links.
-2. If the page is a search results page, return the businesses listed.
-3. If the page is a single business page, return that one business as a single-item list.
-4. Skip generic categories or section headers. We want ACTUAL businesses with names.
-
-Return as JSON: { "businesses": [ {...}, {...} ] }
-"""
+REQUEST_TIMEOUT = 25.0
+MAX_HTML_CHARS_FOR_LLM = 60_000  # ~15k tokens — cabe en cualquier context window
+PLAYWRIGHT_WAIT = 3.0  # seg que esperamos por render JS
 
 
-# ───────────────────────────── Fuentes ──────────────────────────────
+# ─────────────────────── Builders de URL por fuente ────────────────────
 
 
-def build_paginas_amarillas_co_url(query: str, city: Optional[str]) -> str:
-    """
-    Construye URL para Páginas Amarillas Colombia.
-    Formato: https://www.paginasamarillas.com.co/buscar/<query>/<city>
-    Si no hay ciudad, busca a nivel nacional.
-    """
+def _build_paginas_amarillas_co_url(query: str, city: Optional[str]) -> str:
     q = urllib.parse.quote(query.strip())
     if city:
         c = urllib.parse.quote(city.strip())
@@ -101,36 +81,199 @@ def build_paginas_amarillas_co_url(query: str, city: Optional[str]) -> str:
     return f"https://www.paginasamarillas.com.co/buscar/{q}"
 
 
-def build_bing_search_query(query: str, city: Optional[str]) -> str:
-    """Query natural para Bing/SearchGraph."""
-    if city:
-        return f"{query} en {city} contacto telefono direccion"
-    return f"{query} contacto telefono direccion"
+def _build_bing_search_url(query: str, city: Optional[str]) -> str:
+    q = f"{query} en {city} contacto telefono direccion" if city else f"{query} contacto telefono direccion"
+    return f"https://www.bing.com/search?q={urllib.parse.quote(q)}&setlang=es"
 
 
-# ───────────────────────────── Orquestador ──────────────────────────────
+# ─────────────────────── Fetch HTML ────────────────────────
 
 
-def stable_id(source: str, ordinal: int, raw: dict) -> str:
+def _fetch_static(url: str) -> str:
+    """HTTP GET simple. Adecuado para directorios estáticos."""
+    with httpx.Client(
+        headers=DEFAULT_HEADERS,
+        timeout=REQUEST_TIMEOUT,
+        follow_redirects=True,
+        http2=False,
+    ) as client:
+        r = client.get(url)
+        r.raise_for_status()
+        return r.text
+
+
+def _fetch_with_playwright(url: str) -> str:
     """
-    Genera un ID estable para un place sin Google placeId. Usa hash del
-    nombre + dirección para que un mismo negocio scrapeado dos veces retorne
-    el mismo ID (idempotencia para dedup en HalcónOS).
+    Playwright headless Chromium — solo para sitios que requieren JS rendering
+    o anti-bot suave. Más lento (10-30s) y consume RAM. Reservado para casos
+    donde _fetch_static devuelve HTML vacío de contenido.
+
+    Importamos playwright lazy para que el startup del servicio no falle si
+    Chromium no está instalado (ej. en dev local sin `playwright install`).
     """
+    from playwright.sync_api import sync_playwright
+
+    with sync_playwright() as p:
+        browser = p.chromium.launch(headless=True)
+        try:
+            context = browser.new_context(
+                user_agent=DEFAULT_HEADERS["User-Agent"],
+                locale="es-CO",
+                viewport={"width": 1280, "height": 800},
+            )
+            page = context.new_page()
+            page.goto(url, wait_until="domcontentloaded", timeout=int(REQUEST_TIMEOUT * 1000))
+            page.wait_for_timeout(int(PLAYWRIGHT_WAIT * 1000))
+            return page.content()
+        finally:
+            browser.close()
+
+
+def _fetch_html_for_source(source: str, query: str, city: Optional[str], target_url: Optional[str]) -> str:
+    """
+    Decide qué URL fetchar y con qué método (estático vs Playwright) según
+    la fuente. Una fuente nueva = un branch nuevo aquí.
+    """
+    if source == "paginas-amarillas-co":
+        url = _build_paginas_amarillas_co_url(query, city)
+        return _fetch_static(url)
+    if source == "bing-search":
+        url = _build_bing_search_url(query, city)
+        return _fetch_static(url)
+    if source == "url":
+        if not target_url:
+            raise ValueError("source='url' requiere `target_url` en el request.")
+        # Intento estático primero, fallback a Playwright si el HTML está vacío.
+        try:
+            html = _fetch_static(target_url)
+            text_size = len(_clean_html(html))
+            if text_size > 500:
+                return html
+            logger.info("URL devolvió HTML magro (%d chars text), reintento con Playwright", text_size)
+        except Exception as e:
+            logger.info("Fetch estático falló (%s), reintento con Playwright", e)
+        return _fetch_with_playwright(target_url)
+    raise ValueError(f"Source no soportado: {source}")
+
+
+# ─────────────────────── Limpieza HTML ────────────────────────
+
+
+def _clean_html(html: str) -> str:
+    """
+    Tira scripts/styles/ads/nav/footer/etc para reducir ruido y tokens. El
+    LLM recibe solo lo importante: el contenido principal del page.
+    """
+    tree = HTMLParser(html)
+    for tag in ("script", "style", "noscript", "iframe", "svg", "form", "nav", "footer", "header", "aside"):
+        for n in tree.css(tag):
+            n.decompose()
+    # Truncar a un tamaño que cabe en context. Es preferible perder filas que
+    # explotar el LLM.
+    text = tree.body.html if tree.body else tree.html
+    if not text:
+        return ""
+    # Normaliza whitespace: múltiples espacios y newlines → uno.
+    text = re.sub(r"\s+", " ", text)
+    return text[:MAX_HTML_CHARS_FOR_LLM]
+
+
+# ─────────────────────── Extracción con LLM ────────────────────────
+
+
+_EXTRACTION_SCHEMA = {
+    "type": "object",
+    "properties": {
+        "businesses": {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "properties": {
+                    "name": {"type": "string"},
+                    "phone": {"type": ["string", "null"]},
+                    "address": {"type": ["string", "null"]},
+                    "website": {"type": ["string", "null"]},
+                    "rating": {"type": ["number", "null"]},
+                    "review_count": {"type": ["integer", "null"]},
+                    "category": {"type": ["string", "null"]},
+                },
+                "required": ["name"],
+            },
+        }
+    },
+    "required": ["businesses"],
+}
+
+_EXTRACTION_PROMPT = """Extrae todos los negocios listados en el contenido de la página.
+
+Para CADA negocio devuelve un objeto con estos campos (null si no es visible):
+- name: nombre del negocio (REQUERIDO).
+- phone: teléfono incluyendo código de país si está visible.
+- address: dirección completa.
+- website: URL del sitio web.
+- rating: número 0-5 si se muestra.
+- review_count: cantidad de reseñas como entero.
+- category: tipo de negocio / sector.
+
+REGLAS:
+1. SOLO devuelve negocios listados en el contenido principal. Ignora navegación, anuncios,
+   sidebars, "también buscaron", "relacionados", footer.
+2. Si la página es de búsqueda → devuelve los resultados.
+3. Si es la página de UN solo negocio → devuelve un array de 1.
+4. Excluye encabezados genéricos de categoría. Queremos negocios reales con nombre.
+
+Devuelve JSON con esta estructura exacta: {"businesses": [{...}, {...}]}.
+
+Contenido de la página:
+---
+"""
+
+
+def _extract_with_gemini(cleaned_html: str) -> list[dict]:
+    """
+    Llama a Gemini con `response_mime_type=application/json` + `response_schema`.
+    El modelo retorna JSON válido contra el schema o falla — sin parseo manual.
+    """
+    client = _get_genai_client()
+
+    config = genai_types.GenerateContentConfig(
+        response_mime_type="application/json",
+        response_schema=_EXTRACTION_SCHEMA,
+        temperature=0,
+    )
+
+    response = client.models.generate_content(
+        model=GEMINI_MODEL,
+        contents=_EXTRACTION_PROMPT + cleaned_html,
+        config=config,
+    )
+
+    try:
+        data = json.loads(response.text or "{}")
+    except (ValueError, AttributeError) as e:
+        logger.warning("Gemini devolvió JSON inválido: %s", e)
+        return []
+    return data.get("businesses", []) if isinstance(data, dict) else []
+
+
+# ─────────────────────── Normalización ────────────────────────
+
+
+def _stable_id(source: str, raw: dict) -> str:
+    """ID estable a partir de nombre+dirección+tel — idempotente entre scrapes."""
     seed = f"{raw.get('name', '')}|{raw.get('address', '')}|{raw.get('phone', '')}"
     h = hashlib.sha256(seed.encode("utf-8")).hexdigest()[:16]
     return f"scrape:{source}:{h}"
 
 
-def to_place_result(raw: dict, source: str, ordinal: int) -> PlaceResult:
-    """Normaliza el dict crudo del LLM al shape PlaceResult."""
+def _to_place_result(raw: dict, source: str) -> PlaceResult:
     return PlaceResult(
-        id=stable_id(source, ordinal, raw),
+        id=_stable_id(source, raw),
         displayName=raw.get("name"),
         formattedAddress=raw.get("address"),
-        location=None,  # los scrapers no traen lat/lng en general
-        rating=_parse_float(raw.get("rating")),
-        userRatingCount=_parse_int(raw.get("review_count")),
+        location=None,
+        rating=_to_float(raw.get("rating")),
+        userRatingCount=_to_int(raw.get("review_count")),
         websiteUri=raw.get("website"),
         businessStatus="OPERATIONAL",
         types=[raw["category"]] if raw.get("category") else [],
@@ -141,7 +284,7 @@ def to_place_result(raw: dict, source: str, ordinal: int) -> PlaceResult:
     )
 
 
-def _parse_float(v) -> Optional[float]:
+def _to_float(v):
     if v is None:
         return None
     try:
@@ -150,7 +293,7 @@ def _parse_float(v) -> Optional[float]:
         return None
 
 
-def _parse_int(v) -> Optional[int]:
+def _to_int(v):
     if v is None:
         return None
     try:
@@ -159,76 +302,20 @@ def _parse_int(v) -> Optional[int]:
         return None
 
 
-def _run_smart_scraper(url: str) -> list[dict]:
-    """Ejecuta SmartScraperGraph contra una URL y retorna lista de businesses."""
-    if not GEMINI_KEY:
-        raise RuntimeError(
-            "Falta GEMINI_API_KEY (o GOOGLE_API_KEY) en el entorno del scraper."
-        )
-    graph = SmartScraperGraph(
-        prompt=PLACES_EXTRACTION_PROMPT,
-        source=url,
-        config=GRAPH_CONFIG,
-    )
-    result = graph.run()
-    return _extract_businesses(result)
-
-
-def _run_search_graph(query: str) -> list[dict]:
-    """SearchGraph: busca en motor de búsqueda y scrapea top 3."""
-    if not GEMINI_KEY:
-        raise RuntimeError(
-            "Falta GEMINI_API_KEY (o GOOGLE_API_KEY) en el entorno del scraper."
-        )
-    graph = SearchGraph(
-        prompt=PLACES_EXTRACTION_PROMPT,
-        config=GRAPH_CONFIG,
-    )
-    result = graph.run(prompt=query)  # SearchGraph toma el query en run()
-    return _extract_businesses(result)
-
-
-def _extract_businesses(result) -> list[dict]:
-    """
-    El LLM puede retornar:
-      - { "businesses": [...] }  (caso deseado)
-      - [...]                    (a veces el LLM omite el wrapper)
-      - { "places": [...] }      (a veces inventa otro nombre)
-    Aceptamos los tres.
-    """
-    if isinstance(result, list):
-        return result
-    if isinstance(result, dict):
-        for key in ("businesses", "places", "items", "results", "data"):
-            if key in result and isinstance(result[key], list):
-                return result[key]
-        # Si el LLM retornó UN solo business como dict, lo envolvemos.
-        if "name" in result:
-            return [result]
-    return []
+# ─────────────────────── Entrypoint ────────────────────────
 
 
 def scrape(source: str, query: str, city: Optional[str], target_url: Optional[str], max_results: int) -> list[PlaceResult]:
-    """
-    Punto de entrada único. El endpoint FastAPI llama esto y se acabó.
-    """
+    """Pipeline completo: fetch → clean → extract → normalize."""
     logger.info("scrape source=%s query=%r city=%r", source, query, city)
 
-    if source == "paginas-amarillas-co":
-        url = build_paginas_amarillas_co_url(query, city)
-        raw_list = _run_smart_scraper(url)
-    elif source == "bing-search":
-        search_query = build_bing_search_query(query, city)
-        raw_list = _run_search_graph(search_query)
-    elif source == "url":
-        if not target_url:
-            raise ValueError("source='url' requiere `target_url` en el request.")
-        raw_list = _run_smart_scraper(target_url)
-    else:
-        raise ValueError(f"Source no soportado: {source}")
+    html = _fetch_html_for_source(source, query, city, target_url)
+    cleaned = _clean_html(html)
+    if not cleaned:
+        logger.warning("HTML limpio quedó vacío")
+        return []
 
-    # Filtra entradas vacías (sin nombre = ruido del scraper).
-    cleaned = [r for r in raw_list if isinstance(r, dict) and r.get("name")]
-
-    # Limita y normaliza al shape PlaceResult.
-    return [to_place_result(r, source, i) for i, r in enumerate(cleaned[:max_results])]
+    raw_list = _extract_with_gemini(cleaned)
+    # Filtra ruido: sin nombre = entrada inútil.
+    filtered = [r for r in raw_list if isinstance(r, dict) and r.get("name")]
+    return [_to_place_result(r, source) for r in filtered[:max_results]]

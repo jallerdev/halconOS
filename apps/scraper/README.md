@@ -1,9 +1,21 @@
 # HalcónOS Scraper — Microservicio Python
 
-Microservicio FastAPI con **ScrapeGraph AI + Playwright** para descubrir leads desde
-sitios públicos (Páginas Amarillas, buscadores, URLs arbitrarias). Vive en el mismo
-monorepo que la app principal pero corre en un proceso separado (Render free tier),
-porque Python + Chromium no son compatibles con Vercel Serverless.
+Microservicio FastAPI minimal para descubrir leads desde sitios públicos (Páginas
+Amarillas, buscadores, URLs arbitrarias). Stack:
+
+- **httpx** para fetch HTTP estático.
+- **selectolax** para parseo HTML rápido (30x más rápido que bs4).
+- **Playwright (Chromium)** solo para sitios que necesitan JS rendering.
+- **Gemini SDK** (`google-genai`) directo, sin librerías intermediarias.
+
+Vive en el mismo monorepo que la app principal pero corre en un proceso separado
+(Render free tier), porque Python + Chromium no son compatibles con Vercel Serverless.
+
+> **Nota de diseño:** la primera versión usaba ScrapeGraph AI. Lo descartamos
+> porque tenía imports rotos contra cualquier versión moderna de langchain
+> (intentos de pinning sucesivos destapaban imports rotos uno tras otro). El
+> pipeline manual fetch → clean → LLM extract es ~150 líneas y cero dependency
+> hell.
 
 ---
 
@@ -18,9 +30,9 @@ apps/api/src/server/integrations/scrape/client.ts
    ▼
 halcon-scraper (Python en Render)
    ├─ FastAPI: /scrape
-   ├─ ScrapeGraph AI: SmartScraperGraph / SearchGraph
-   ├─ Playwright (Chromium headless) cuando hace falta JS
-   ├─ Gemini API (LLM extraction)
+   ├─ httpx (fetch estático) + Playwright (Chromium, solo si hace falta JS)
+   ├─ selectolax (clean HTML: quita scripts/nav/footer/ads)
+   ├─ Gemini SDK (structured output con response_schema)
    └─ Retorna PlaceResult[] (mismo shape que Google Places)
 ```
 
