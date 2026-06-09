@@ -1,9 +1,10 @@
 import { TRPCError } from '@trpc/server';
-import { and, eq, inArray } from 'drizzle-orm';
+import { and, eq, inArray, or } from 'drizzle-orm';
 import { z } from 'zod';
 
 import { can } from '@halcon-os/shared/rbac';
 
+import { buildDedupeKey } from '../../lib/dedup';
 import { discoveredPlaces, leads } from '../db/schema';
 import {
   buildSearchKey,
@@ -124,36 +125,76 @@ export const discoverRouter = router({
     return { results, cached: false as const, source: input.source };
   }),
 
-  // Importa lugares al CRM como leads NEW. Dedup por (orgId, placeId).
-  // - Para Google places (id sin prefijo): refresca details via getDetails antes
-  //   de insertar.
-  // - Para places scrapeados (id con prefijo `scrape:`): usa los datos que la
-  //   UI ya tiene en el state (no hay endpoint de details para esas fuentes).
+  // Importa lugares al CRM como leads NEW. Dedup en DOS niveles:
+  //   1. Por (orgId, placeId) — mismo lead exacto de la misma fuente.
+  //   2. Por (orgId, dedupeKey) — mismo lead entre fuentes distintas (Google
+  //      Places vs OpenStreetMap vs Páginas Amarillas tienen placeIds distintos
+  //      pero comparten nombre + dirección + teléfono).
+  //
+  // Reporta también `refetchFailed`: cuántos places usaron data cacheada
+  // (UI) porque Google Places falló al refrescar details.
   importPlaces: orgProcedure.input(importInput).mutation(async ({ ctx, input }) => {
     const placeIds = input.places.map((p) => p.id);
 
-    const existing = await ctx.db
-      .select({ placeId: leads.placeId })
-      .from(leads)
-      .where(and(eq(leads.orgId, ctx.orgId), inArray(leads.placeId, placeIds)));
+    // Dedupes candidates (placeId + dedupeKey computado de los inputs).
+    const inputDedupeKeys = input.places
+      .map((p) =>
+        buildDedupeKey({
+          name: p.displayName ?? '',
+          address: p.formattedAddress,
+          phone: p.nationalPhoneNumber ?? p.internationalPhoneNumber,
+        }),
+      )
+      .filter((k): k is string => Boolean(k));
 
-    const existingSet = new Set(
+    const existing = await ctx.db
+      .select({ placeId: leads.placeId, dedupeKey: leads.dedupeKey })
+      .from(leads)
+      .where(
+        and(
+          eq(leads.orgId, ctx.orgId),
+          or(
+            inArray(leads.placeId, placeIds),
+            inputDedupeKeys.length > 0
+              ? inArray(leads.dedupeKey, inputDedupeKeys)
+              : eq(leads.placeId, '__never_matches__'),
+          ),
+        ),
+      );
+
+    const existingPlaceIds = new Set(
       existing.map((e) => e.placeId).filter((p): p is string => Boolean(p)),
     );
-    const toImport = input.places.filter((p) => !existingSet.has(p.id));
+    const existingDedupeKeys = new Set(
+      existing.map((e) => e.dedupeKey).filter((k): k is string => Boolean(k)),
+    );
+
+    const toImport = input.places.filter((p) => {
+      if (existingPlaceIds.has(p.id)) return false;
+      const k = buildDedupeKey({
+        name: p.displayName ?? '',
+        address: p.formattedAddress,
+        phone: p.nationalPhoneNumber ?? p.internationalPhoneNumber,
+      });
+      if (k && existingDedupeKeys.has(k)) return false;
+      return true;
+    });
 
     if (toImport.length === 0) {
-      return { imported: 0, skipped: input.places.length };
+      return { imported: 0, skipped: input.places.length, refetchFailed: 0 };
     }
 
     // Para Google placeIds, refrescamos details (más data fresca). Para scraped
     // places, usamos los datos que el frontend ya tiene en su state.
+    // Contamos los que fallaron al refrescar para avisar al usuario.
+    let refetchFailed = 0;
     const enriched: PlaceResult[] = await Promise.all(
       toImport.map(async (p) => {
         if (p.id.startsWith('scrape:')) return p;
         try {
           return await getDetails(p.id);
         } catch {
+          refetchFailed += 1;
           return p; // Si falla el refresh, fallback a lo que envió la UI.
         }
       }),
@@ -164,17 +205,31 @@ export const discoverRouter = router({
     const assignedToId = can(ctx.role, 'leads.view.all') ? null : ctx.userId;
 
     const rows: typeof leads.$inferInsert[] = [];
+    // Dentro del batch también dedupeamos — el LLM puede haber retornado el
+    // mismo negocio dos veces (con diferente formato de nombre/dirección).
+    const batchKeys = new Set<string>();
+
     for (const p of enriched) {
       if (!p.id || !p.displayName) continue;
       const sourceTag = p.id.startsWith('scrape:')
         ? p.id.split(':')[1] ?? 'scrape'
         : 'google_maps';
+      const phone = p.nationalPhoneNumber ?? null;
+      const dedupeKey = buildDedupeKey({
+        name: p.displayName,
+        address: p.formattedAddress,
+        phone,
+      });
+      // Skip si este mismo batch ya incluyó el mismo dedupeKey.
+      if (dedupeKey && batchKeys.has(dedupeKey)) continue;
+      if (dedupeKey) batchKeys.add(dedupeKey);
+
       rows.push({
         orgId: ctx.orgId,
         ownerId: ctx.userId,
         assignedToId,
         businessName: p.displayName,
-        phone: p.nationalPhoneNumber ?? null,
+        phone,
         phoneIntl: p.internationalPhoneNumber ?? null,
         source: sourceTag,
         status: 'NEW',
@@ -193,6 +248,7 @@ export const discoverRouter = router({
         latitude: p.location?.latitude != null ? String(p.location.latitude) : null,
         longitude: p.location?.longitude != null ? String(p.location.longitude) : null,
         scrapedAt: new Date(),
+        dedupeKey,
       });
     }
 
@@ -210,6 +266,7 @@ export const discoverRouter = router({
     });
 
     return {
+      refetchFailed,
       imported,
       skipped: input.places.length - imported,
     };

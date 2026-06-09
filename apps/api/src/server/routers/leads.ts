@@ -18,6 +18,7 @@ import {
   leadUpdateSchema,
 } from '@halcon-os/shared/schemas';
 import { can, type AppRole, type Permission } from '@halcon-os/shared/rbac';
+import { buildDedupeKey } from '../../lib/dedup';
 import { buildPrompt } from '../integrations/ai/lead-prompts';
 import { generateText, isAiConfigured } from '../integrations/ai/provider';
 import { rateLimit } from '../rate-limit';
@@ -443,6 +444,13 @@ export const leadsRouter = router({
         status: input.status ?? 'NEW',
         tags: input.tags ?? [],
         nextFollowUpAt: toDateOrNull(input.nextFollowUpAt) ?? null,
+        // Dedup por contenido — permite que un re-import o `/discover` detecte
+        // que ya existe este lead sin necesidad de placeId.
+        dedupeKey: buildDedupeKey({
+          name: input.businessName,
+          address: null,
+          phone: input.phone,
+        }),
       })
       .returning();
     if (!created) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR' });
@@ -528,6 +536,7 @@ export const leadsRouter = router({
         estimatedValue: row.estimatedValue ?? null,
         status: row.status ?? 'NEW',
         tags: row.tags ?? [],
+        dedupeKey: buildDedupeKey({ name: row.businessName, address: null, phone }),
       });
     }
 

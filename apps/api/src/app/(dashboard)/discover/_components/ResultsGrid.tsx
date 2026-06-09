@@ -1,19 +1,37 @@
 'use client';
 
 import { motion } from 'framer-motion';
-import { AlertTriangle, Compass, Settings2 } from 'lucide-react';
+import { AlertTriangle, Compass, Info, Settings2 } from 'lucide-react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 
 import { toast } from '~/hooks/use-toast';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '~/components/ui/alert-dialog';
 import { Button } from '~/components/ui/button';
 import { Skeleton } from '~/components/ui/skeleton';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '~/components/ui/tooltip';
 import { trpc } from '~/lib/trpc';
 import { BulkImportBar } from './BulkImportBar';
 import { getCountryName } from './countries';
 import { PlaceCard } from './PlaceCard';
+import { PlacePreview } from './PlacePreview';
 import { SOURCES_CONFIG, type Source } from './sources-config';
+import { useSearchHistory } from './use-search-history';
 
 // Lee la URL para construir el input del query y muestra los estados:
 //   - sin query → estado vacío "Busca para empezar"
@@ -95,6 +113,32 @@ export function ResultsGrid() {
   );
 
   const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [previewId, setPreviewId] = useState<string | null>(null);
+  const [confirmBulk, setConfirmBulk] = useState(false);
+
+  // Guardar en historial cuando una búsqueda FRESCA (no cache) devuelve
+  // resultados. Para cache hits no guardamos: ya estaba el dato en el
+  // historial cuando se hizo la búsqueda original.
+  const { add: addHistory } = useSearchHistory();
+  const lastSavedSearchRef = useRef<string>('');
+  useEffect(() => {
+    if (!places.data || places.isLoading) return;
+    if (!hasQuery) return;
+    // Solo guardamos búsquedas frescas (no cache hits) para no llenar el
+    // historial cuando el user navega entre rutas con la misma URL.
+    const sig = `${source}|${query}|${cityParam ?? ''}|${countryParam ?? ''}`;
+    if (lastSavedSearchRef.current === sig) return;
+    lastSavedSearchRef.current = sig;
+    addHistory({
+      source,
+      query,
+      city: cityParam,
+      country: countryParam,
+      resultCount: places.data.results.length,
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [places.data, places.isLoading]);
+
   const toggle = (id: string) =>
     setSelected((prev) => {
       const next = new Set(prev);
@@ -110,7 +154,18 @@ export function ResultsGrid() {
       utils.leads.stats.invalidate();
       utils.leads.facets.invalidate();
       setSelected(new Set());
-      toast.success(`${r.imported} lead${r.imported === 1 ? '' : 's'} importado${r.imported === 1 ? '' : 's'} al CRM`);
+      setConfirmBulk(false);
+
+      // Mensaje rico: importados + duplicados detectados + refetch fallido.
+      const parts = [
+        `${r.imported} lead${r.imported === 1 ? '' : 's'} importado${r.imported === 1 ? '' : 's'} al CRM`,
+      ];
+      if (r.skipped > 0) parts.push(`${r.skipped} ya en CRM`);
+      const refetchFailed = (r as { refetchFailed?: number }).refetchFailed ?? 0;
+      if (refetchFailed > 0) {
+        parts.push(`${refetchFailed} usaron datos cacheados`);
+      }
+      toast.success(parts.join(' · '));
     },
     onError: () => {
       // No mostramos el mensaje técnico de tRPC. Texto humano + sugerencia.
@@ -209,43 +264,112 @@ export function ResultsGrid() {
   // hay endpoint de details que podamos llamar en el server.
   const selectedPlaces = results.filter((p) => selectedIds.includes(p.id));
 
+  // Place actualmente en preview drawer.
+  const previewPlace = previewId ? results.find((p) => p.id === previewId) ?? null : null;
+
+  const runBulkImport = () => {
+    importMut.mutate({ places: selectedPlaces });
+  };
+
+  const runSingleImport = (place: (typeof results)[number]) => {
+    importMut.mutate(
+      { places: [place] },
+      {
+        onSuccess: () => {
+          setPreviewId(null);
+        },
+      },
+    );
+  };
+
   return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between text-xs text-muted-foreground">
-        <span>
-          {results.length} resultado{results.length === 1 ? '' : 's'}
-          {filteredOut > 0 && ` (${filteredOut} ocultos por filtros)`}
-          {places.data?.cached && places.data.cachedAt
-            ? ` · cache de ${timeAgo(places.data.cachedAt)}`
-            : ''}
-        </span>
-      </div>
+    <TooltipProvider delayDuration={250}>
+      <div className="space-y-4">
+        <div className="flex items-center justify-between text-xs text-muted-foreground">
+          <span className="inline-flex items-center gap-1">
+            {results.length} resultado{results.length === 1 ? '' : 's'}
+            {filteredOut > 0 && ` (${filteredOut} ocultos por filtros)`}
+            {places.data?.cached && places.data.cachedAt && (
+              <>
+                {' · cache de '}
+                {timeAgo(places.data.cachedAt)}
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <span
+                      tabIndex={0}
+                      className="inline-flex size-4 cursor-help items-center justify-center text-muted-foreground/60 hover:text-muted-foreground"
+                      aria-label="Más info sobre cache"
+                    >
+                      <Info className="size-3" />
+                    </span>
+                  </TooltipTrigger>
+                  <TooltipContent side="bottom" className="max-w-[260px] text-xs">
+                    Resultados cacheados 24h para no gastar API. Si los necesitas
+                    frescos, cambia ligeramente la búsqueda (ej. agrega un detalle).
+                  </TooltipContent>
+                </Tooltip>
+              </>
+            )}
+          </span>
+        </div>
 
-      <BulkImportBar
-        count={selectedIds.length}
-        loading={importMut.isPending}
-        onImport={() => importMut.mutate({ places: selectedPlaces })}
-        onClear={() => setSelected(new Set())}
-      />
+        <BulkImportBar
+          count={selectedIds.length}
+          loading={importMut.isPending}
+          onImport={() => setConfirmBulk(true)}
+          onClear={() => setSelected(new Set())}
+        />
 
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
-        {results.map((p, i) => (
-          <motion.div
-            key={p.id}
-            initial={{ opacity: 0, y: 8 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.25, delay: Math.min(i * 0.03, 0.3) }}
-          >
-            <PlaceCard
-              place={p}
-              selected={selected.has(p.id)}
-              alreadyImported={existingSet.has(p.id)}
-              onToggle={() => toggle(p.id)}
-            />
-          </motion.div>
-        ))}
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
+          {results.map((p, i) => (
+            <motion.div
+              key={p.id}
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.25, delay: Math.min(i * 0.03, 0.3) }}
+            >
+              <PlaceCard
+                place={p}
+                selected={selected.has(p.id)}
+                alreadyImported={existingSet.has(p.id)}
+                onToggle={() => toggle(p.id)}
+                onPreview={() => setPreviewId(p.id)}
+              />
+            </motion.div>
+          ))}
+        </div>
+
+        <PlacePreview
+          place={previewPlace}
+          open={!!previewPlace}
+          alreadyImported={previewPlace ? existingSet.has(previewPlace.id) : false}
+          importing={importMut.isPending}
+          onOpenChange={(o) => !o && setPreviewId(null)}
+          onImport={() => previewPlace && runSingleImport(previewPlace)}
+        />
+
+        <AlertDialog open={confirmBulk} onOpenChange={setConfirmBulk}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>
+                Importar {selectedIds.length} lead{selectedIds.length === 1 ? '' : 's'}
+              </AlertDialogTitle>
+              <AlertDialogDescription>
+                Vas a agregar {selectedIds.length} negocio
+                {selectedIds.length === 1 ? '' : 's'} a tu CRM como leads NEW. Los
+                duplicados que ya tengas se omiten automáticamente.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancelar</AlertDialogCancel>
+              <AlertDialogAction onClick={runBulkImport}>
+                Importar {selectedIds.length}
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </div>
-    </div>
+    </TooltipProvider>
   );
 }
 

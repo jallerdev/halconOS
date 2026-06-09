@@ -31,6 +31,12 @@ export type Source =
 
 export type SourceGroup = 'businesses' | 'freelance';
 
+// `tier` decide si la fuente se muestra en el picker principal o queda escondida
+// bajo "Mostrar avanzado". El ICP de HalcónOS son agencias/freelancers LatAm
+// buscando CLIENTES; las fuentes 'primary' encajan, las 'advanced' son útiles
+// solo en casos puntuales y se ocultan para reducir ruido visual.
+export type SourceTier = 'primary' | 'advanced';
+
 // `pinnedCountry` indica que la fuente solo opera en UN país (Páginas Amarillas
 // CO sólo busca en Colombia). En ese caso ocultamos el dropdown de país y
 // usamos el pinned como valor implícito.
@@ -39,6 +45,7 @@ export type SourceConfig = {
   label: string;
   icon: LucideIcon;
   group: SourceGroup;
+  tier: SourceTier;
   hint: string;
   // Campos del form que se muestran:
   fields: {
@@ -61,6 +68,7 @@ export const SOURCES_CONFIG: Record<Source, SourceConfig> = {
     label: 'Google Places',
     icon: MapIcon,
     group: 'businesses',
+    tier: 'primary',
     hint: 'Oficial · rápido · mundial',
     fields: {
       query: {
@@ -78,6 +86,7 @@ export const SOURCES_CONFIG: Record<Source, SourceConfig> = {
     label: 'OpenStreetMap',
     icon: Earth,
     group: 'businesses',
+    tier: 'primary',
     hint: 'Mapa público · gratis · mundial',
     fields: {
       query: {
@@ -95,6 +104,7 @@ export const SOURCES_CONFIG: Record<Source, SourceConfig> = {
     label: 'P. Amarillas CO',
     icon: BookOpen,
     group: 'businesses',
+    tier: 'primary',
     hint: 'Directorio Colombia',
     fields: {
       query: { placeholder: 'Negocio (ej. barbería, restaurante)' },
@@ -109,6 +119,7 @@ export const SOURCES_CONFIG: Record<Source, SourceConfig> = {
     label: 'P. Amarillas MX',
     icon: BookOpen,
     group: 'businesses',
+    tier: 'primary',
     hint: 'Directorio México',
     fields: {
       query: { placeholder: 'Negocio (ej. restaurante, dentista)' },
@@ -123,6 +134,7 @@ export const SOURCES_CONFIG: Record<Source, SourceConfig> = {
     label: 'P. Amarillas AR',
     icon: BookOpen,
     group: 'businesses',
+    tier: 'primary',
     hint: 'Directorio Argentina',
     fields: {
       query: { placeholder: 'Negocio (ej. parrilla, gimnasio)' },
@@ -137,6 +149,7 @@ export const SOURCES_CONFIG: Record<Source, SourceConfig> = {
     label: 'Bing Search',
     icon: Telescope,
     group: 'businesses',
+    tier: 'advanced',
     hint: 'Búsqueda mundial + scrape',
     fields: {
       query: {
@@ -153,6 +166,7 @@ export const SOURCES_CONFIG: Record<Source, SourceConfig> = {
     label: 'DuckDuckGo',
     icon: Telescope,
     group: 'businesses',
+    tier: 'advanced',
     hint: 'Búsqueda mundial alt.',
     fields: {
       query: { placeholder: 'Lo que quieras buscar' },
@@ -167,6 +181,7 @@ export const SOURCES_CONFIG: Record<Source, SourceConfig> = {
     label: 'Clutch.co',
     icon: BookOpen,
     group: 'businesses',
+    tier: 'primary',
     hint: 'Directorio global de agencias B2B',
     fields: {
       query: {
@@ -184,6 +199,7 @@ export const SOURCES_CONFIG: Record<Source, SourceConfig> = {
     label: 'Workana',
     icon: Briefcase,
     group: 'freelance',
+    tier: 'advanced',
     hint: 'Freelancers LatAm · 100% remote',
     fields: {
       query: { placeholder: 'Skill (ej. diseño web, marketing digital)' },
@@ -197,6 +213,7 @@ export const SOURCES_CONFIG: Record<Source, SourceConfig> = {
     label: 'Fiverr',
     icon: Briefcase,
     group: 'freelance',
+    tier: 'advanced',
     hint: 'Freelancers global · servicios',
     fields: {
       query: { placeholder: 'Servicio (ej. logo design, video editing)' },
@@ -209,6 +226,7 @@ export const SOURCES_CONFIG: Record<Source, SourceConfig> = {
     label: 'Behance',
     icon: Network,
     group: 'freelance',
+    tier: 'advanced',
     hint: 'Diseñadores con portafolio',
     fields: {
       query: { placeholder: 'Especialidad (ej. brand design, illustration)' },
@@ -221,6 +239,7 @@ export const SOURCES_CONFIG: Record<Source, SourceConfig> = {
     label: 'Dribbble',
     icon: Network,
     group: 'freelance',
+    tier: 'advanced',
     hint: 'Diseñadores UI/UX',
     fields: {
       query: { placeholder: 'Skill (ej. ui-designer, illustrator)' },
@@ -236,6 +255,10 @@ export const GROUP_LABELS: Record<SourceGroup, string> = {
 
 export function getSourcesByGroup(group: SourceGroup): SourceConfig[] {
   return Object.values(SOURCES_CONFIG).filter((s) => s.group === group);
+}
+
+export function getSourcesByTier(tier: SourceTier): SourceConfig[] {
+  return Object.values(SOURCES_CONFIG).filter((s) => s.tier === tier);
 }
 
 export function sourceHasFilter(

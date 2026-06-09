@@ -33,10 +33,9 @@ const NAV: { href: string; label: string; icon: LucideIcon; exact?: boolean; tou
   { href: '/settings', label: 'Ajustes', icon: KeyRound, tour: 'nav-settings' },
 ];
 
-// Sidebar — navegación + workspace al fondo. Estilo Gemini: el LOGO de
-// HalcónOS es el toggle del collapse — al hacer hover sobre él, se
-// reemplaza por el icono PanelLeftOpen/Close. Las acciones globales
-// (bell, theme, user) viven en <TopBar />.
+// Sidebar — navegación + workspace al fondo. El LOGO nunca colapsa: colapsado es el botón
+// que EXPANDE; expandido muestra el logo a la izquierda y el ícono de colapsar a la derecha
+// (space-between). Las acciones globales (bell, theme, user) viven en <TopBar />.
 export function Sidebar() {
   const pathname = usePathname();
   const { collapsed, toggle } = useSidebar();
@@ -56,40 +55,47 @@ export function Sidebar() {
           collapsed ? 'w-[68px] px-2.5 py-4' : 'w-[240px] px-3 py-4',
         )}
       >
-        {/* Brand · click toggle; hover swap logo↔panel icon (estilo Gemini) */}
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <button
-              type="button"
-              onClick={toggle}
-              aria-label={collapsed ? 'Expandir barra lateral' : 'Colapsar barra lateral'}
-              className={cn(
-                'hx-press group/brand flex items-center gap-2.5 rounded-lg text-left transition-colors hover:bg-accent/60',
-                collapsed
-                  ? 'mx-auto size-10 justify-center px-0'
-                  : 'w-full px-2 py-1',
-              )}
-            >
-              {/* Default: logo · Hover: toggle icon */}
-              <span className="relative inline-flex size-[26px] shrink-0 items-center justify-center">
+        {/* Brand. El LOGO nunca colapsa: colapsado = botón que EXPANDE; expandido = logo a la
+            izquierda + ícono de colapsar a la derecha (space-between). */}
+        {collapsed ? (
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <button
+                type="button"
+                onClick={toggle}
+                aria-label="Expandir barra lateral"
+                className="hx-press group/brand relative mx-auto flex size-10 items-center justify-center rounded-lg transition-colors hover:bg-accent/60"
+              >
+                {/* Colapsado: logo ↔ ícono de expandir (hover-swap, estilo Gemini). */}
                 <HalconLogo className="absolute size-[26px] text-[hsl(var(--violet))] transition-opacity duration-150 group-hover/brand:opacity-0" />
-                {collapsed ? (
-                  <PanelLeftOpen className="absolute size-[20px] text-muted-foreground opacity-0 transition-opacity duration-150 group-hover/brand:opacity-100 group-hover/brand:text-foreground" />
-                ) : (
-                  <PanelLeftClose className="absolute size-[20px] text-muted-foreground opacity-0 transition-opacity duration-150 group-hover/brand:opacity-100 group-hover/brand:text-foreground" />
-                )}
-              </span>
-              {!collapsed && (
-                <span className="text-[16px] font-[650] tracking-[-0.02em]">
-                  Halcón<span className="text-[hsl(var(--violet))]">OS</span>
-                </span>
-              )}
-            </button>
-          </TooltipTrigger>
-          {collapsed && (
+                <PanelLeftOpen className="absolute size-[20px] text-muted-foreground opacity-0 transition-opacity duration-150 group-hover/brand:text-foreground group-hover/brand:opacity-100" />
+              </button>
+            </TooltipTrigger>
             <TooltipContent side="right">Expandir barra lateral</TooltipContent>
-          )}
-        </Tooltip>
+          </Tooltip>
+        ) : (
+          <div className="flex items-center justify-between gap-2 px-1">
+            <span className="flex items-center gap-2.5">
+              <HalconLogo className="size-[26px] shrink-0 text-[hsl(var(--violet))]" />
+              <span className="text-[16px] font-[650] tracking-[-0.02em]">
+                Halcón<span className="text-[hsl(var(--violet))]">OS</span>
+              </span>
+            </span>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button
+                  type="button"
+                  onClick={toggle}
+                  aria-label="Colapsar barra lateral"
+                  className="hx-press flex size-8 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+                >
+                  <PanelLeftClose className="size-[18px]" />
+                </button>
+              </TooltipTrigger>
+              <TooltipContent side="right">Colapsar barra lateral</TooltipContent>
+            </Tooltip>
+          </div>
+        )}
         {!collapsed && (
           <div className="mt-0.5 px-2 text-[9px] uppercase tracking-[0.12em] text-muted-foreground">
             by jaller.dev

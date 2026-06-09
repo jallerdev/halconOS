@@ -128,6 +128,14 @@ export const leads = agencySchema.table(
     // Para leads con status != NEW este campo es irrelevante.
     pipelinePromotedAt: timestamp('pipeline_promoted_at', { withTimezone: true }),
 
+    // Dedup por contenido entre fuentes distintas. El mismo negocio en
+    // Google Places, OpenStreetMap y Páginas Amarillas tiene placeIds
+    // distintos pero comparte nombre + dirección + teléfono. Construido por
+    // `buildDedupeKey` en `lib/dedup.ts`.
+    // Nullable porque leads creados antes de esta feature no lo tienen y
+    // porque algunos leads (ej. inbound manual) no tienen suficiente data.
+    dedupeKey: text('dedupe_key'),
+
     projectId: uuid('project_id'),
     convertedAt: timestamp('converted_at', { withTimezone: true }),
 
@@ -139,6 +147,7 @@ export const leads = agencySchema.table(
     index('leads_follow_up_idx').on(t.nextFollowUpAt),
     index('leads_city_category_idx').on(t.city, t.category),
     uniqueIndex('leads_org_place_idx').on(t.orgId, t.placeId),
+    index('leads_org_dedupe_idx').on(t.orgId, t.dedupeKey),
   ],
 );
 

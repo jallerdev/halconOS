@@ -17,31 +17,26 @@ type Props = {
   selected: boolean;
   alreadyImported: boolean;
   onToggle: () => void;
+  onPreview: () => void;
 };
 
-// Card de un resultado de Google Places. Tres estados visuales:
-//   - imported: ya está en el CRM → checkbox deshabilitado + badge.
-//   - selected: seleccionado para bulk import → ring violet.
-//   - default: clic en cualquier parte de la card alterna selección.
-export function PlaceCard({ place, selected, alreadyImported, onToggle }: Props) {
+// Card de un resultado. El checkbox SELECCIONA para bulk import (multi).
+// El cuerpo de la card ABRE el preview drawer (atomic). Patrón estándar de
+// CRMs/dashboards: checkbox != click en row.
+export function PlaceCard({ place, selected, alreadyImported, onToggle, onPreview }: Props) {
   const name = place.displayName ?? 'Sin nombre';
   const rating = place.rating;
   const reviews = place.userRatingCount;
   const phone = place.nationalPhoneNumber ?? place.internationalPhoneNumber;
   const noWebsite = !place.websiteUri;
 
-  const handleClick = () => {
-    if (alreadyImported) return;
-    onToggle();
-  };
-
   return (
     <Card
-      onClick={handleClick}
+      onClick={onPreview}
       className={cn(
         'hx-lift group relative h-full cursor-pointer overflow-hidden bg-gradient-to-br from-card/88 to-card/72 transition-all',
         selected && 'ring-2 ring-[hsl(var(--violet))]/60',
-        alreadyImported && 'cursor-not-allowed opacity-70',
+        alreadyImported && 'opacity-70',
       )}
     >
       <CardContent className="space-y-3 px-[20px] pb-5 pt-5">
