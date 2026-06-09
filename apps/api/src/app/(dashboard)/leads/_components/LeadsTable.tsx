@@ -185,10 +185,11 @@ export function LeadsTable() {
   };
   const search = trpc.leads.search.useQuery(filters);
 
-  // Mantener scroll al volver desde /leads/[id] (ej. cuando se hace click
-  // en una fila → detalle → router.back). Restaura cuando ya hay data,
-  // si no scrollTo cae en un doc corto y se queda arriba.
-  useScrollRestore('leads', !!search.data);
+  // El scroll de la tabla NO es de window: el wrapper interno tiene
+  // `max-h-... overflow-auto`. Pasamos su ref al hook para que capture
+  // scrollLeft/Top correctos.
+  const tableScrollerRef = useRef<HTMLDivElement | null>(null);
+  useScrollRestore('leads', !!search.data, tableScrollerRef);
 
   // Miembros para el selector "Asignar a" — solo se consulta si el usuario
   // puede asignar (admin); evita un FORBIDDEN en consola para sellers.
@@ -506,7 +507,10 @@ export function LeadsTable() {
 
       {/* Tabla */}
       <div className="overflow-hidden rounded-xl border border-border bg-card/80 shadow-card backdrop-blur-2xl">
-        <div className="max-h-[calc(100vh-22rem)] overflow-auto">
+        <div
+          ref={tableScrollerRef}
+          className="max-h-[calc(100vh-22rem)] overflow-auto"
+        >
           <Table>
             <TableHeader>
               <TableRow className="hover:bg-transparent">
@@ -519,13 +523,12 @@ export function LeadsTable() {
                   />
                 </TableHead>
                 <SortableHead label="Score" active={sort === 'score'} onClick={() => toggleSort('score')} />
-                <TableHead className="w-[26%]">Negocio</TableHead>
-                <TableHead>Sector</TableHead>
-                <TableHead>Ciudad</TableHead>
+                <TableHead className="w-[22%] min-w-[180px]">Negocio</TableHead>
+                <TableHead className="hidden md:table-cell">Sector</TableHead>
+                <TableHead className="hidden md:table-cell">Ciudad</TableHead>
                 <SortableHead label="Rating" active={sort === 'rating'} onClick={() => toggleSort('rating')} />
-                <SortableHead label="Reseñas" active={sort === 'reviews'} onClick={() => toggleSort('reviews')} />
                 <TableHead>Estado</TableHead>
-                <TableHead>Actividad</TableHead>
+                <TableHead className="hidden lg:table-cell">Actividad</TableHead>
                 <TableHead className="text-right">Acciones</TableHead>
               </TableRow>
             </TableHeader>
@@ -534,7 +537,7 @@ export function LeadsTable() {
                 <SkeletonRows />
               ) : items.length === 0 ? (
                 <TableRow className="hover:bg-transparent">
-                  <TableCell colSpan={10} className="py-16 text-center text-sm text-muted-foreground">
+                  <TableCell colSpan={9} className="py-16 text-center text-sm text-muted-foreground">
                     Sin resultados con esos filtros.
                   </TableCell>
                 </TableRow>
@@ -566,20 +569,26 @@ export function LeadsTable() {
                         <span className="truncate group-hover:text-primary">{l.businessName}</span>
                       </div>
                     </TableCell>
-                    <TableCell className="text-muted-foreground">{l.category ?? '—'}</TableCell>
-                    <TableCell className="text-muted-foreground">{l.city ?? '—'}</TableCell>
+                    <TableCell className="hidden text-muted-foreground md:table-cell">
+                      {l.category ?? '—'}
+                    </TableCell>
+                    <TableCell className="hidden text-muted-foreground md:table-cell">
+                      {l.city ?? '—'}
+                    </TableCell>
                     <TableCell>
                       {l.googleRating ? (
-                        <span className="inline-flex items-center gap-1 font-mono text-sm">
+                        <span className="inline-flex items-center gap-1 font-mono text-sm whitespace-nowrap">
                           <Star className="size-3 fill-primary text-primary" />
                           {l.googleRating}
+                          {l.reviewCount != null && (
+                            <span className="text-xs text-muted-foreground">
+                              ({l.reviewCount.toLocaleString('es-CO')})
+                            </span>
+                          )}
                         </span>
                       ) : (
                         '—'
                       )}
-                    </TableCell>
-                    <TableCell className="font-mono text-sm text-muted-foreground">
-                      {l.reviewCount?.toLocaleString('es-CO') ?? '—'}
                     </TableCell>
                     <TableCell onClick={(e) => e.stopPropagation()}>
                       <StatusSelect

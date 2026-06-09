@@ -18,7 +18,7 @@ import { restrictToWindowEdges } from '@dnd-kit/modifiers';
 import { ArrowRight, Inbox, Star, X } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useMemo, useRef, useState } from 'react';
 import { toast } from '~/hooks/use-toast';
 import { usePermissions } from '~/hooks/use-permissions';
 import { useScrollRestore } from '~/hooks/use-scroll-restore';
@@ -93,7 +93,11 @@ export function KanbanBoard() {
   const [peekId, setPeekId] = useState<string | null>(null);
 
   // Mantener scroll al volver desde /leads/[id] o cambiar de tab y regresar.
+  // Hay dos scrolls: el vertical de la página (window) y el horizontal del
+  // contenedor kanban (`overflow-x-auto`). Restauramos ambos por separado.
+  const kanbanScrollerRef = useRef<HTMLDivElement | null>(null);
   useScrollRestore('pipeline', !!data);
+  useScrollRestore('pipeline-x', !!data, kanbanScrollerRef);
 
   const removeFromPipeline = trpc.leads.removeFromPipeline.useMutation({
     onSuccess: () => {
@@ -205,7 +209,7 @@ export function KanbanBoard() {
         </div>
       )}
       {inboxCount > 0 && <NewInboxHint count={inboxCount} />}
-      <div className="flex gap-3 overflow-x-auto pb-4">
+      <div ref={kanbanScrollerRef} className="flex gap-3 overflow-x-auto pb-4">
         {LEAD_STATUS.map((status) => {
           const col = data?.columns.find((c) => c.status === status);
           return (
