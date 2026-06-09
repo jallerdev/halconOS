@@ -23,7 +23,7 @@ import {
   Zap,
 } from 'lucide-react';
 import Link from 'next/link';
-import { useParams } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { toast } from '~/hooks/use-toast';
 import { usePermissions } from '~/hooks/use-permissions';
@@ -72,14 +72,24 @@ export default function LeadDetailPage() {
 
   // Breadcrumb-back con filtros: LeadsTable guarda su última query string en
   // sessionStorage; la leemos en cliente para reconstruir el href y no perder
-  // los filtros al volver desde el detalle.
+  // los filtros al volver desde el detalle. Si el usuario llegó por navegación
+  // interna (typical), preferimos router.back() porque restaura tanto los
+  // filtros como el scroll position de donde sea que venga (/leads o /pipeline).
+  // Solo caemos al Link cuando no hay historial (ej. deep link directo).
+  const router = useRouter();
   const [backHref, setBackHref] = useState('/leads');
+  const [canGoBack, setCanGoBack] = useState(false);
   useEffect(() => {
-    const saved = typeof window !== 'undefined'
-      ? sessionStorage.getItem('halcon:leads:lastFilters')
-      : null;
+    if (typeof window === 'undefined') return;
+    setCanGoBack(window.history.length > 1);
+    const saved = sessionStorage.getItem('halcon:leads:lastFilters');
     if (saved) setBackHref(`/leads?${saved}`);
   }, []);
+  const goBack = (e: React.MouseEvent) => {
+    if (!canGoBack) return; // deja que el Link nativo navegue
+    e.preventDefault();
+    router.back();
+  };
 
   const updateStatus = trpc.leads.updateStatus.useMutation({
     onMutate: async (input) => {
@@ -150,8 +160,12 @@ export default function LeadDetailPage() {
     <div className="hx-page mx-auto max-w-[1480px] px-6 py-8 lg:px-10">
       {/* Breadcrumbs */}
       <nav className="flex items-center gap-1.5 text-sm text-muted-foreground">
-        <Link href={backHref} className="transition-colors hover:text-foreground">
-          Leads
+        <Link
+          href={backHref}
+          onClick={goBack}
+          className="transition-colors hover:text-foreground"
+        >
+          Volver
         </Link>
         <ChevronRight className="size-3.5" />
         <span className="truncate text-foreground">{lead.businessName}</span>

@@ -22,6 +22,7 @@ import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import { toast } from '~/hooks/use-toast';
 import { usePermissions } from '~/hooks/use-permissions';
+import { useScrollRestore } from '~/hooks/use-scroll-restore';
 import { openEditLeadSheet } from '../../_components/EditLeadSheet';
 
 import { LEAD_STATUS as LEAD_STATUS_LIST, type LeadStatus } from '@halcon-os/shared/enums';
@@ -183,6 +184,11 @@ export function LeadsTable() {
     statuses: statuses.length ? statuses : undefined,
   };
   const search = trpc.leads.search.useQuery(filters);
+
+  // Mantener scroll al volver desde /leads/[id] (ej. cuando se hace click
+  // en una fila → detalle → router.back). Restaura cuando ya hay data,
+  // si no scrollTo cae en un doc corto y se queda arriba.
+  useScrollRestore('leads', !!search.data);
 
   // Miembros para el selector "Asignar a" — solo se consulta si el usuario
   // puede asignar (admin); evita un FORBIDDEN en consola para sellers.

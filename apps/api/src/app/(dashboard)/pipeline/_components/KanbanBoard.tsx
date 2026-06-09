@@ -21,6 +21,7 @@ import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useCallback, useMemo, useState } from 'react';
 import { toast } from '~/hooks/use-toast';
 import { usePermissions } from '~/hooks/use-permissions';
+import { useScrollRestore } from '~/hooks/use-scroll-restore';
 
 import { LEAD_STATUS, type LeadStatus } from '@halcon-os/shared/enums';
 import { BusinessAvatar } from '~/components/business-avatar';
@@ -90,6 +91,9 @@ export function KanbanBoard() {
   const { data, isLoading } = trpc.leads.pipeline.useQuery(pipelineInput);
   const [activeCard, setActiveCard] = useState<Card | null>(null);
   const [peekId, setPeekId] = useState<string | null>(null);
+
+  // Mantener scroll al volver desde /leads/[id] o cambiar de tab y regresar.
+  useScrollRestore('pipeline', !!data);
 
   const removeFromPipeline = trpc.leads.removeFromPipeline.useMutation({
     onSuccess: () => {
