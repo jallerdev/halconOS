@@ -79,6 +79,9 @@ export function LeadsTable() {
   // volver, refresh y bookmark. Reseteamos `cursor` cuando cambia cualquier
   // filtro (no quieres quedarte en página 4 después de cambiar de ciudad).
   const q = searchParams.get('q') ?? '';
+  // Estado local del input para que cada tecla no dispare un fetch. Lo
+  // commiteamos a la URL después de ~400ms sin tipear (debounce).
+  const [qInput, setQInput] = useState(q);
   const city = searchParams.get('city') ?? undefined;
   const category = searchParams.get('category') ?? undefined;
   const sort = parseSort(searchParams.get('sort'));
@@ -114,6 +117,19 @@ export function LeadsTable() {
   );
 
   const setQ = (v: string) => patchParams({ q: v, cursor: null });
+  // Sync URL → input: cuando la URL cambia desde afuera (history nav, restore
+  // de historial, sessionStorage), reflejamos el valor en el input local.
+  useEffect(() => {
+    setQInput(q);
+  }, [q]);
+  // Debounce: 400ms después de la última tecla, commiteamos a la URL.
+  // Si el valor ya está sincronizado no agendamos nada.
+  useEffect(() => {
+    if (qInput === q) return;
+    const id = setTimeout(() => setQ(qInput), 400);
+    return () => clearTimeout(id);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [qInput]);
   const setCity = (v: string | undefined) => patchParams({ city: v ?? null, cursor: null });
   const setCategory = (v: string | undefined) =>
     patchParams({ category: v ?? null, cursor: null });
@@ -346,8 +362,8 @@ export function LeadsTable() {
         <div className="relative flex-1 min-w-[220px]">
           <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
           <Input
-            value={q}
-            onChange={(e) => resetAnd(() => setQ(e.target.value))}
+            value={qInput}
+            onChange={(e) => setQInput(e.target.value)}
             placeholder="Buscar negocio, ciudad, teléfono…"
             className="pl-9"
           />
