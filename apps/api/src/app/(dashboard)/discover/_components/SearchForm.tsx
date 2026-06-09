@@ -10,6 +10,9 @@ import {
   Map as MapIcon,
   BookOpen,
   Telescope,
+  Briefcase,
+  Network,
+  Earth,
 } from 'lucide-react';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useEffect, useMemo, useState } from 'react';
@@ -19,16 +22,56 @@ import { Input } from '~/components/ui/input';
 import { cn } from '~/lib/utils';
 import { trpc } from '~/lib/trpc';
 
-// Fuentes de descubrimiento de leads. `google` usa la API oficial de Places;
-// el resto delega al microservicio Python (apps/scraper/) que corre con
-// ScrapeGraph AI + Playwright.
-type Source = 'google' | 'paginas-amarillas-co' | 'bing-search';
+// Fuentes de descubrimiento. `google` usa la API oficial; el resto va al
+// microservicio Python (apps/scraper/). Agrupadas por confiabilidad para que el
+// usuario sepa cuáles fallan más.
+type Source =
+  | 'google'
+  | 'openstreetmap'
+  | 'paginas-amarillas-co'
+  | 'paginas-amarillas-mx'
+  | 'paginas-amarillas-ar'
+  | 'bing-search'
+  | 'duckduckgo-search'
+  | 'computrabajo'
+  | 'bumeran'
+  | 'indeed'
+  | 'linkedin-jobs'
+  | 'workana';
 
-const SOURCE_OPTIONS: { value: Source; label: string; icon: typeof Search; hint: string }[] = [
-  { value: 'google', label: 'Google Places', icon: MapIcon, hint: 'Rápido, datos completos' },
-  { value: 'paginas-amarillas-co', label: 'Páginas Amarillas CO', icon: BookOpen, hint: 'Directorio LatAm' },
-  { value: 'bing-search', label: 'Bing Search', icon: Telescope, hint: 'Búsqueda + scrape' },
+type SourceOption = {
+  value: Source;
+  label: string;
+  icon: typeof Search;
+  hint: string;
+  group: 'reliable' | 'jobs' | 'freelance' | 'experimental';
+};
+
+const SOURCE_OPTIONS: SourceOption[] = [
+  // Grupo 1 — confiables (HTML estático, alta tasa de éxito).
+  { value: 'google', label: 'Google Places', icon: MapIcon, hint: 'Oficial · rápido', group: 'reliable' },
+  { value: 'openstreetmap', label: 'OpenStreetMap', icon: Earth, hint: 'Mapa público · gratis', group: 'reliable' },
+  { value: 'paginas-amarillas-co', label: 'P. Amarillas CO', icon: BookOpen, hint: 'Directorio Colombia', group: 'reliable' },
+  { value: 'paginas-amarillas-mx', label: 'P. Amarillas MX', icon: BookOpen, hint: 'Directorio México', group: 'reliable' },
+  { value: 'paginas-amarillas-ar', label: 'P. Amarillas AR', icon: BookOpen, hint: 'Directorio Argentina', group: 'reliable' },
+  { value: 'bing-search', label: 'Bing Search', icon: Telescope, hint: 'Búsqueda + scrape top', group: 'reliable' },
+  { value: 'duckduckgo-search', label: 'DuckDuckGo', icon: Telescope, hint: 'Búsqueda + scrape top', group: 'reliable' },
+  // Grupo 2 — jobs (empresas que contratan = empresas con presupuesto).
+  { value: 'computrabajo', label: 'Computrabajo', icon: Briefcase, hint: 'Empresas que contratan en LatAm', group: 'jobs' },
+  { value: 'bumeran', label: 'Bumeran', icon: Briefcase, hint: 'Empleos AR/MX/PE/CL', group: 'jobs' },
+  { value: 'indeed', label: 'Indeed', icon: Briefcase, hint: 'Empleos global · puede fallar', group: 'jobs' },
+  // Grupo 3 — freelancers (plataformas de talento independiente).
+  { value: 'workana', label: 'Workana', icon: Briefcase, hint: 'Freelancers LatAm', group: 'freelance' },
+  // Grupo 4 — experimentales (anti-bot agresivo, fallan seguido).
+  { value: 'linkedin-jobs', label: 'LinkedIn Jobs', icon: Network, hint: 'Experimental · LinkedIn bloquea seguido', group: 'experimental' },
 ];
+
+const GROUP_LABELS: Record<SourceOption['group'], string> = {
+  reliable: 'Confiables',
+  jobs: 'Empresas que contratan',
+  freelance: 'Freelancers',
+  experimental: 'Experimentales',
+};
 
 // Filtros del lado del cliente. Places API no soporta filtrar por
 // has-website / rating-min / operational en el request, así que los
@@ -108,27 +151,40 @@ export function SearchForm() {
 
   return (
     <form onSubmit={submit} className="space-y-3">
-      {/* Fuente — botones segmentados. Solo el seleccionado tiene color de marca. */}
-      <div className="flex flex-wrap items-center gap-1.5 rounded-full border border-border bg-card-2/40 p-1">
-        {SOURCE_OPTIONS.map((opt) => {
-          const Ico = opt.icon;
-          const active = source === opt.value;
+      {/* Fuente — botones agrupados por confiabilidad. */}
+      <div className="space-y-2">
+        {(['reliable', 'jobs', 'freelance', 'experimental'] as const).map((group) => {
+          const opts = SOURCE_OPTIONS.filter((o) => o.group === group);
+          if (opts.length === 0) return null;
           return (
-            <button
-              key={opt.value}
-              type="button"
-              onClick={() => setSource(opt.value)}
-              className={cn(
-                'hx-press inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-xs font-medium transition-colors',
-                active
-                  ? 'bg-[hsl(var(--violet))]/15 text-[hsl(var(--violet))]'
-                  : 'text-muted-foreground hover:bg-accent hover:text-foreground',
-              )}
-              title={opt.hint}
-            >
-              <Ico className="size-3.5" />
-              {opt.label}
-            </button>
+            <div key={group} className="flex flex-wrap items-center gap-2">
+              <span className="w-[150px] shrink-0 text-[10px] font-bold uppercase tracking-[0.1em] text-muted-foreground">
+                {GROUP_LABELS[group]}
+              </span>
+              <div className="flex flex-wrap gap-1.5">
+                {opts.map((opt) => {
+                  const Ico = opt.icon;
+                  const active = source === opt.value;
+                  return (
+                    <button
+                      key={opt.value}
+                      type="button"
+                      onClick={() => setSource(opt.value)}
+                      className={cn(
+                        'hx-press inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-medium transition-colors',
+                        active
+                          ? 'border-[hsl(var(--violet))]/40 bg-[hsl(var(--violet))]/15 text-[hsl(var(--violet))]'
+                          : 'border-border bg-card-2/40 text-muted-foreground hover:bg-accent hover:text-foreground',
+                      )}
+                      title={opt.hint}
+                    >
+                      <Ico className="size-3" />
+                      {opt.label}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
           );
         })}
       </div>

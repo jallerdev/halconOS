@@ -19,7 +19,20 @@ import { PlaceCard } from './PlaceCard';
 //   - error (incluye API key faltante) → mensaje + CTA a settings
 //   - sin resultados → empty con sugerencia
 //   - results → grid de PlaceCards + bulk bar
-const VALID_SOURCES = ['google', 'paginas-amarillas-co', 'bing-search'] as const;
+const VALID_SOURCES = [
+  'google',
+  'openstreetmap',
+  'paginas-amarillas-co',
+  'paginas-amarillas-mx',
+  'paginas-amarillas-ar',
+  'bing-search',
+  'duckduckgo-search',
+  'computrabajo',
+  'bumeran',
+  'indeed',
+  'linkedin-jobs',
+  'workana',
+] as const;
 type Source = (typeof VALID_SOURCES)[number];
 
 function parseSource(v: string | null): Source {
@@ -87,7 +100,10 @@ export function ResultsGrid() {
       setSelected(new Set());
       toast.success(`${r.imported} lead${r.imported === 1 ? '' : 's'} importado${r.imported === 1 ? '' : 's'} al CRM`);
     },
-    onError: (e) => toast.error(e.message),
+    onError: () => {
+      // No mostramos el mensaje técnico de tRPC. Texto humano + sugerencia.
+      toast.error('No se pudo importar. Intenta de nuevo o reduce la selección.');
+    },
   });
 
   if (!hasQuery) {
@@ -130,16 +146,16 @@ export function ResultsGrid() {
   }
 
   if (places.error) {
-    const isMissingConfig = places.error.data?.code === 'PRECONDITION_FAILED';
+    const code = places.error.data?.code;
+    const isMissingConfig = code === 'PRECONDITION_FAILED';
+    const { title, body } = friendlyError(code, source);
     return (
       <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-border py-20 text-center">
-        <div className="grid size-12 place-items-center rounded-[13px] bg-rose-500/15 text-rose-400">
+        <div className="grid size-12 place-items-center rounded-[13px] bg-[hsl(var(--violet))]/15 text-[hsl(var(--violet))]">
           <AlertTriangle className="size-6" />
         </div>
-        <h3 className="mt-4 text-sm font-semibold">
-          {isMissingConfig ? 'Falta configurar esta fuente' : 'No se pudo completar la búsqueda'}
-        </h3>
-        <p className="mt-1 max-w-md text-xs text-muted-foreground">{places.error.message}</p>
+        <h3 className="mt-4 text-sm font-semibold">{title}</h3>
+        <p className="mt-1 max-w-md text-xs text-muted-foreground">{body}</p>
         {isMissingConfig && (
           <Button asChild variant="outline" size="sm" className="mt-4">
             <Link href="/settings">
@@ -227,4 +243,57 @@ function timeAgo(date: Date): string {
   const hours = Math.floor(mins / 60);
   if (hours < 24) return `hace ${hours}h`;
   return 'hace 1 día';
+}
+
+// Mapeo de errores técnicos a mensajes humanos. NUNCA mostramos detalles
+// internos (códigos HTTP, stack traces, mensajes de Google) — el usuario ve
+// algo que entiende y puede accionar.
+function friendlyError(
+  code: string | undefined,
+  source: string,
+): { title: string; body: string } {
+  if (code === 'PRECONDITION_FAILED') {
+    if (source === 'google') {
+      return {
+        title: 'Google Places no está configurado',
+        body: 'Pide al admin que active esta fuente en Ajustes.',
+      };
+    }
+    return {
+      title: 'Esta fuente no está configurada',
+      body: 'Algunas fuentes necesitan setup adicional. Mientras tanto prueba con otra de la lista.',
+    };
+  }
+  if (code === 'TOO_MANY_REQUESTS') {
+    return {
+      title: 'Hicimos demasiadas búsquedas',
+      body: 'Espera un par de minutos y vuelve a intentar, o prueba otra fuente.',
+    };
+  }
+  if (code === 'TIMEOUT' || code === 'CLIENT_CLOSED_REQUEST') {
+    return {
+      title: 'La búsqueda tomó demasiado',
+      body: 'El sitio respondió lento. Vuelve a intentar o cambia a otra fuente.',
+    };
+  }
+  if (code === 'BAD_GATEWAY' || code === 'INTERNAL_SERVER_ERROR') {
+    if (sourceIsExperimental(source)) {
+      return {
+        title: 'Esta fuente nos bloqueó',
+        body: 'Marca como "experimental" — las plataformas grandes (LinkedIn, etc.) detectan scrapers y bloquean. Intenta con una de "Confiables".',
+      };
+    }
+    return {
+      title: 'Esta fuente no respondió bien',
+      body: 'Puede ser un problema temporal del sitio. Prueba con otra fuente de la lista.',
+    };
+  }
+  return {
+    title: 'No se pudo completar la búsqueda',
+    body: 'Algo no funcionó. Intenta con otra fuente o cambia un poco la búsqueda.',
+  };
+}
+
+function sourceIsExperimental(source: string): boolean {
+  return source === 'linkedin-jobs' || source === 'indeed';
 }

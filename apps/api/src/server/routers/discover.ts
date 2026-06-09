@@ -18,7 +18,20 @@ const CACHE_TTL_HOURS = 24;
 
 // Fuentes soportadas. `google` corre contra la API oficial de Places; el resto
 // delega al microservicio Python (apps/scraper/) vía HTTP.
-const SOURCES = ['google', 'paginas-amarillas-co', 'bing-search'] as const;
+const SOURCES = [
+  'google',
+  'openstreetmap',
+  'paginas-amarillas-co',
+  'paginas-amarillas-mx',
+  'paginas-amarillas-ar',
+  'bing-search',
+  'duckduckgo-search',
+  'computrabajo',
+  'bumeran',
+  'indeed',
+  'linkedin-jobs',
+  'workana',
+] as const;
 type Source = (typeof SOURCES)[number];
 
 const searchInput = z.object({

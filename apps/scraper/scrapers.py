@@ -81,9 +81,75 @@ def _build_paginas_amarillas_co_url(query: str, city: Optional[str]) -> str:
     return f"https://www.paginasamarillas.com.co/buscar/{q}"
 
 
+def _build_paginas_amarillas_mx_url(query: str, city: Optional[str]) -> str:
+    q = urllib.parse.quote(query.strip())
+    where = urllib.parse.quote(city.strip()) if city else "mexico"
+    return f"https://www.seccionamarilla.com.mx/resultados/{q}/{where}"
+
+
+def _build_paginas_amarillas_ar_url(query: str, city: Optional[str]) -> str:
+    q = urllib.parse.quote(query.strip())
+    where = urllib.parse.quote(city.strip()) if city else "argentina"
+    return f"https://www.paginasamarillas.com.ar/b/{q}/{where}"
+
+
 def _build_bing_search_url(query: str, city: Optional[str]) -> str:
     q = f"{query} en {city} contacto telefono direccion" if city else f"{query} contacto telefono direccion"
     return f"https://www.bing.com/search?q={urllib.parse.quote(q)}&setlang=es"
+
+
+def _build_duckduckgo_search_url(query: str, city: Optional[str]) -> str:
+    q = f"{query} en {city} contacto telefono direccion" if city else f"{query} contacto telefono direccion"
+    # DuckDuckGo HTML version — más amable con scrapers que la JSON.
+    return f"https://html.duckduckgo.com/html/?q={urllib.parse.quote(q)}&kl=es-es"
+
+
+def _build_computrabajo_url(query: str, city: Optional[str]) -> str:
+    """
+    Computrabajo Colombia. La query suele ser un cargo o sector ("marketing
+    digital", "diseñador") y la ciudad opcional. Las empresas que publican vacantes
+    son leads B2B: tienen presupuesto y necesidad activa.
+    """
+    q = urllib.parse.quote(query.strip())
+    if city:
+        c = urllib.parse.quote(city.strip().lower().replace(" ", "-"))
+        return f"https://co.computrabajo.com/trabajo-de-{q}-en-{c}"
+    return f"https://co.computrabajo.com/trabajo-de-{q}"
+
+
+def _build_bumeran_url(query: str, city: Optional[str]) -> str:
+    """Bumeran (Argentina, México, Perú, Chile, Panamá)."""
+    q = urllib.parse.quote(query.strip().replace(" ", "-"))
+    if city:
+        c = urllib.parse.quote(city.strip().lower().replace(" ", "-"))
+        return f"https://www.bumeran.com.ar/empleos-busqueda-{q}-en-{c}.html"
+    return f"https://www.bumeran.com.ar/empleos-busqueda-{q}.html"
+
+
+def _build_indeed_url(query: str, city: Optional[str]) -> str:
+    q = urllib.parse.quote(query.strip())
+    where = urllib.parse.quote(city.strip()) if city else ""
+    return f"https://www.indeed.com/jobs?q={q}&l={where}"
+
+
+def _build_linkedin_jobs_url(query: str, city: Optional[str]) -> str:
+    """
+    LinkedIn Jobs público (sin login). Muestra ~25 trabajos con empresa visible.
+    Muy probable que LinkedIn detecte el bot y bloquee. Mantén expectativas bajas.
+    """
+    q = urllib.parse.quote(query.strip())
+    where = urllib.parse.quote(city.strip()) if city else ""
+    return f"https://www.linkedin.com/jobs/search?keywords={q}&location={where}"
+
+
+def _build_workana_url(query: str, city: Optional[str]) -> str:
+    """
+    Workana — plataforma #1 de freelancers en LatAm. La URL de búsqueda de
+    proyectos lista freelancers + empresas que contratan freelance. `city`
+    no aplica directo (Workana es remote-first); ignoramos.
+    """
+    q = urllib.parse.quote(query.strip())
+    return f"https://www.workana.com/jobs?language=es&query={q}"
 
 
 # ─────────────────────── Fetch HTML ────────────────────────
@@ -129,31 +195,186 @@ def _fetch_with_playwright(url: str) -> str:
             browser.close()
 
 
+# Sitios que requieren JS rendering — usan Playwright en vez de httpx.
+_JS_REQUIRED_SOURCES = {"linkedin-jobs", "indeed", "bumeran"}
+
+# Routing source → builder. Una fuente nueva = una línea aquí.
+_URL_BUILDERS = {
+    "paginas-amarillas-co": _build_paginas_amarillas_co_url,
+    "paginas-amarillas-mx": _build_paginas_amarillas_mx_url,
+    "paginas-amarillas-ar": _build_paginas_amarillas_ar_url,
+    "bing-search": _build_bing_search_url,
+    "duckduckgo-search": _build_duckduckgo_search_url,
+    "computrabajo": _build_computrabajo_url,
+    "bumeran": _build_bumeran_url,
+    "indeed": _build_indeed_url,
+    "linkedin-jobs": _build_linkedin_jobs_url,
+    "workana": _build_workana_url,
+}
+
+
 def _fetch_html_for_source(source: str, query: str, city: Optional[str], target_url: Optional[str]) -> str:
     """
     Decide qué URL fetchar y con qué método (estático vs Playwright) según
-    la fuente. Una fuente nueva = un branch nuevo aquí.
+    la fuente. Sitios en `_JS_REQUIRED_SOURCES` van directo a Playwright; el
+    resto intenta estático primero y cae a Playwright si el contenido es magro.
     """
-    if source == "paginas-amarillas-co":
-        url = _build_paginas_amarillas_co_url(query, city)
-        return _fetch_static(url)
-    if source == "bing-search":
-        url = _build_bing_search_url(query, city)
-        return _fetch_static(url)
     if source == "url":
         if not target_url:
             raise ValueError("source='url' requiere `target_url` en el request.")
-        # Intento estático primero, fallback a Playwright si el HTML está vacío.
         try:
             html = _fetch_static(target_url)
-            text_size = len(_clean_html(html))
-            if text_size > 500:
+            if len(_clean_html(html)) > 500:
                 return html
-            logger.info("URL devolvió HTML magro (%d chars text), reintento con Playwright", text_size)
+            logger.info("URL devolvió HTML magro, reintento con Playwright")
         except Exception as e:
             logger.info("Fetch estático falló (%s), reintento con Playwright", e)
         return _fetch_with_playwright(target_url)
-    raise ValueError(f"Source no soportado: {source}")
+
+    builder = _URL_BUILDERS.get(source)
+    if not builder:
+        raise ValueError(f"Source no soportado: {source}")
+
+    url = builder(query, city)
+
+    if source in _JS_REQUIRED_SOURCES:
+        return _fetch_with_playwright(url)
+
+    # Static-first con fallback a Playwright. Cubre sitios que a veces sirven JS
+    # detrás de un loader (Indeed lo hace en algunas regiones).
+    try:
+        html = _fetch_static(url)
+        if len(_clean_html(html)) > 500:
+            return html
+        logger.info("Source %s devolvió HTML magro, fallback Playwright", source)
+    except Exception as e:
+        logger.info("Source %s fetch estático falló (%s), fallback Playwright", source, e)
+    return _fetch_with_playwright(url)
+
+
+# ─────────────────────── OpenStreetMap (Overpass API) ────────────────────────
+#
+# OSM no necesita LLM: el API Overpass devuelve JSON estructurado directamente.
+# Mucho más rápido (~1-2s) y 100% gratis (rate limit: 1 req/seg al server público).
+# Cubre cualquier ciudad del mundo. Datos: nombre, lat/lng, tipo, a veces tel/web.
+
+_OVERPASS_URL = "https://overpass-api.de/api/interpreter"
+
+# Mapeo intuitivo de queries en español a tags OSM. Si el usuario escribe algo
+# fuera de este set, hacemos búsqueda fuzzy con `~name~` (regex en el name tag).
+_OSM_TAG_HINTS = {
+    "cafetería": ("amenity", "cafe"),
+    "cafeteria": ("amenity", "cafe"),
+    "café": ("amenity", "cafe"),
+    "restaurante": ("amenity", "restaurant"),
+    "bar": ("amenity", "bar"),
+    "pub": ("amenity", "pub"),
+    "hotel": ("tourism", "hotel"),
+    "hostal": ("tourism", "hostel"),
+    "panadería": ("shop", "bakery"),
+    "panaderia": ("shop", "bakery"),
+    "farmacia": ("amenity", "pharmacy"),
+    "veterinaria": ("amenity", "veterinary"),
+    "clínica": ("amenity", "clinic"),
+    "clinica": ("amenity", "clinic"),
+    "barbería": ("shop", "hairdresser"),
+    "barberia": ("shop", "hairdresser"),
+    "peluquería": ("shop", "hairdresser"),
+    "supermercado": ("shop", "supermarket"),
+    "gimnasio": ("leisure", "fitness_centre"),
+    "taller": ("shop", "car_repair"),
+    "abogado": ("office", "lawyer"),
+    "contador": ("office", "accountant"),
+}
+
+
+def _geocode_city(city: str) -> Optional[tuple[float, float, float, float]]:
+    """Usa Nominatim para convertir 'Medellín' en bbox (south,west,north,east)."""
+    r = httpx.get(
+        "https://nominatim.openstreetmap.org/search",
+        params={"q": city, "format": "json", "limit": 1},
+        headers={"User-Agent": "HalconOS-Scraper/1.0 (https://halcon.jvagencia.com)"},
+        timeout=10.0,
+    )
+    r.raise_for_status()
+    data = r.json()
+    if not data:
+        return None
+    bb = data[0].get("boundingbox")
+    if not bb or len(bb) != 4:
+        return None
+    return float(bb[0]), float(bb[2]), float(bb[1]), float(bb[3])
+
+
+def _scrape_openstreetmap(query: str, city: Optional[str], max_results: int) -> list[PlaceResult]:
+    """Llama a Overpass API directamente — no necesita Playwright ni LLM."""
+    bbox = _geocode_city(city) if city else None
+    bbox_clause = f"({bbox[0]},{bbox[1]},{bbox[2]},{bbox[3]})" if bbox else ""
+
+    q_lower = query.lower().strip()
+    if q_lower in _OSM_TAG_HINTS:
+        key, value = _OSM_TAG_HINTS[q_lower]
+        filter_clause = f'["{key}"="{value}"]'
+    else:
+        # Fuzzy match en el nombre — `~"texto"` es regex insensitive.
+        safe_q = query.replace('"', '').replace("\\", "")
+        filter_clause = f'["name"~"{safe_q}",i]'
+
+    overpass_query = f"""
+    [out:json][timeout:15];
+    (
+      node{filter_clause}{bbox_clause};
+      way{filter_clause}{bbox_clause};
+    );
+    out center {max_results};
+    """
+
+    r = httpx.post(
+        _OVERPASS_URL,
+        data={"data": overpass_query},
+        headers={"User-Agent": "HalconOS-Scraper/1.0"},
+        timeout=30.0,
+    )
+    r.raise_for_status()
+    elements = r.json().get("elements", [])
+
+    out: list[PlaceResult] = []
+    for el in elements[:max_results]:
+        tags = el.get("tags", {})
+        name = tags.get("name")
+        if not name:
+            continue
+        # `way` results traen `center`, `node` results traen `lat`/`lon` directos.
+        lat = el.get("lat") or el.get("center", {}).get("lat")
+        lon = el.get("lon") or el.get("center", {}).get("lon")
+        osm_id = f"{el.get('type', 'node')}/{el.get('id', '')}"
+        h = hashlib.sha256(f"osm:{osm_id}".encode()).hexdigest()[:16]
+
+        address_parts = [
+            tags.get("addr:street"),
+            tags.get("addr:housenumber"),
+            tags.get("addr:city") or city,
+        ]
+        address = ", ".join(p for p in address_parts if p) or None
+
+        out.append(
+            PlaceResult(
+                id=f"scrape:openstreetmap:{h}",
+                displayName=name,
+                formattedAddress=address,
+                location=None if lat is None or lon is None else {"latitude": float(lat), "longitude": float(lon)},  # type: ignore
+                rating=None,
+                userRatingCount=None,
+                websiteUri=tags.get("website") or tags.get("contact:website"),
+                businessStatus="OPERATIONAL",
+                types=[tags.get("amenity") or tags.get("shop") or tags.get("office") or "place"],
+                priceLevel=None,
+                googleMapsUri=f"https://www.openstreetmap.org/{osm_id}" if el.get("id") else None,
+                nationalPhoneNumber=tags.get("phone") or tags.get("contact:phone"),
+                internationalPhoneNumber=None,
+            )
+        )
+    return out
 
 
 # ─────────────────────── Limpieza HTML ────────────────────────
@@ -306,8 +527,15 @@ def _to_int(v):
 
 
 def scrape(source: str, query: str, city: Optional[str], target_url: Optional[str], max_results: int) -> list[PlaceResult]:
-    """Pipeline completo: fetch → clean → extract → normalize."""
+    """
+    Pipeline completo. OSM va por un camino separado (Overpass devuelve JSON,
+    no necesita Playwright ni LLM); todo el resto: fetch → clean → LLM extract → normalize.
+    """
     logger.info("scrape source=%s query=%r city=%r", source, query, city)
+
+    # Path rápido: OSM no necesita LLM ni Playwright.
+    if source == "openstreetmap":
+        return _scrape_openstreetmap(query, city, max_results)
 
     html = _fetch_html_for_source(source, query, city, target_url)
     cleaned = _clean_html(html)

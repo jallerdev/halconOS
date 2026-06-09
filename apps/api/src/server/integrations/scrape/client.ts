@@ -17,7 +17,19 @@ import type { PlaceResult } from '../google/places';
  *  - Errores 4xx/5xx del servicio → BAD_GATEWAY con el mensaje upstream truncado.
  */
 
-export type ScrapeSource = 'paginas-amarillas-co' | 'bing-search' | 'url';
+export type ScrapeSource =
+  | 'openstreetmap'
+  | 'paginas-amarillas-co'
+  | 'paginas-amarillas-mx'
+  | 'paginas-amarillas-ar'
+  | 'bing-search'
+  | 'duckduckgo-search'
+  | 'computrabajo'
+  | 'bumeran'
+  | 'indeed'
+  | 'linkedin-jobs'
+  | 'workana'
+  | 'url';
 
 export type ScrapeInput = {
   source: ScrapeSource;
