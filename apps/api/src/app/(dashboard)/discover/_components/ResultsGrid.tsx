@@ -11,7 +11,9 @@ import { Button } from '~/components/ui/button';
 import { Skeleton } from '~/components/ui/skeleton';
 import { trpc } from '~/lib/trpc';
 import { BulkImportBar } from './BulkImportBar';
+import { getCountryName } from './countries';
 import { PlaceCard } from './PlaceCard';
+import { SOURCES_CONFIG, type Source } from './sources-config';
 
 // Lee la URL para construir el input del query y muestra los estados:
 //   - sin query → estado vacío "Busca para empezar"
@@ -19,39 +21,49 @@ import { PlaceCard } from './PlaceCard';
 //   - error (incluye API key faltante) → mensaje + CTA a settings
 //   - sin resultados → empty con sugerencia
 //   - results → grid de PlaceCards + bulk bar
-const VALID_SOURCES = [
-  'google',
-  'openstreetmap',
-  'paginas-amarillas-co',
-  'paginas-amarillas-mx',
-  'paginas-amarillas-ar',
-  'bing-search',
-  'duckduckgo-search',
-  'clutch',
-  'workana',
-  'fiverr',
-  'behance',
-  'dribbble',
-] as const;
-type Source = (typeof VALID_SOURCES)[number];
+const VALID_SOURCES = Object.keys(SOURCES_CONFIG) as Source[];
 
 function parseSource(v: string | null): Source {
   return (VALID_SOURCES as readonly string[]).includes(v ?? '') ? (v as Source) : 'google';
 }
 
+// El backend recibe `city` como string libre. Si el form mandó un código de
+// país (ej. "MX"), lo expandimos al nombre legible y lo concatenamos con la
+// ciudad: "Guadalajara, México". Para Google Places y los scrapers eso da
+// señales geográficas correctas.
+function buildLocationString(
+  city: string | undefined,
+  countryCode: string | undefined,
+  pinnedCountry: string | undefined,
+): string | undefined {
+  const country = countryCode ? getCountryName(countryCode) : pinnedCountry ? getCountryName(pinnedCountry) : undefined;
+  const parts = [city, country].filter(Boolean) as string[];
+  return parts.length > 0 ? parts.join(', ') : undefined;
+}
+
 export function ResultsGrid() {
   const searchParams = useSearchParams();
   const query = searchParams.get('q') ?? '';
-  const city = searchParams.get('city') ?? undefined;
+  const cityParam = searchParams.get('city') ?? undefined;
+  const countryParam = searchParams.get('country') ?? undefined;
   const source = parseSource(searchParams.get('source'));
   const webFilter = (searchParams.get('web') as 'yes' | 'no' | null) ?? null;
   const minRating = Number(searchParams.get('minRating')) || 0;
   const operationalOnly = searchParams.get('operational') === '1';
   const hasQuery = query.trim().length >= 2;
 
+  // La fuente puede tener un país pinned (Páginas Amarillas CO/MX/AR) que
+  // implícitamente filtra geográficamente.
+  const sourceConfig = SOURCES_CONFIG[source];
+  const locationString = buildLocationString(
+    cityParam,
+    countryParam,
+    sourceConfig.fields.pinnedCountry,
+  );
+
   const utils = trpc.useUtils();
   const places = trpc.discover.searchPlaces.useQuery(
-    { query, city, source },
+    { query, city: locationString, source },
     {
       enabled: hasQuery,
       retry: false, // los errores de config / billing no se solucionan con retry
