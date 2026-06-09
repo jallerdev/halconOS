@@ -31,6 +31,7 @@ from typing import Optional
 import httpx
 from google import genai
 from google.genai import types as genai_types
+from pydantic import BaseModel, Field
 from selectolax.parser import HTMLParser
 
 from models import PlaceResult
@@ -82,9 +83,13 @@ def _build_paginas_amarillas_co_url(query: str, city: Optional[str]) -> str:
 
 
 def _build_paginas_amarillas_mx_url(query: str, city: Optional[str]) -> str:
+    # Sección Amarilla usa querystring `?palabra=X&ubicacion=Y` para la búsqueda
+    # general. El patrón `/resultados/{q}/{c}` que probamos antes daba 404.
     q = urllib.parse.quote(query.strip())
-    where = urllib.parse.quote(city.strip()) if city else "mexico"
-    return f"https://www.seccionamarilla.com.mx/resultados/{q}/{where}"
+    if city:
+        c = urllib.parse.quote(city.strip())
+        return f"https://www.seccionamarilla.com.mx/busqueda?palabra={q}&ubicacion={c}"
+    return f"https://www.seccionamarilla.com.mx/busqueda?palabra={q}"
 
 
 def _build_paginas_amarillas_ar_url(query: str, city: Optional[str]) -> str:
@@ -445,28 +450,21 @@ def _clean_html(html: str) -> str:
 # ─────────────────────── Extracción con LLM ────────────────────────
 
 
-_EXTRACTION_SCHEMA = {
-    "type": "object",
-    "properties": {
-        "businesses": {
-            "type": "array",
-            "items": {
-                "type": "object",
-                "properties": {
-                    "name": {"type": "string"},
-                    "phone": {"type": ["string", "null"]},
-                    "address": {"type": ["string", "null"]},
-                    "website": {"type": ["string", "null"]},
-                    "rating": {"type": ["number", "null"]},
-                    "review_count": {"type": ["integer", "null"]},
-                    "category": {"type": ["string", "null"]},
-                },
-                "required": ["name"],
-            },
-        }
-    },
-    "required": ["businesses"],
-}
+# El nuevo google-genai SDK introspecta Pydantic models para generar su Schema
+# interno (tipo TYPE_UNSPECIFIED/STRING/etc). Es la forma soportada — los dicts
+# JSON-Schema con `type: ["string", "null"]` no se aceptan.
+class _ExtractedBusiness(BaseModel):
+    name: str = Field(description="Nombre del negocio/freelancer/empresa")
+    phone: Optional[str] = Field(default=None, description="Teléfono si está visible")
+    address: Optional[str] = Field(default=None, description="Dirección física o región")
+    website: Optional[str] = Field(default=None, description="URL del sitio o perfil")
+    rating: Optional[float] = Field(default=None, description="Rating 0-5")
+    review_count: Optional[int] = Field(default=None, description="Cantidad de reseñas")
+    category: Optional[str] = Field(default=None, description="Tipo de servicio o sector")
+
+
+class _ExtractionResult(BaseModel):
+    businesses: list[_ExtractedBusiness]
 
 _EXTRACTION_PROMPT = """Extrae todos los LEADS listados en el contenido de la página. Un lead puede ser
 un negocio, una empresa que contrata, un freelancer con perfil público, o un creador
@@ -499,14 +497,15 @@ Contenido de la página:
 
 def _extract_with_gemini(cleaned_html: str) -> list[dict]:
     """
-    Llama a Gemini con `response_mime_type=application/json` + `response_schema`.
-    El modelo retorna JSON válido contra el schema o falla — sin parseo manual.
+    Llama a Gemini con structured output. Pasamos el modelo Pydantic como
+    `response_schema` y el SDK genera internamente el formato correcto. El
+    modelo retorna JSON válido contra el schema o falla — sin parseo manual.
     """
     client = _get_genai_client()
 
     config = genai_types.GenerateContentConfig(
         response_mime_type="application/json",
-        response_schema=_EXTRACTION_SCHEMA,
+        response_schema=_ExtractionResult,
         temperature=0,
     )
 
@@ -515,6 +514,12 @@ def _extract_with_gemini(cleaned_html: str) -> list[dict]:
         contents=_EXTRACTION_PROMPT + cleaned_html,
         config=config,
     )
+
+    # `response.parsed` ya viene como instancia de _ExtractionResult — el SDK
+    # parsea + valida por nosotros. Fallback a JSON crudo si por algo no se parsea.
+    parsed = getattr(response, "parsed", None)
+    if isinstance(parsed, _ExtractionResult):
+        return [b.model_dump() for b in parsed.businesses]
 
     try:
         data = json.loads(response.text or "{}")
