@@ -26,11 +26,10 @@ const SOURCES = [
   'paginas-amarillas-ar',
   'bing-search',
   'duckduckgo-search',
-  'computrabajo',
-  'bumeran',
-  'indeed',
-  'linkedin-jobs',
   'workana',
+  'fiverr',
+  'behance',
+  'dribbble',
 ] as const;
 type Source = (typeof SOURCES)[number];
 

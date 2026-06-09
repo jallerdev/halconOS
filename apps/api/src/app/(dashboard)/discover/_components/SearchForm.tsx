@@ -33,44 +33,38 @@ type Source =
   | 'paginas-amarillas-ar'
   | 'bing-search'
   | 'duckduckgo-search'
-  | 'computrabajo'
-  | 'bumeran'
-  | 'indeed'
-  | 'linkedin-jobs'
-  | 'workana';
+  | 'workana'
+  | 'fiverr'
+  | 'behance'
+  | 'dribbble';
 
 type SourceOption = {
   value: Source;
   label: string;
   icon: typeof Search;
   hint: string;
-  group: 'reliable' | 'jobs' | 'freelance' | 'experimental';
+  group: 'businesses' | 'freelance';
 };
 
 const SOURCE_OPTIONS: SourceOption[] = [
-  // Grupo 1 — confiables (HTML estático, alta tasa de éxito).
-  { value: 'google', label: 'Google Places', icon: MapIcon, hint: 'Oficial · rápido', group: 'reliable' },
-  { value: 'openstreetmap', label: 'OpenStreetMap', icon: Earth, hint: 'Mapa público · gratis', group: 'reliable' },
-  { value: 'paginas-amarillas-co', label: 'P. Amarillas CO', icon: BookOpen, hint: 'Directorio Colombia', group: 'reliable' },
-  { value: 'paginas-amarillas-mx', label: 'P. Amarillas MX', icon: BookOpen, hint: 'Directorio México', group: 'reliable' },
-  { value: 'paginas-amarillas-ar', label: 'P. Amarillas AR', icon: BookOpen, hint: 'Directorio Argentina', group: 'reliable' },
-  { value: 'bing-search', label: 'Bing Search', icon: Telescope, hint: 'Búsqueda + scrape top', group: 'reliable' },
-  { value: 'duckduckgo-search', label: 'DuckDuckGo', icon: Telescope, hint: 'Búsqueda + scrape top', group: 'reliable' },
-  // Grupo 2 — jobs (empresas que contratan = empresas con presupuesto).
-  { value: 'computrabajo', label: 'Computrabajo', icon: Briefcase, hint: 'Empresas que contratan en LatAm', group: 'jobs' },
-  { value: 'bumeran', label: 'Bumeran', icon: Briefcase, hint: 'Empleos AR/MX/PE/CL', group: 'jobs' },
-  { value: 'indeed', label: 'Indeed', icon: Briefcase, hint: 'Empleos global · puede fallar', group: 'jobs' },
-  // Grupo 3 — freelancers (plataformas de talento independiente).
+  // Grupo 1 — negocios (directorios + buscadores).
+  { value: 'google', label: 'Google Places', icon: MapIcon, hint: 'Oficial · rápido', group: 'businesses' },
+  { value: 'openstreetmap', label: 'OpenStreetMap', icon: Earth, hint: 'Mapa público · gratis', group: 'businesses' },
+  { value: 'paginas-amarillas-co', label: 'P. Amarillas CO', icon: BookOpen, hint: 'Directorio Colombia', group: 'businesses' },
+  { value: 'paginas-amarillas-mx', label: 'P. Amarillas MX', icon: BookOpen, hint: 'Directorio México', group: 'businesses' },
+  { value: 'paginas-amarillas-ar', label: 'P. Amarillas AR', icon: BookOpen, hint: 'Directorio Argentina', group: 'businesses' },
+  { value: 'bing-search', label: 'Bing Search', icon: Telescope, hint: 'Búsqueda + scrape top', group: 'businesses' },
+  { value: 'duckduckgo-search', label: 'DuckDuckGo', icon: Telescope, hint: 'Búsqueda + scrape top', group: 'businesses' },
+  // Grupo 2 — freelancers (plataformas de talento independiente).
   { value: 'workana', label: 'Workana', icon: Briefcase, hint: 'Freelancers LatAm', group: 'freelance' },
-  // Grupo 4 — experimentales (anti-bot agresivo, fallan seguido).
-  { value: 'linkedin-jobs', label: 'LinkedIn Jobs', icon: Network, hint: 'Experimental · LinkedIn bloquea seguido', group: 'experimental' },
+  { value: 'fiverr', label: 'Fiverr', icon: Briefcase, hint: 'Freelancers global · servicios', group: 'freelance' },
+  { value: 'behance', label: 'Behance', icon: Network, hint: 'Diseñadores con portafolio', group: 'freelance' },
+  { value: 'dribbble', label: 'Dribbble', icon: Network, hint: 'Diseñadores UI/UX', group: 'freelance' },
 ];
 
 const GROUP_LABELS: Record<SourceOption['group'], string> = {
-  reliable: 'Confiables',
-  jobs: 'Empresas que contratan',
+  businesses: 'Negocios',
   freelance: 'Freelancers',
-  experimental: 'Experimentales',
 };
 
 // Filtros del lado del cliente. Places API no soporta filtrar por
@@ -153,7 +147,7 @@ export function SearchForm() {
     <form onSubmit={submit} className="space-y-3">
       {/* Fuente — botones agrupados por confiabilidad. */}
       <div className="space-y-2">
-        {(['reliable', 'jobs', 'freelance', 'experimental'] as const).map((group) => {
+        {(['businesses', 'freelance'] as const).map((group) => {
           const opts = SOURCE_OPTIONS.filter((o) => o.group === group);
           if (opts.length === 0) return null;
           return (

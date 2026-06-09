@@ -24,11 +24,10 @@ export type ScrapeSource =
   | 'paginas-amarillas-ar'
   | 'bing-search'
   | 'duckduckgo-search'
-  | 'computrabajo'
-  | 'bumeran'
-  | 'indeed'
-  | 'linkedin-jobs'
   | 'workana'
+  | 'fiverr'
+  | 'behance'
+  | 'dribbble'
   | 'url';
 
 export type ScrapeInput = {

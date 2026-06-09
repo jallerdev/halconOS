@@ -27,11 +27,10 @@ const VALID_SOURCES = [
   'paginas-amarillas-ar',
   'bing-search',
   'duckduckgo-search',
-  'computrabajo',
-  'bumeran',
-  'indeed',
-  'linkedin-jobs',
   'workana',
+  'fiverr',
+  'behance',
+  'dribbble',
 ] as const;
 type Source = (typeof VALID_SOURCES)[number];
 
@@ -277,10 +276,10 @@ function friendlyError(
     };
   }
   if (code === 'BAD_GATEWAY' || code === 'INTERNAL_SERVER_ERROR') {
-    if (sourceIsExperimental(source)) {
+    if (sourceIsHeavy(source)) {
       return {
         title: 'Esta fuente nos bloqueó',
-        body: 'Marca como "experimental" — las plataformas grandes (LinkedIn, etc.) detectan scrapers y bloquean. Intenta con una de "Confiables".',
+        body: 'Algunos sitios con mucho JS (Fiverr, Behance, Dribbble) detectan scrapers y bloquean. Intenta con Google Places, Páginas Amarillas o Workana.',
       };
     }
     return {
@@ -294,6 +293,8 @@ function friendlyError(
   };
 }
 
-function sourceIsExperimental(source: string): boolean {
-  return source === 'linkedin-jobs' || source === 'indeed';
+// Fuentes JS-heavy que pueden ser bloqueadas por anti-bot. Cambia este set
+// si agregas/quitas fuentes con Playwright.
+function sourceIsHeavy(source: string): boolean {
+  return source === 'fiverr' || source === 'behance' || source === 'dribbble';
 }

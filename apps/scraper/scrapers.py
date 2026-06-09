@@ -104,44 +104,6 @@ def _build_duckduckgo_search_url(query: str, city: Optional[str]) -> str:
     return f"https://html.duckduckgo.com/html/?q={urllib.parse.quote(q)}&kl=es-es"
 
 
-def _build_computrabajo_url(query: str, city: Optional[str]) -> str:
-    """
-    Computrabajo Colombia. La query suele ser un cargo o sector ("marketing
-    digital", "diseñador") y la ciudad opcional. Las empresas que publican vacantes
-    son leads B2B: tienen presupuesto y necesidad activa.
-    """
-    q = urllib.parse.quote(query.strip())
-    if city:
-        c = urllib.parse.quote(city.strip().lower().replace(" ", "-"))
-        return f"https://co.computrabajo.com/trabajo-de-{q}-en-{c}"
-    return f"https://co.computrabajo.com/trabajo-de-{q}"
-
-
-def _build_bumeran_url(query: str, city: Optional[str]) -> str:
-    """Bumeran (Argentina, México, Perú, Chile, Panamá)."""
-    q = urllib.parse.quote(query.strip().replace(" ", "-"))
-    if city:
-        c = urllib.parse.quote(city.strip().lower().replace(" ", "-"))
-        return f"https://www.bumeran.com.ar/empleos-busqueda-{q}-en-{c}.html"
-    return f"https://www.bumeran.com.ar/empleos-busqueda-{q}.html"
-
-
-def _build_indeed_url(query: str, city: Optional[str]) -> str:
-    q = urllib.parse.quote(query.strip())
-    where = urllib.parse.quote(city.strip()) if city else ""
-    return f"https://www.indeed.com/jobs?q={q}&l={where}"
-
-
-def _build_linkedin_jobs_url(query: str, city: Optional[str]) -> str:
-    """
-    LinkedIn Jobs público (sin login). Muestra ~25 trabajos con empresa visible.
-    Muy probable que LinkedIn detecte el bot y bloquee. Mantén expectativas bajas.
-    """
-    q = urllib.parse.quote(query.strip())
-    where = urllib.parse.quote(city.strip()) if city else ""
-    return f"https://www.linkedin.com/jobs/search?keywords={q}&location={where}"
-
-
 def _build_workana_url(query: str, city: Optional[str]) -> str:
     """
     Workana — plataforma #1 de freelancers en LatAm. La URL de búsqueda de
@@ -150,6 +112,34 @@ def _build_workana_url(query: str, city: Optional[str]) -> str:
     """
     q = urllib.parse.quote(query.strip())
     return f"https://www.workana.com/jobs?language=es&query={q}"
+
+
+def _build_fiverr_url(query: str, city: Optional[str]) -> str:
+    """
+    Fiverr — marketplace global #1 de freelancers. Búsqueda por "gig" (servicio).
+    Cada resultado trae seller + servicio + rating + país. JS-heavy → Playwright.
+    `city` no aplica (Fiverr es 100% remote).
+    """
+    q = urllib.parse.quote(query.strip())
+    return f"https://www.fiverr.com/search/gigs?query={q}&source=top-bar&search_in=everywhere"
+
+
+def _build_behance_url(query: str, city: Optional[str]) -> str:
+    """
+    Behance — portfolios de diseñadores / creativos (propiedad de Adobe).
+    Búsqueda por usuarios — devuelve creadores con sus portafolios. JS-heavy.
+    """
+    q = urllib.parse.quote(query.strip())
+    return f"https://www.behance.net/search/users?search={q}"
+
+
+def _build_dribbble_url(query: str, city: Optional[str]) -> str:
+    """
+    Dribbble — comunidad de diseñadores. Búsqueda por diseñadores con
+    portafolios públicos. JS-heavy, requiere Playwright.
+    """
+    q = urllib.parse.quote(query.strip())
+    return f"https://dribbble.com/search/{q}?type=designer"
 
 
 # ─────────────────────── Fetch HTML ────────────────────────
@@ -196,7 +186,11 @@ def _fetch_with_playwright(url: str) -> str:
 
 
 # Sitios que requieren JS rendering — usan Playwright en vez de httpx.
-_JS_REQUIRED_SOURCES = {"linkedin-jobs", "indeed", "bumeran"}
+_JS_REQUIRED_SOURCES = {
+    "fiverr",
+    "behance",
+    "dribbble",
+}
 
 # Routing source → builder. Una fuente nueva = una línea aquí.
 _URL_BUILDERS = {
@@ -205,11 +199,10 @@ _URL_BUILDERS = {
     "paginas-amarillas-ar": _build_paginas_amarillas_ar_url,
     "bing-search": _build_bing_search_url,
     "duckduckgo-search": _build_duckduckgo_search_url,
-    "computrabajo": _build_computrabajo_url,
-    "bumeran": _build_bumeran_url,
-    "indeed": _build_indeed_url,
-    "linkedin-jobs": _build_linkedin_jobs_url,
     "workana": _build_workana_url,
+    "fiverr": _build_fiverr_url,
+    "behance": _build_behance_url,
+    "dribbble": _build_dribbble_url,
 }
 
 
@@ -425,23 +418,27 @@ _EXTRACTION_SCHEMA = {
     "required": ["businesses"],
 }
 
-_EXTRACTION_PROMPT = """Extrae todos los negocios listados en el contenido de la página.
+_EXTRACTION_PROMPT = """Extrae todos los LEADS listados en el contenido de la página. Un lead puede ser
+un negocio, una empresa que contrata, un freelancer con perfil público, o un creador
+con portafolio (Behance/Dribbble/Fiverr).
 
-Para CADA negocio devuelve un objeto con estos campos (null si no es visible):
-- name: nombre del negocio (REQUERIDO).
-- phone: teléfono incluyendo código de país si está visible.
-- address: dirección completa.
-- website: URL del sitio web.
-- rating: número 0-5 si se muestra.
-- review_count: cantidad de reseñas como entero.
-- category: tipo de negocio / sector.
+Para CADA lead devuelve un objeto con estos campos (null si no es visible):
+- name: nombre del negocio / empresa / freelancer / creador (REQUERIDO).
+- phone: teléfono si está visible (suele faltar en sites de freelancers).
+- address: dirección física O país/región si es freelancer remoto.
+- website: URL del sitio web personal o del perfil público.
+- rating: número 0-5 si se muestra (Fiverr usa 5 estrellas; OK pasarlo igual).
+- review_count: cantidad de reviews/ratings como entero.
+- category: tipo de servicio / sector / skill (ej. "diseño de logos", "marketing digital").
 
 REGLAS:
-1. SOLO devuelve negocios listados en el contenido principal. Ignora navegación, anuncios,
-   sidebars, "también buscaron", "relacionados", footer.
+1. SOLO devuelve leads del contenido principal. Ignora navegación, anuncios, sidebars,
+   "también buscaron", "relacionados", footer.
 2. Si la página es de búsqueda → devuelve los resultados.
-3. Si es la página de UN solo negocio → devuelve un array de 1.
-4. Excluye encabezados genéricos de categoría. Queremos negocios reales con nombre.
+3. Si es la página de UN solo perfil/negocio → devuelve un array de 1.
+4. Excluye encabezados genéricos de categoría. Queremos perfiles/negocios reales con nombre.
+5. Para Fiverr: el "name" es el seller (no el título del gig); el "category" es el servicio.
+6. Para Behance/Dribbble: el "name" es el creador; el "website" es su URL de perfil.
 
 Devuelve JSON con esta estructura exacta: {"businesses": [{...}, {...}]}.
 
