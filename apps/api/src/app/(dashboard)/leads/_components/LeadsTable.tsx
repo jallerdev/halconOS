@@ -18,7 +18,7 @@ import {
 } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { memo, useCallback, useEffect, useMemo, useState } from 'react';
 
 import { toast } from '~/hooks/use-toast';
 import { usePermissions } from '~/hooks/use-permissions';
@@ -79,9 +79,6 @@ export function LeadsTable() {
   // volver, refresh y bookmark. Reseteamos `cursor` cuando cambia cualquier
   // filtro (no quieres quedarte en página 4 después de cambiar de ciudad).
   const q = searchParams.get('q') ?? '';
-  // Estado local del input para que cada tecla no dispare un fetch. Lo
-  // commiteamos a la URL después de ~400ms sin tipear (debounce).
-  const [qInput, setQInput] = useState(q);
   const city = searchParams.get('city') ?? undefined;
   const category = searchParams.get('category') ?? undefined;
   const sort = parseSort(searchParams.get('sort'));
@@ -116,20 +113,10 @@ export function LeadsTable() {
     [pathname, router, searchParams],
   );
 
-  const setQ = (v: string) => patchParams({ q: v, cursor: null });
-  // Sync URL → input: cuando la URL cambia desde afuera (history nav, restore
-  // de historial, sessionStorage), reflejamos el valor en el input local.
-  useEffect(() => {
-    setQInput(q);
-  }, [q]);
-  // Debounce: 400ms después de la última tecla, commiteamos a la URL.
-  // Si el valor ya está sincronizado no agendamos nada.
-  useEffect(() => {
-    if (qInput === q) return;
-    const id = setTimeout(() => setQ(qInput), 400);
-    return () => clearTimeout(id);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [qInput]);
+  const setQ = useCallback(
+    (v: string) => patchParams({ q: v, cursor: null }),
+    [patchParams],
+  );
   const setCity = (v: string | undefined) => patchParams({ city: v ?? null, cursor: null });
   const setCategory = (v: string | undefined) =>
     patchParams({ category: v ?? null, cursor: null });
@@ -361,12 +348,7 @@ export function LeadsTable() {
       <div className="flex flex-wrap items-center gap-2">
         <div className="relative flex-1 min-w-[220px]">
           <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-          <Input
-            value={qInput}
-            onChange={(e) => setQInput(e.target.value)}
-            placeholder="Buscar negocio, ciudad, teléfono…"
-            className="pl-9"
-          />
+          <DebouncedSearchInput urlValue={q} onCommit={setQ} />
         </div>
         <Combobox
           value={city}
@@ -796,6 +778,40 @@ function SkeletonRows() {
     </>
   );
 }
+
+// Input de búsqueda aislado: vive en su propio render tree con su estado
+// local. Cada tecla solo re-renderiza este componente, no la tabla entera
+// (que tiene 50 filas con avatars + status selects → cada render costaba
+// suficiente como para perder teclas al escribir rápido). El commit a la URL
+// va con 400ms de debounce.
+const DebouncedSearchInput = memo(function DebouncedSearchInput({
+  urlValue,
+  onCommit,
+}: {
+  urlValue: string;
+  onCommit: (v: string) => void;
+}) {
+  const [local, setLocal] = useState(urlValue);
+  // Sync hacia afuera: si la URL cambia por history nav, restore de historial,
+  // etc., el input refleja el nuevo valor.
+  useEffect(() => {
+    setLocal(urlValue);
+  }, [urlValue]);
+  // Debounce: 400ms sin tipear → commit a la URL. Cancelamos en cada tecla.
+  useEffect(() => {
+    if (local === urlValue) return;
+    const id = setTimeout(() => onCommit(local), 400);
+    return () => clearTimeout(id);
+  }, [local, urlValue, onCommit]);
+  return (
+    <Input
+      value={local}
+      onChange={(e) => setLocal(e.target.value)}
+      placeholder="Buscar negocio, ciudad, teléfono…"
+      className="pl-9"
+    />
+  );
+});
 
 // Multi-select de estados — popover con un checkbox-like row por estado.
 // `selected` vacío = no filtra (muestra todos). El dot a la izquierda usa
