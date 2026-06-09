@@ -1,5 +1,5 @@
 import { TRPCError } from '@trpc/server';
-import { and, asc, desc, eq, getTableColumns, ilike, inArray, or, sql } from 'drizzle-orm';
+import { and, asc, desc, eq, getTableColumns, ilike, inArray, isNull, or, sql } from 'drizzle-orm';
 import { z } from 'zod';
 
 import { LEAD_STATUS } from '@halcon-os/shared/enums';
@@ -107,10 +107,12 @@ export const leadsRouter = router({
     // Seller: acota a sus leads asignados. Admin: ve toda la org.
     if (!can(ctx.role, 'leads.view.all')) conds.push(eq(leads.assignedToId, ctx.userId));
     if (input.status) conds.push(eq(leads.status, input.status));
+    if (input.statuses?.length) conds.push(inArray(leads.status, input.statuses));
     if (input.city) conds.push(eq(leads.city, input.city));
     if (input.category) conds.push(eq(leads.category, input.category));
     if (input.hasWebsite !== undefined) conds.push(eq(leads.hasWebsite, input.hasWebsite));
     if (input.assignedToId) conds.push(eq(leads.assignedToId, input.assignedToId));
+    if (input.unassigned) conds.push(isNull(leads.assignedToId));
     if (input.q) {
       const pattern = `%${input.q}%`;
       const search = or(

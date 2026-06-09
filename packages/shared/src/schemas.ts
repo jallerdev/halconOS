@@ -172,8 +172,10 @@ export const leadSearchSchema = z.object({
   city: z.string().optional(),
   category: z.string().optional(),
   status: z.enum(LEAD_STATUS).optional(),
+  statuses: z.array(z.enum(LEAD_STATUS)).optional(),
   hasWebsite: z.boolean().optional(),
   assignedToId: uuid.optional(),
+  unassigned: z.boolean().optional(),
   sort: z.enum(['recent', 'rating', 'reviews', 'name', 'score']).default('recent'),
   limit: z.number().int().min(1).max(100).default(50),
   cursor: z.number().int().min(0).default(0), // offset-based

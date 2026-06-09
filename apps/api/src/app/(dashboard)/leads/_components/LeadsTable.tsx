@@ -3,6 +3,8 @@
 import { motion } from 'framer-motion';
 import {
   ArrowUpDown,
+  Check,
+  ChevronsUpDown,
   Download,
   Eye,
   Inbox,
@@ -43,6 +45,7 @@ import {
 } from '~/components/ui/alert-dialog';
 import { Button, buttonVariants } from '~/components/ui/button';
 import { Combobox } from '~/components/ui/combobox';
+import { Popover, PopoverContent, PopoverTrigger } from '~/components/ui/popover';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -83,6 +86,14 @@ export function LeadsTable() {
   // Filtro "Asignado a" — solo lo usa la UI cuando el usuario es admin
   // (canAssign). El server ignora el param si el rol no tiene leads.view.all.
   const assignedTo = searchParams.get('assignedTo') ?? undefined;
+  // Multi-select de estados: param `statuses=NEW,CONTACTED`. Filtramos a los
+  // valores válidos para no enviar basura al server.
+  const statuses = useMemo<LeadStatus[]>(() => {
+    const raw = searchParams.get('statuses');
+    if (!raw) return [];
+    const valid = new Set<string>(LEAD_STATUS_LIST);
+    return raw.split(',').filter((s): s is LeadStatus => valid.has(s));
+  }, [searchParams]);
 
   // Patcheamos un set de keys en la URL en una sola operación (un solo
   // router.replace). Pasar `null` borra la key del query string.
@@ -110,6 +121,11 @@ export function LeadsTable() {
   const setCursor = (v: number) => patchParams({ cursor: v > 0 ? String(v) : null });
   const setAssignedTo = (v: string | undefined) =>
     patchParams({ assignedTo: v ?? null, cursor: null });
+  const setStatuses = (next: LeadStatus[]) =>
+    patchParams({ statuses: next.length ? next.join(',') : null, cursor: null });
+  const toggleStatus = (s: LeadStatus) => {
+    setStatuses(statuses.includes(s) ? statuses.filter((x) => x !== s) : [...statuses, s]);
+  };
 
   // Persistimos el último query string de /leads en sessionStorage para que la
   // breadcrumb de /leads/[id] pueda construir un href que conserve los filtros
@@ -128,6 +144,10 @@ export function LeadsTable() {
   const [pendingDelete, setPendingDelete] = useState<{ id: string; name: string } | null>(null);
 
   const facets = trpc.leads.facets.useQuery();
+  // Sentinel: el filtro "Asignado a" puede traer un uuid de miembro o el
+  // string especial `__unassigned__` (que el server interpreta como
+  // assignedToId IS NULL). Separamos antes de pasar al query.
+  const UNASSIGNED = '__unassigned__';
   const filters = {
     q: q || undefined,
     city,
@@ -135,7 +155,9 @@ export function LeadsTable() {
     sort,
     limit: PAGE_SIZE,
     cursor,
-    assignedToId: assignedTo,
+    assignedToId: assignedTo === UNASSIGNED ? undefined : assignedTo,
+    unassigned: assignedTo === UNASSIGNED ? true : undefined,
+    statuses: statuses.length ? statuses : undefined,
   };
   const search = trpc.leads.search.useQuery(filters);
 
@@ -241,13 +263,17 @@ export function LeadsTable() {
   );
 
   // Opciones del filtro "Asignado a" — solo admin. Cae al email si no hay name.
+  // `__unassigned__` es un sentinel para filtrar leads con assignedToId null
+  // (útil para rescatar leads "huérfanos" que nadie ve por scope de seller).
   const memberOptions = useMemo(
-    () =>
-      (members.data ?? []).map((m) => ({
+    () => [
+      { value: UNASSIGNED, label: 'Sin asignar', hint: 'sin dueño' as string | undefined },
+      ...(members.data ?? []).map((m) => ({
         value: m.id,
         label: m.name ?? m.email ?? 'Sin nombre',
         hint: m.orgRole === 'org:admin' ? 'admin' : undefined,
       })),
+    ],
     [members.data],
   );
 
@@ -339,6 +365,11 @@ export function LeadsTable() {
           options={categoryOptions}
           placeholder="Sector"
           searchPlaceholder="Buscar sector…"
+        />
+        <StatusMultiSelect
+          selected={statuses}
+          onToggle={toggleStatus}
+          onClear={() => setStatuses([])}
         />
         {/* Admin-only: filtra los leads de un vendedor específico. */}
         {canAssign && (
@@ -747,5 +778,73 @@ function SkeletonRows() {
         </TableRow>
       ))}
     </>
+  );
+}
+
+// Multi-select de estados — popover con un checkbox-like row por estado.
+// `selected` vacío = no filtra (muestra todos). El dot a la izquierda usa
+// STATUS_HUE para que coincida con los badges del resto de la app.
+function StatusMultiSelect({
+  selected,
+  onToggle,
+  onClear,
+}: {
+  selected: LeadStatus[];
+  onToggle: (s: LeadStatus) => void;
+  onClear: () => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const label =
+    selected.length === 0
+      ? 'Estado'
+      : selected.length === 1
+        ? `Estado: ${LEAD_STATUS_LABEL[selected[0]!]}`
+        : `Estado (${selected.length})`;
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <button
+          type="button"
+          className="inline-flex h-9 items-center justify-between gap-2 rounded-md border border-border bg-card-2/60 px-3 text-sm transition-colors hover:bg-accent/60 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+        >
+          <span className={selected.length === 0 ? 'text-muted-foreground' : undefined}>
+            {label}
+          </span>
+          <ChevronsUpDown className="size-3.5 shrink-0 text-muted-foreground" />
+        </button>
+      </PopoverTrigger>
+      <PopoverContent className="w-56 p-1" align="start">
+        {selected.length > 0 && (
+          <button
+            type="button"
+            onClick={() => {
+              onClear();
+              setOpen(false);
+            }}
+            className="mb-1 flex w-full items-center gap-2 rounded-md px-2.5 py-1.5 text-xs text-muted-foreground transition-colors hover:bg-accent"
+          >
+            Limpiar ({selected.length})
+          </button>
+        )}
+        {LEAD_STATUS_LIST.map((s) => {
+          const active = selected.includes(s);
+          return (
+            <button
+              key={s}
+              type="button"
+              onClick={() => onToggle(s)}
+              className="flex w-full items-center gap-2 rounded-md px-2.5 py-1.5 text-sm transition-colors hover:bg-accent"
+            >
+              <Check className={active ? 'size-3.5 opacity-100' : 'size-3.5 opacity-0'} />
+              <span
+                className="size-2 shrink-0 rounded-full"
+                style={{ backgroundColor: STATUS_HUE[s].hsl }}
+              />
+              <span className="flex-1 truncate text-left">{LEAD_STATUS_LABEL[s]}</span>
+            </button>
+          );
+        })}
+      </PopoverContent>
+    </Popover>
   );
 }
