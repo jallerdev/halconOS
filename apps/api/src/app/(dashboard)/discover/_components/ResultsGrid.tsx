@@ -7,6 +7,7 @@ import { useSearchParams } from 'next/navigation';
 import { useEffect, useMemo, useRef, useState } from 'react';
 
 import { toast } from '~/hooks/use-toast';
+import { useScrollRestore } from '~/hooks/use-scroll-restore';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -87,6 +88,9 @@ export function ResultsGrid() {
       retry: false, // los errores de config / billing no se solucionan con retry
     },
   );
+  // Restore scroll de Descubrir: solo activable cuando hay resultados (si no,
+  // la página es corta y scrollTo cae en 0).
+  useScrollRestore('discover', !!places.data);
 
   // Filtros client-side aplicados sobre los resultados de Places. La API no
   // soporta filtrar por has-website / rating-min / operational en el request.

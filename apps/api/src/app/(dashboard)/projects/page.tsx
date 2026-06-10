@@ -23,6 +23,7 @@ import { Card, CardContent } from '~/components/ui/card';
 import { Skeleton } from '~/components/ui/skeleton';
 import { PROJECT_STATUS_HUE } from '~/lib/design-tokens';
 import { trpc } from '~/lib/trpc';
+import { useScrollRestore } from '~/hooks/use-scroll-restore';
 
 const STATUS_META: Record<
   ProjectStatus,
@@ -53,6 +54,7 @@ function formatDate(d: Date | string | null): string {
 
 export default function ProjectsPage() {
   const { data, isLoading } = trpc.projects.list.useQuery();
+  useScrollRestore('projects', !!data);
 
   const stats = data
     ? {

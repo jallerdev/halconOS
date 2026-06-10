@@ -16,11 +16,14 @@ import { WhatsAppButton } from '~/components/whatsapp-button';
 import { Button } from '~/components/ui/button';
 import { Skeleton } from '~/components/ui/skeleton';
 import { trpc } from '~/lib/trpc';
+import { useScrollRestore } from '~/hooks/use-scroll-restore';
 
 import { UpcomingMeetings } from './_components/UpcomingMeetings';
 
 export default function TodayPage() {
   const { data, isLoading } = trpc.leads.followUps.useQuery();
+  // Restaura scroll al volver desde un detalle de lead (o tab switch).
+  useScrollRestore('today', !!data);
 
   const items: KpiSpec[] = data
     ? [
