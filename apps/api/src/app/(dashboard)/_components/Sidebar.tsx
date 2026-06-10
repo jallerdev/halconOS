@@ -6,10 +6,10 @@ import {
   Compass,
   FileSpreadsheet,
   KanbanSquare,
-  KeyRound,
   PanelLeftClose,
   PanelLeftOpen,
   Search,
+  Settings,
   Zap,
   type LucideIcon,
 } from 'lucide-react';
@@ -30,7 +30,7 @@ const NAV: { href: string; label: string; icon: LucideIcon; exact?: boolean; tou
   { href: '/pipeline', label: 'Pipeline', icon: KanbanSquare, tour: 'nav-pipeline' },
   { href: '/projects', label: 'Proyectos', icon: Boxes, tour: 'nav-projects' },
   { href: '/leads/import', label: 'Importar', icon: FileSpreadsheet, exact: true, tour: 'nav-import' },
-  { href: '/settings', label: 'Ajustes', icon: KeyRound, tour: 'nav-settings' },
+  { href: '/settings', label: 'Ajustes', icon: Settings, tour: 'nav-settings' },
 ];
 
 // Sidebar — navegación + workspace al fondo. El LOGO nunca colapsa: colapsado es el botón
